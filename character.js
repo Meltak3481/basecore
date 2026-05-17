@@ -358,26 +358,65 @@ const CHAR = (() => {
     const el = document.getElementById('char-widget');
     if (!el) return;
 
-    el.innerHTML = `
-      <div style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-          <span style="font-size:15px;font-weight:900;color:#fff;">Base Entity</span>
-          <span style="background:rgba(37,99,235,.18);border:1px solid rgba(96,165,250,.35);border-radius:20px;padding:2px 9px;font-size:10px;font-weight:800;color:#93c5fd;font-family:var(--mono);">LV ${lv}</span>
-        </div>
-        <div style="font-size:12px;color:#93c5fd;margin-bottom:8px;font-weight:700;">${name}</div>
-        <div style="background:rgba(255,255,255,.07);border-radius:8px;height:6px;overflow:hidden;margin-bottom:5px;">
-          <div id="cw-bar" style="height:100%;border-radius:8px;background:linear-gradient(90deg,#2563eb,#60a5fa,#bfdbfe);width:0%;transition:width 1.2s cubic-bezier(.34,1.56,.64,1);"></div>
-        </div>
-        <div style="font-size:10px;color:var(--muted);font-family:var(--mono);">
-          ${lv >= 10 ? '⬡ MAX LEVEL — Base God' : `${fmtXP(prog.cur)} / ${fmtXP(prog.needed)} XP → ${LEVEL_NAMES[lv]}`}
-        </div>
-      </div>
-      <div id="cw-char" style="width:80px;height:80px;flex-shrink:0;cursor:pointer;" onclick="CHAR.openModal()">
-        ${buildSVG(lv, 80, true)}
-      </div>
+    // Widget stilini güncelle — dikey, merkezi, büyük
+    el.style.cssText = `
+      background:linear-gradient(160deg,rgba(30,58,138,.28),rgba(37,99,235,.12),rgba(15,23,42,.8));
+      border:1px solid rgba(96,165,250,.38);border-radius:22px;
+      padding:22px 20px 16px;margin-bottom:20px;
+      display:flex;flex-direction:column;align-items:center;
+      position:relative;overflow:hidden;cursor:pointer;
+      box-shadow:0 0 48px rgba(37,99,235,.18),0 8px 32px rgba(0,0,0,.35);
+      transition:all .3s;
     `;
 
-    // Bar animasyonu (kısa gecikme ile)
+    el.innerHTML = `
+      <!-- Üst glow çizgisi -->
+      <div style="position:absolute;top:0;left:0;right:0;height:1px;
+        background:linear-gradient(90deg,transparent,rgba(96,165,250,.7),rgba(147,197,253,.5),transparent);"></div>
+
+      <!-- Arka radyal glow -->
+      <div style="position:absolute;inset:0;
+        background:radial-gradient(ellipse at 50% 0%,rgba(37,99,235,.14),transparent 65%);
+        pointer-events:none;"></div>
+
+      <!-- Karakter — büyük, merkezi -->
+      <div style="position:relative;margin-bottom:14px;filter:drop-shadow(0 8px 24px rgba(37,99,235,.5));">
+        ${buildSVG(lv, 120, true)}
+        <!-- Gölge -->
+        <div style="position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);
+          width:90px;height:14px;background:radial-gradient(ellipse,rgba(37,99,235,.5),transparent);
+          filter:blur(6px);"></div>
+      </div>
+
+      <!-- İsim + Level badge -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;z-index:1;">
+        <span style="font-size:17px;font-weight:900;color:#fff;">Base Entity</span>
+        <span style="background:rgba(37,99,235,.25);border:1px solid rgba(96,165,250,.4);
+          border-radius:20px;padding:2px 10px;font-size:11px;font-weight:800;
+          color:#93c5fd;font-family:var(--mono);">LV ${lv}</span>
+      </div>
+
+      <!-- Evolution ismi -->
+      <div style="font-size:12px;color:#93c5fd;font-weight:700;margin-bottom:12px;z-index:1;">${name}</div>
+
+      <!-- XP Bar -->
+      <div style="width:100%;background:rgba(255,255,255,.07);border-radius:8px;
+        height:6px;overflow:hidden;margin-bottom:5px;z-index:1;">
+        <div id="cw-bar" style="height:100%;border-radius:8px;
+          background:linear-gradient(90deg,#1d4ed8,#3b82f6,#93c5fd);
+          width:0%;transition:width 1.4s cubic-bezier(.34,1.56,.64,1);"></div>
+      </div>
+
+      <!-- XP label -->
+      <div style="font-size:10px;color:rgba(255,255,255,.4);font-family:var(--mono);margin-bottom:8px;z-index:1;">
+        ${lv >= 10 ? '⬡ MAX LEVEL — Base God' : `${fmtXP(prog.cur)} / ${fmtXP(prog.needed)} XP → ${LEVEL_NAMES[lv]}`}
+      </div>
+
+      <!-- Tap hint -->
+      <div style="font-size:10px;color:rgba(96,165,250,.4);letter-spacing:.8px;
+        text-transform:uppercase;z-index:1;">Tap to view evolution ›</div>
+    `;
+
     setTimeout(() => {
       const bar = document.getElementById('cw-bar');
       if (bar) bar.style.width = prog.pct + '%';
