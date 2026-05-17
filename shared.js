@@ -189,13 +189,13 @@ async function connectWallet(type, silent = false) {
     }
 
     BC.signer     = await BC.provider.getSigner();
-    BC.addr       = await BC.signer.getAddress();
+    BC.addr       = (await BC.signer.getAddress()).toLowerCase();
     BC.walletType = type;
 
     const savedMode = localStorage.getItem('bc_payment_mode');
     BC.paymentMode  = savedMode || 'onchain';
 
-    localStorage.setItem('bc_last_addr',    BC.addr);
+    localStorage.setItem('bc_last_addr',    BC.addr.toLowerCase());
     localStorage.setItem('bc_wallet_type',  type);
     localStorage.setItem('bc_payment_mode', BC.paymentMode);
 
@@ -256,9 +256,9 @@ async function switchAccount() {
     await window.ethereum.request({ method: 'wallet_requestPermissions', params: [{ eth_accounts: {} }] });
     const accs = await window.ethereum.request({ method: 'eth_requestAccounts' });
     if (accs[0]) {
-      BC.addr   = accs[0];
+      BC.addr   = accs[0].toLowerCase();
       BC.signer = await BC.provider.getSigner();
-      localStorage.setItem('bc_last_addr', BC.addr);
+      localStorage.setItem('bc_last_addr', BC.addr.toLowerCase());
       loadState(); updateNavUI();
       showNotification('Hesap Değiştirildi', BC.shortAddr + ' hesabına geçildi.', 'success');
       const d = document.getElementById('user-dropdown');
@@ -358,14 +358,14 @@ function showDisconnectConfirm() {
 // ── STATE PERSIST ──
 function saveState() {
   if (!BC.addr) return;
-  localStorage.setItem('bc_' + BC.addr, JSON.stringify({
+  localStorage.setItem('bc_' + BC.addr.toLowerCase(), JSON.stringify({
     xp: BC.xp, level: BC.level, streak: BC.streak, refs: BC.refs, tasks: BC.tasks
   }));
 }
 
 function loadState() {
   if (!BC.addr) return;
-  const d = localStorage.getItem('bc_' + BC.addr);
+  const d = localStorage.getItem('bc_' + BC.addr.toLowerCase());
   if (d) {
     const p  = JSON.parse(d);
     BC.xp     = p.xp     || 0;
@@ -724,7 +724,7 @@ function initNav(activePage) {
               BC.provider = new ethers.BrowserProvider(provider);
               BC.provider.getSigner().then(s => {
                 BC.signer = s;
-                BC.addr   = accs[0];
+                BC.addr   = accs[0].toLowerCase();
                 loadState();
                 updateNavUI();
               });
