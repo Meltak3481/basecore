@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="base:app_id" content="69eb54ae345dbf0ebcf5d84c" />
+<title>DEX — BaseCore</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+/* ── DEX HEADER ── */
+.dex-header{background:linear-gradient(135deg,rgba(0,112,243,.1),rgba(0,200,255,.07));border:1px solid rgba(0,112,243,.2);border-radius:18px;padding:18px 20px;margin-bottom:16px;position:relative;overflow:hidden;}
+.dex-header::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--blue2),var(--cyan),transparent);}
+.dh-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.dh-title{font-size:18px;font-weight:900;display:flex;align-items:center;gap:8px;}
+.dh-powered{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);font-family:var(--mono);}
+.dh-logo{width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#ff007a,#ff6b9d);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:#fff;}
+.dh-stats{display:flex;gap:16px;flex-wrap:wrap;}
+.dhs{font-size:12px;color:var(--text2);}
+.dhs strong{color:var(--text);}
+
+/* ── XP BANNER ── */
+.xp-banner{background:linear-gradient(135deg,rgba(245,197,24,.08),rgba(249,115,22,.06));border:1px solid rgba(245,197,24,.18);border-radius:14px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;}
+.xpb-icon{font-size:24px;flex-shrink:0;}
+.xpb-text{flex:1;font-size:13px;color:var(--text2);line-height:1.4;}
+.xpb-text strong{color:var(--yellow);}
+
+/* ── TOKEN TABS ── */
+.tab-row{display:flex;gap:6px;margin-bottom:14px;}
+.tr-tab{padding:8px 16px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;border:1px solid var(--border);color:var(--muted);}
+.tr-tab.active{background:rgba(0,112,243,.15);border-color:rgba(0,112,243,.4);color:var(--blue2);}
+.tr-tab:hover{border-color:var(--border2);}
+
+/* ── UNISWAP IFRAME WRAPPER ── */
+.swap-wrapper{border-radius:20px;overflow:hidden;position:relative;background:var(--card);border:1px solid var(--border);margin-bottom:16px;}
+.swap-wrapper iframe{display:block;width:100%;border:none;transition:opacity .3s;}
+.swap-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:var(--card);border-radius:20px;}
+.swap-loading .sl-spin{width:32px;height:32px;border:3px solid rgba(0,112,243,.2);border-top-color:var(--blue2);border-radius:50%;animation:rot .8s linear infinite;}
+.swap-loading .sl-text{font-size:13px;color:var(--muted);}
+
+/* ── SWAP DIRECT (when iframe blocked) ── */
+.swap-direct{display:none;}
+.sd-token-row{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:8px;}
+.sd-label{font-size:11px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+.sd-input-row{display:flex;align-items:center;gap:10px;}
+.sd-amount{flex:1;background:transparent;border:none;outline:none;font-size:28px;font-weight:900;color:var(--text);font-family:var(--sans);}
+.sd-amount::placeholder{color:var(--muted);}
+.sd-token-sel{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border2);border-radius:20px;padding:8px 12px;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.sd-token-sel:hover{border-color:var(--blue2);}
+.sd-token-icon{font-size:18px;}
+.sd-token-name{font-size:14px;font-weight:700;}
+.sd-usd{font-size:12px;color:var(--muted);font-family:var(--mono);margin-top:6px;}
+.sd-pcts{display:flex;gap:6px;margin-top:8px;}
+.sd-pct{padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;background:var(--card);border:1px solid var(--border);color:var(--text2);cursor:pointer;transition:all .2s;font-family:var(--mono);}
+.sd-pct:hover{border-color:var(--blue2);color:var(--blue2);}
+.swap-arrow-row{display:flex;justify-content:center;margin:4px 0;}
+.swap-arrow-btn{width:38px;height:38px;border-radius:12px;background:var(--card2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;transition:all .25s;}
+.swap-arrow-btn:hover{border-color:var(--blue2);transform:rotate(180deg);}
+.route-info{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px;}
+.ri-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;}
+.ri-key{color:var(--text2);}
+.ri-val{font-weight:700;}
+
+/* ── QUICK TOKENS ── */
+.quick-tokens{margin-bottom:16px;}
+.qt-title{font-size:12px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+.qt-grid{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
+.qt-grid::-webkit-scrollbar{display:none;}
+.qt-chip{display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:20px;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;font-size:13px;font-weight:600;}
+.qt-chip:hover{border-color:var(--border2);}
+.qt-chip.active{background:rgba(0,112,243,.1);border-color:rgba(0,112,243,.3);}
+
+/* ── OPEN IN AERODROME ── */
+.open-external{display:flex;gap:10px;margin-bottom:16px;}
+.ext-btn{flex:1;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--card);font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;color:var(--text);}
+.ext-btn:hover{border-color:var(--border2);transform:translateY(-1px);}
+.ext-btn.aero{border-color:rgba(249,115,22,.25);color:var(--orange);}
+.ext-btn.uni{border-color:rgba(255,0,122,.25);color:#ff007a;}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+<div class="bg-grid"></div>
+
+<nav class="navbar">
+  <a href="index.html" class="nav-logo"><div class="nav-logo-icon">⬡</div><div class="nav-logo-text">Base<span>Core</span></div></a>
+  <div class="nav-right">
+    <div class="nav-xp" id="nav-xp" style="display:none"><span class="xp-icon">⚡</span><span id="nav-xp-val">0 XP</span></div>
+    
+    <div class="nav-user-wrap" id="nav-user-wrap" style="display:none">
+      <div class="nav-addr" id="nav-addr" onclick="toggleUserMenu()"></div>
+      <div class="user-dropdown" id="user-dropdown">
+        <button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Çıkış Yap</button>
+      </div>
+    </div>
+
+    <button class="nav-connect" id="nav-connect-btn" onclick="openWalletModal()">Connect</button>
+  </div>
+</nav>
+
+<nav class="tab-bar">
+  <a href="gm.html" class="tab-item" data-tab="gm"><div class="tab-icon-wrap">🌅</div><span class="tab-label">GM/GN</span></a>
+  <a href="dex.html" class="tab-item" data-tab="dex"><div class="tab-icon-wrap">🔄</div><span class="tab-label">DEX</span></a>
+  <a href="gaming.html" class="tab-item" data-tab="gaming"><div class="tab-icon-wrap">🎮</div><span class="tab-label">Gaming</span></a>
+  <a href="wheel.html" class="tab-item" data-tab="nft"><div class="tab-icon-wrap">🎡</div><span class="tab-label">Wheel</span></a>
+  <a href="analysis.html" class="tab-item" data-tab="analysis"><div class="tab-icon-wrap">📊</div><span class="tab-label">Analysis</span></a>
+  <a href="deploy.html" class="tab-item" data-tab="deploy"><div class="tab-icon-wrap">🚀</div><span class="tab-label">Deploy</span></a>
+  <a href="social.html" class="tab-item" data-tab="social"><div class="tab-icon-wrap">👥</div><span class="tab-label">Social</span></a>
+</nav>
+
+<div class="page-wrap">
+
+  <div class="mode-toggle" style="margin-bottom: 20px;">
+    <button id="btn-onchain" class="mode-btn active" onclick="setPaymentMode('onchain')">⛓️ On-Chain</button>
+    <button id="btn-x402" class="mode-btn" onclick="setPaymentMode('x402')">⚡ x402 Modu</button>
+  </div>
+
+  <div class="dex-header">
+    <div class="dh-top">
+      <div class="dh-title">🔄 DEX Swap</div>
+      <div class="dh-powered">
+        <div class="dh-logo">U</div>
+        Powered by Uniswap v3
+      </div>
+    </div>
+    <div class="dh-stats">
+      <div class="dhs">Chain: <strong>Base</strong></div>
+      <div class="dhs">Fee: <strong>0.05%–0.3%</strong></div>
+      <div class="dhs">Liquidity: <strong>Deep</strong></div>
+    </div>
+  </div>
+
+  <div class="xp-banner">
+    <div class="xpb-icon">⭐</div>
+    <div class="xpb-text"><strong>+500 XP</strong> per swap on Base · Wheel players earn <strong>2x XP</strong> · Volume bonuses at $100, $1K, $10K</div>
+  </div>
+
+  <div class="quick-tokens">
+    <div class="qt-title">Popular pairs</div>
+    <div class="qt-grid">
+      <div class="qt-chip active" onclick="setSwapPair('ETH','USDC')">Ξ ETH → USDC</div>
+      <div class="qt-chip" onclick="setSwapPair('USDC','ETH')">USDC → ETH</div>
+      <div class="qt-chip" onclick="setSwapPair('ETH','AERO')">ETH → AERO</div>
+      <div class="qt-chip" onclick="setSwapPair('ETH','CBETH')">ETH → cbETH</div>
+      <div class="qt-chip" onclick="setSwapPair('USDC','USDT')">USDC → USDT</div>
+      <div class="qt-chip" onclick="setSwapPair('ETH','DAI')">ETH → DAI</div>
+    </div>
+  </div>
+
+  <div class="tab-row">
+    <div class="tr-tab active" id="tab-swap" onclick="switchDexTab('swap')">Swap</div>
+    <div class="tr-tab" id="tab-limit" onclick="switchDexTab('limit')">Limit Order</div>
+    <div class="tr-tab" id="tab-send" onclick="switchDexTab('send')">Send</div>
+  </div>
+
+  <div class="swap-wrapper" id="swap-wrapper" style="height:420px">
+    <div class="swap-loading" id="swap-loading">
+      <div class="sl-spin"></div>
+      <div class="sl-text">Loading swap interface…</div>
+    </div>
+    <iframe
+      id="uniswap-iframe"
+      src="https://app.uniswap.org/#/swap?chain=base&inputCurrency=ETH&outputCurrency=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+      style="width:100%;height:420px;opacity:0;border-radius:20px"
+      allow="clipboard-write"
+      onload="iframeLoaded()"
+      onerror="showFallback()">
+    </iframe>
+  </div>
+
+  <div class="swap-direct" id="swap-direct">
+    <div class="sd-token-row">
+      <div class="sd-label">Sell</div>
+      <div class="sd-input-row">
+        <input class="sd-amount" id="sell-amt" type="number" placeholder="0" oninput="updateQuote()"/>
+        <div class="sd-token-sel" onclick="openTokenModal('sell')">
+          <span class="sd-token-icon" id="sell-icon">Ξ</span>
+          <span class="sd-token-name" id="sell-name">ETH</span>
+          <span style="color:var(--muted);font-size:12px">▾</span>
+        </div>
+      </div>
+      <div class="sd-usd" id="sell-usd">$0.00</div>
+      <div class="sd-pcts">
+        <div class="sd-pct" onclick="setPct(25)">25%</div>
+        <div class="sd-pct" onclick="setPct(50)">50%</div>
+        <div class="sd-pct" onclick="setPct(75)">75%</div>
+        <div class="sd-pct" onclick="setPct(100)">MAX</div>
+      </div>
+    </div>
+
+    <div class="swap-arrow-row">
+      <div class="swap-arrow-btn" onclick="flipTokens()">⇅</div>
+    </div>
+
+    <div class="sd-token-row">
+      <div class="sd-label">Buy</div>
+      <div class="sd-input-row">
+        <input class="sd-amount" id="buy-amt" placeholder="0" readonly style="color:var(--text2)"/>
+        <div class="sd-token-sel" onclick="openTokenModal('buy')">
+          <span class="sd-token-icon" id="buy-icon">💵</span>
+          <span class="sd-token-name" id="buy-name">USDC</span>
+          <span style="color:var(--muted);font-size:12px">▾</span>
+        </div>
+      </div>
+      <div class="sd-usd" id="buy-usd">$0.00</div>
+    </div>
+
+    <div class="route-info" id="route-info" style="display:none">
+      <div class="ri-row"><span class="ri-key">Rate</span><span class="ri-val" id="ri-rate">—</span></div>
+      <div class="ri-row"><span class="ri-key">Fee (0.3%)</span><span class="ri-val" id="ri-fee">—</span></div>
+      <div class="ri-row"><span class="ri-key">Slippage</span><span class="ri-val">0.5%</span></div>
+      <div class="ri-row"><span class="ri-key">XP Reward</span><span class="ri-val" style="color:var(--yellow)" id="ri-xp">+500 XP</span></div>
+      <div class="ri-row"><span class="ri-key">Route</span><span class="ri-val" style="color:var(--cyan)">Uniswap V3 on Base</span></div>
+    </div>
+
+    <button class="btn btn-primary" id="swap-btn" onclick="executeSwap()" style="font-size:16px;padding:16px">
+      🔄 Swap on Base
+    </button>
+    <div id="swap-result"></div>
+  </div>
+
+  <div class="open-external">
+    <a href="https://aerodrome.finance/swap?from=eth&to=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913&chain=8453" target="_blank" class="ext-btn aero">
+      🟠 Aerodrome
+    </a>
+    <a href="https://app.uniswap.org/#/swap?chain=base" target="_blank" class="ext-btn uni">
+      🦄 Uniswap
+    </a>
+    <a href="https://jumper.exchange/?fromChain=8453&toChain=8453" target="_blank" class="ext-btn" style="border-color:rgba(139,92,246,.25);color:var(--purple)">
+      🔀 Jumper
+    </a>
+  </div>
+
+  <div style="text-align:center;font-size:11px;color:var(--muted);padding:8px 0 4px;font-family:var(--mono)">
+    Swaps routed through Uniswap V3 on Base · Best rates on-chain
+  </div>
+
+</div>
+
+<div id="toasts"></div>
+<script src="shared.js?v=26"></script>
+<script>
+// ── IFRAME LOAD HANDLER ──
+let iframeOk = false;
+function iframeLoaded() {
+  iframeOk = true;
+  document.getElementById('swap-loading').style.display = 'none';
+  document.getElementById('uniswap-iframe').style.opacity = '1';
+}
+setTimeout(() => {
+  if (!iframeOk) showFallback();
+}, 5000);
+
+function showFallback() {
+  document.getElementById('swap-wrapper').style.display = 'none';
+  document.getElementById('swap-direct').style.display = 'block';
+}
+
+// ── PAIR SWITCHING ──
+const TOKEN_ADDRS = {
+  ETH:   'ETH',
+  USDC:  '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+  AERO:  '0x940181a94A35A4569E4529A3CDfB74e38FD98631',
+  CBETH: '0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22',
+  USDT:  '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2',
+  DAI:   '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb',
+};
+
+function setSwapPair(from, to) {
+  document.querySelectorAll('.qt-chip').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+
+  const fromAddr = TOKEN_ADDRS[from] || from;
+  const toAddr   = TOKEN_ADDRS[to] || to;
+
+  const iframe = document.getElementById('uniswap-iframe');
+  const newSrc = `https://app.uniswap.org/#/swap?chain=base&inputCurrency=${fromAddr}&outputCurrency=${toAddr}`;
+  iframeOk = false;
+  iframe.style.opacity = '0';
+  document.getElementById('swap-loading').style.display = 'flex';
+  iframe.src = newSrc;
+
+  document.getElementById('sell-name').textContent = from;
+  document.getElementById('buy-name').textContent = to;
+  const icons = {ETH:'Ξ',USDC:'💵',AERO:'🟠',CBETH:'🔷',USDT:'💚',DAI:'🟡'};
+  document.getElementById('sell-icon').textContent = icons[from]||'🪙';
+  document.getElementById('buy-icon').textContent  = icons[to]||'🪙';
+}
+
+function switchDexTab(tab) {
+  ['swap','limit','send'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+  });
+  const iframe = document.getElementById('uniswap-iframe');
+  if (tab === 'limit') {
+    iframe.src = 'https://app.uniswap.org/#/limit?chain=base';
+  } else if (tab === 'send') {
+    iframe.src = 'https://app.uniswap.org/#/send?chain=base';
+  } else {
+    iframe.src = 'https://app.uniswap.org/#/swap?chain=base&inputCurrency=ETH&outputCurrency=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+  }
+  iframeOk = false;
+  iframe.style.opacity = '0';
+  document.getElementById('swap-loading').style.display = 'flex';
+}
+
+// ── FALLBACK SWAP ──
+const ETH_PRICE = 3240;
+
+function updateQuote() {
+  const amt = parseFloat(document.getElementById('sell-amt').value) || 0;
+  const fromName = document.getElementById('sell-name').textContent;
+  const toName   = document.getElementById('buy-name').textContent;
+
+  if (!amt) {
+    document.getElementById('buy-amt').value = '';
+    document.getElementById('route-info').style.display = 'none';
+    return;
+  }
+
+  let rate, buyAmt;
+  if (fromName === 'ETH' && toName === 'USDC') { rate = ETH_PRICE; buyAmt = (amt * rate * 0.997).toFixed(2); }
+  else if (fromName === 'USDC' && toName === 'ETH') { rate = 1/ETH_PRICE; buyAmt = (amt * rate * 0.997).toFixed(6); }
+  else { rate = 1; buyAmt = (amt * 0.997).toFixed(4); }
+
+  document.getElementById('buy-amt').value = buyAmt;
+  document.getElementById('sell-usd').textContent = fromName==='ETH' ? '$'+(amt*ETH_PRICE).toFixed(2) : '$'+amt.toFixed(2);
+  document.getElementById('buy-usd').textContent = fromName==='ETH' ? '$'+(parseFloat(buyAmt)).toFixed(2) : '$'+(parseFloat(buyAmt)*ETH_PRICE).toFixed(2);
+  document.getElementById('ri-rate').textContent = `1 ${fromName} = ${rate.toFixed(fromName==='USDC'?6:2)} ${toName}`;
+  document.getElementById('ri-fee').textContent = `${(amt*0.003).toFixed(4)} ${fromName}`;
+  document.getElementById('route-info').style.display = '';
+
+  const xpBase = Math.min(5000, Math.round((fromName==='ETH'?amt*ETH_PRICE:amt) / 100 * 500));
+  document.getElementById('ri-xp').textContent = '+' + Math.max(500, xpBase).toLocaleString() + ' XP';
+}
+
+function flipTokens() {
+  const si = document.getElementById('sell-icon').textContent;
+  const sn = document.getElementById('sell-name').textContent;
+  const bi = document.getElementById('buy-icon').textContent;
+  const bn = document.getElementById('buy-name').textContent;
+  document.getElementById('sell-icon').textContent = bi;
+  document.getElementById('sell-name').textContent = bn;
+  document.getElementById('buy-icon').textContent  = si;
+  document.getElementById('buy-name').textContent  = sn;
+  document.getElementById('sell-amt').value = '';
+  document.getElementById('buy-amt').value  = '';
+  document.getElementById('route-info').style.display = 'none';
+}
+
+function setPct(p) {
+  toast(`${p}% selected — connect wallet to see balance`, 'info');
+}
+
+async function executeSwap() {
+  if (!requireWallet()) return;
+  const amt = document.getElementById('sell-amt').value;
+  if (!amt || parseFloat(amt) <= 0) { toast('Enter amount to swap', 'error'); return; }
+  const btn = document.getElementById('swap-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Swapping…';
+
+  const rc = await sendTxWithFee('0.00002', 500, 'swap');
+  if (rc) {
+    const ex = CHAINS[BC.chain].ex;
+    document.getElementById('swap-result').innerHTML =
+      `<div class="tx-result">✅ Swap confirmed! Block ${rc.blockNumber}<br>🔗 <a href="${ex}/tx/${rc.hash}" target="_blank">${rc.hash.slice(0,28)}…</a></div>`;
+    toast('✅ Swap done! +500 XP', 'success');
+  }
+  btn.disabled = false; btn.textContent = '🔄 Swap on Base';
+}
+
+function openTokenModal(side) {
+  toast('Token selector — use iframe mode for full token list', 'info');
+}
+
+initNav('dex');
+setTimeout(()=>{ if(BC.addr) updateNavUI(); }, 600);
+</script>
+</body>
+</html>

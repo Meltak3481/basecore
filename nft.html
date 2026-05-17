@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="base:app_id" content="69eb54ae345dbf0ebcf5d84c" />
+<title>Wheel — BaseCore</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+.page-wrap{position:relative;z-index:1;padding:80px 16px 100px;max-width:480px;margin:0 auto;}
+
+/* ── HERO ── */
+.wheel-hero{text-align:center;margin-bottom:14px;}
+.wheel-hero h1{font-size:26px;font-weight:900;background:linear-gradient(135deg,#c084fc,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.wheel-hero p{font-size:13px;color:var(--text2);margin-top:4px;}
+
+/* ── WHEEL WRAP ── */
+.wheel-wrap{
+  position:relative;width:100%;max-width:340px;
+  margin:0 auto 16px;
+}
+.wheel-canvas-outer{
+  position:relative;
+  width:100%;aspect-ratio:1;
+}
+/* 3D tilt via CSS perspective */
+.wheel-canvas-outer{
+  transform:perspective(900px) rotateX(8deg);
+  transform-origin:center center;
+  filter:drop-shadow(0 16px 32px rgba(0,0,0,.65));
+}
+#wcanvas{
+  width:100%;height:100%;display:block;
+  border-radius:50%;
+}
+
+/* Pointer — above tilt */
+.wheel-ptr{
+  position:absolute;
+  top:-18px;left:50%;
+  transform:translateX(-50%);
+  z-index:20;
+  width:0;height:0;
+  border-left:18px solid transparent;
+  border-right:18px solid transparent;
+  border-top:36px solid #c084fc;
+  filter:drop-shadow(0 0 14px #c084fc) drop-shadow(0 0 28px #7c3aed);
+  animation:ptrBob 1.6s ease-in-out infinite;
+}
+@keyframes ptrBob{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(-6px);}}
+
+/* Rainbow outer ring — CSS, not canvas */
+.wheel-ring{
+  position:absolute;inset:-12px;border-radius:50%;z-index:0;
+  background:conic-gradient(from 0deg,
+    #c084fc,#818cf8,#38bdf8,#34d399,#fbbf24,#fb923c,#f472b6,#c084fc);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 2px));
+  mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 2px));
+  animation:ringRot 5s linear infinite;
+}
+@keyframes ringRot{to{transform:rotate(360deg);}}
+
+/* Glow behind wheel */
+.wheel-glow{
+  position:absolute;inset:-40px;border-radius:50%;z-index:-1;
+  background:radial-gradient(ellipse,rgba(139,92,246,.22) 0%,transparent 65%);
+  animation:glowPulse 2.2s ease-in-out infinite alternate;
+}
+@keyframes glowPulse{from{opacity:.4;transform:scale(.88);}to{opacity:1;transform:scale(1.12);}}
+
+/* ── SPIN BAR ── */
+.spin-bar{display:flex;justify-content:center;gap:28px;margin:10px 0 14px;}
+.sb-item{text-align:center;}
+.sb-val{font-size:24px;font-weight:900;font-family:var(--mono);}
+.sb-lbl{font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-top:2px;}
+
+/* Dots */
+.spin-dots{display:flex;justify-content:center;gap:10px;margin-bottom:18px;}
+.sd{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.07);border:1.5px solid rgba(139,92,246,.3);transition:all .4s cubic-bezier(.34,1.56,.64,1);}
+.sd.on{background:var(--purple);border-color:var(--purple);box-shadow:0 0 16px var(--purple),0 0 32px rgba(139,92,246,.3);transform:scale(1.25);}
+.sd.off{background:#1e1e2e;border-color:rgba(255,255,255,.1);}
+
+/* ── SPIN BUTTON ── */
+.spin-btn{
+  width:100%;padding:20px;border-radius:18px;border:none;cursor:pointer;
+  font-family:var(--sans);font-size:17px;font-weight:900;color:#fff;
+  background:linear-gradient(135deg,#7c3aed,#4f46e5,#2563eb);
+  box-shadow:0 0 36px rgba(124,58,237,.5),0 8px 32px rgba(0,0,0,.4);
+  transition:all .2s;position:relative;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.spin-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transform:translateX(-100%);transition:transform .5s;}
+.spin-btn:hover::before{transform:translateX(100%);}
+.spin-btn:hover:not(:disabled){transform:translateY(-3px);box-shadow:0 0 56px rgba(124,58,237,.7);}
+.spin-btn:active:not(:disabled){transform:scale(.98);}
+.spin-btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shadow:none;}
+@keyframes rotSpin{to{transform:rotate(360deg);}}
+.spin-dot-el{width:20px;height:20px;border-radius:50%;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;animation:rotSpin .7s linear infinite;display:inline-block;}
+
+/* Sound toggle */
+.sfx-toggle{
+  position:fixed;bottom:80px;right:16px;z-index:200;
+  width:40px;height:40px;border-radius:50%;
+  background:var(--card);border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;cursor:pointer;
+  box-shadow:0 4px 16px rgba(0,0,0,.4);
+  transition:all .2s;
+}
+.sfx-toggle:hover{background:var(--card2);transform:scale(1.1);}
+
+/* ── MYSTERY BOX ── */
+.mystery-section{background:linear-gradient(135deg,rgba(245,197,24,.07),rgba(249,115,22,.05));border:1px solid rgba(245,197,24,.2);border-radius:18px;padding:20px;margin-bottom:24px;position:relative;overflow:hidden;}
+.mystery-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(245,197,24,.45),transparent);}
+.mystery-header{display:flex;align-items:center;gap:14px;margin-bottom:12px;}
+.mystery-icon{width:52px;height:52px;border-radius:14px;flex-shrink:0;background:linear-gradient(135deg,rgba(245,197,24,.15),rgba(249,115,22,.1));border:1px solid rgba(245,197,24,.25);display:flex;align-items:center;justify-content:center;font-size:26px;position:relative;}
+.mystery-lock{position:absolute;bottom:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:var(--card);border:1.5px solid rgba(245,197,24,.3);display:flex;align-items:center;justify-content:center;font-size:10px;}
+.mystery-title{font-size:16px;font-weight:900;color:var(--yellow);}
+.mystery-sub{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.5;}
+.mystery-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(245,197,24,.08);border:1px solid rgba(245,197,24,.2);border-radius:20px;padding:4px 12px;margin-top:8px;font-size:10px;font-weight:800;color:var(--yellow);font-family:var(--mono);}
+.mystery-row{display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,.18);border-radius:10px;padding:10px 14px;margin-top:6px;}
+.mr-label{font-size:12px;color:var(--text2);}
+.mr-val{font-size:13px;font-weight:800;color:var(--yellow);font-family:var(--mono);}
+
+/* ── LEGEND ── */
+.seg-legend{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:28px;}
+.sl-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;transition:border-color .2s;}
+.sl-item:hover{border-color:var(--border2);}
+.sl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.sl-label{font-size:12px;font-weight:700;}
+.sl-prob{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:1px;}
+
+/* ── WIN CARD ── */
+.win-overlay{position:fixed;inset:0;z-index:900;pointer-events:none;display:flex;align-items:center;justify-content:center;}
+.win-burst{position:absolute;inset:0;background:radial-gradient(ellipse 70% 70% at 50% 50%,rgba(139,92,246,.2),transparent);opacity:0;}
+.win-card{background:linear-gradient(145deg,#0f0a22,#0a1525);border:2px solid var(--purple);border-radius:26px;padding:38px 48px;text-align:center;transform:scale(0) rotate(-12deg);opacity:0;box-shadow:0 0 80px rgba(139,92,246,.5),0 24px 60px rgba(0,0,0,.8);pointer-events:all;max-width:300px;width:90%;}
+.win-card.show{animation:winPop .55s cubic-bezier(.175,.885,.32,1.275) forwards;}
+.win-card.hide{animation:winHide .3s ease forwards;}
+.win-burst.show{animation:burstAnim .7s ease forwards;}
+@keyframes winPop{from{transform:scale(0) rotate(-12deg);opacity:0;}to{transform:scale(1) rotate(0);opacity:1;}}
+@keyframes winHide{from{transform:scale(1);opacity:1;}to{transform:scale(.7);opacity:0;}}
+@keyframes burstAnim{0%{opacity:0;}40%{opacity:1;}100%{opacity:0;}}
+.win-emoji{font-size:60px;margin-bottom:10px;display:block;animation:emojiJump .65s ease infinite alternate;}
+@keyframes emojiJump{from{transform:translateY(0) scale(1);}to{transform:translateY(-10px) scale(1.1);}}
+.win-label{font-size:12px;font-weight:700;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
+.win-xp{font-size:50px;font-weight:900;font-family:var(--mono);margin-bottom:4px;}
+.win-name{font-size:14px;font-weight:700;color:var(--text2);margin-bottom:20px;}
+.win-close{padding:12px 32px;border-radius:12px;border:1px solid var(--border2);background:rgba(255,255,255,.06);color:var(--text2);font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background .2s;}
+.win-close:hover{background:rgba(255,255,255,.1);}
+
+/* Mystery overlay */
+.mystery-overlay{position:fixed;inset:0;background:rgba(0,0,0,.93);backdrop-filter:blur(28px);z-index:950;display:none;align-items:center;justify-content:center;flex-direction:column;gap:0;padding:28px;}
+.mystery-overlay.open{display:flex;animation:fadeUp .4s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+.mbox-emoji{font-size:96px;animation:boxRock 2s ease-in-out infinite;margin-bottom:18px;}
+@keyframes boxRock{0%,100%{transform:translateY(0) rotate(-5deg);}50%{transform:translateY(-14px) rotate(5deg);}}
+.mystery-win-title{font-size:30px;font-weight:900;color:var(--yellow);text-align:center;margin-bottom:8px;}
+.mystery-win-sub{font-size:14px;color:var(--text2);text-align:center;line-height:1.7;margin-bottom:14px;}
+.mystery-locked{background:rgba(245,197,24,.1);border:1px solid rgba(245,197,24,.3);border-radius:14px;padding:14px 22px;text-align:center;font-size:13px;color:var(--yellow);font-weight:700;line-height:1.7;max-width:280px;margin-bottom:24px;}
+.mystery-ok{padding:15px 44px;border-radius:14px;border:1px solid var(--border2);background:rgba(255,255,255,.07);color:var(--text);font-family:var(--sans);font-size:15px;font-weight:800;cursor:pointer;transition:all .2s;}
+.mystery-ok:hover{background:rgba(255,255,255,.13);transform:translateY(-2px);}
+
+/* Confetti */
+.cp{position:fixed;width:9px;height:9px;border-radius:2px;pointer-events:none;z-index:960;animation:cpFall var(--d) ease-in var(--dl) forwards;}
+@keyframes cpFall{0%{transform:translateY(-20px) rotate(0);opacity:1;}100%{transform:translateY(100vh) rotate(720deg);opacity:0;}}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+<div class="bg-grid"></div>
+
+<!-- Sound toggle button -->
+<div class="sfx-toggle" id="sfx-toggle" onclick="toggleSFX()" title="Toggle sound">🔊</div>
+
+<!-- Win overlay -->
+<div class="win-overlay" id="win-overlay" style="pointer-events:none">
+  <div class="win-burst" id="win-burst"></div>
+  <div class="win-card" id="win-card">
+    <span class="win-emoji" id="win-emoji">🎉</span>
+    <div class="win-label">You Won</div>
+    <div class="win-xp" id="win-xp">+0 XP</div>
+    <div class="win-name" id="win-name">—</div>
+    <button class="win-close" onclick="closeWin()">Awesome! 🚀</button>
+  </div>
+</div>
+
+<!-- Mystery overlay -->
+<div class="mystery-overlay" id="mystery-overlay">
+  <div class="mbox-emoji">🎁</div>
+  <div class="mystery-win-title">Mystery Box!</div>
+  <div class="mystery-win-sub">Ultra-rare find! You got a Mystery Box.<br>It will be openable in a future update.</div>
+  <div class="mystery-locked">🔒 Locked · Coming Soon<br><span style="font-size:11px;opacity:.7">Your box is saved. Stay tuned!</span></div>
+  <button class="mystery-ok" onclick="closeMysteryOverlay()">Got it! 🔥</button>
+</div>
+
+<!-- Nav -->
+<nav class="navbar">
+  <a href="index.html" class="nav-logo"><div class="nav-logo-icon">⬡</div><div class="nav-logo-text">Base<span>Core</span></div></a>
+  <div class="nav-right">
+    <div class="nav-xp" id="nav-xp" style="display:none"><span class="xp-icon">⚡</span><span id="nav-xp-val">0 XP</span></div>
+    <div class="nav-user-wrap" id="nav-user-wrap" style="display:none">
+      <div class="nav-addr" id="nav-addr" onclick="toggleUserMenu()"></div>
+      <div class="user-dropdown" id="user-dropdown">
+        <button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Disconnect</button>
+      </div>
+    </div>
+    <button class="nav-connect" id="nav-connect-btn" onclick="openWalletModal()">Connect</button>
+  </div>
+</nav>
+
+<nav class="tab-bar">
+  <a href="gm.html"       class="tab-item" data-tab="gm">      <div class="tab-icon-wrap">🌅</div><span class="tab-label">GM/GN</span></a>
+  <a href="dex.html"      class="tab-item" data-tab="dex">     <div class="tab-icon-wrap">🔄</div><span class="tab-label">DEX</span></a>
+  <a href="gaming.html"   class="tab-item" data-tab="gaming">  <div class="tab-icon-wrap">🎮</div><span class="tab-label">Gaming</span></a>
+  <a href="wheel.html"    class="tab-item" data-tab="nft">      <div class="tab-icon-wrap">🎡</div><span class="tab-label">Wheel</span></a>
+  <a href="analysis.html" class="tab-item" data-tab="analysis"><div class="tab-icon-wrap">📊</div><span class="tab-label">Analysis</span></a>
+  <a href="deploy.html"   class="tab-item" data-tab="deploy">  <div class="tab-icon-wrap">🚀</div><span class="tab-label">Deploy</span></a>
+  <a href="social.html"   class="tab-item" data-tab="social">  <div class="tab-icon-wrap">👥</div><span class="tab-label">Social</span></a>
+</nav>
+
+<div class="page-wrap">
+  <div class="mode-toggle" style="margin-bottom:20px;">
+    <button id="btn-onchain" class="mode-btn active" onclick="setPaymentMode('onchain')">⛓️ On-Chain</button>
+    <button id="btn-x402"   class="mode-btn"        onclick="setPaymentMode('x402')">⚡ x402</button>
+  </div>
+
+  <div class="wheel-hero">
+    <h1>🎡 Fortune Wheel</h1>
+    <p>3 free spins daily · Earn XP · Find Mystery Boxes</p>
+  </div>
+
+  <!-- Wheel -->
+  <div class="wheel-wrap">
+    <div class="wheel-glow"></div>
+    <div class="wheel-ring"></div>
+    <div class="wheel-ptr"></div>
+    <div class="wheel-canvas-outer">
+      <canvas id="wcanvas"></canvas>
+    </div>
+  </div>
+
+  <div class="spin-bar">
+    <div class="sb-item"><div class="sb-val" id="sb-spins" style="color:var(--purple)">3</div><div class="sb-lbl">Spins Left</div></div>
+    <div class="sb-item"><div class="sb-val" id="sb-boxes" style="color:var(--yellow)">0</div><div class="sb-lbl">Boxes</div></div>
+    <div class="sb-item"><div class="sb-val" id="sb-xp" style="color:var(--cyan)">0</div><div class="sb-lbl">Spin XP</div></div>
+  </div>
+
+  <div class="spin-dots" id="spin-dots"></div>
+
+  <button class="spin-btn" id="spin-btn" onclick="doSpin()">
+    <span>✦</span> Pay via x402 &amp; Spin!
+  </button>
+
+  <div style="height:28px;"></div>
+
+  <div class="mystery-section">
+    <div class="mystery-header">
+      <div class="mystery-icon">🎁<div class="mystery-lock">🔒</div></div>
+      <div>
+        <div class="mystery-title">Mystery Box</div>
+        <div class="mystery-sub">Ultra-rare drop from the wheel.<br>Boxes unlock in a future update.</div>
+        <div class="mystery-badge">🔒 COMING SOON</div>
+      </div>
+    </div>
+    <div class="mystery-row"><span class="mr-label">Drop chance</span><span class="mr-val">2% per spin</span></div>
+    <div class="mystery-row"><span class="mr-label">Your boxes</span><span class="mr-val" id="mystery-count-inline">0 boxes</span></div>
+  </div>
+
+  <div style="font-size:12px;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px;">Prize Table</div>
+  <div class="seg-legend" id="seg-legend"></div>
+</div>
+
+<script src="shared.js"></script>
+<script src="sfx.js"></script>
+<script src="character.js"></script>
+<script src="sfx.js"></script>
+<script>
+/* ══════════════════════════════════════════════════
+   SEGMENTS — canlı, güçlü renkler
+   ══════════════════════════════════════════════════ */
+const SEGS = [
+  { label:'500 XP',  xp:500,  hex:'#3b82f6', light:'#93c5fd', prob:.18, emoji:'💙', name:'Rare'      },
+  { label:'1K XP',   xp:1000, hex:'#a855f7', light:'#d8b4fe', prob:.12, emoji:'💜', name:'Epic'      },
+  { label:'200 XP',  xp:200,  hex:'#06b6d4', light:'#67e8f9', prob:.22, emoji:'🔵', name:'Common'    },
+  { label:'2.5K XP', xp:2500, hex:'#10b981', light:'#6ee7b7', prob:.09, emoji:'💚', name:'Super'     },
+  { label:'350 XP',  xp:350,  hex:'#f97316', light:'#fed7aa', prob:.16, emoji:'🟠', name:'Uncommon'  },
+  { label:'5K XP',   xp:5000, hex:'#ef4444', light:'#fca5a5', prob:.04, emoji:'🔴', name:'Legendary' },
+  { label:'750 XP',  xp:750,  hex:'#8b5cf6', light:'#c4b5fd', prob:.17, emoji:'🔮', name:'Rare+'     },
+  { label:'🎁 BOX',  xp:300,  hex:'#f59e0b', light:'#fde68a', prob:.02, emoji:'🎁', name:'Mystery'   },
+];
+const N   = SEGS.length;
+const TAU = Math.PI * 2;
+const ARC = TAU / N;
+
+/* ══════════════════════════════════════════════════
+   STATE
+   ══════════════════════════════════════════════════ */
+let wheelSpins   = 3;
+let totalWheelXP = 0;
+let mysteryBoxes = 0;
+let isSpinning   = false;
+let wheelAngle   = 0;
+
+/* ══════════════════════════════════════════════════
+   PERSIST
+   ══════════════════════════════════════════════════ */
+function loadWheelState() {
+  if (!BC.addr) return;
+  const dayKey = 'bc_wsp_' + BC.addr + '_' + new Date().toDateString();
+  wheelSpins   = Math.max(0, 3 - parseInt(localStorage.getItem(dayKey) || '0'));
+  const raw    = localStorage.getItem('bc_wheel_' + BC.addr);
+  if (raw) { const d = JSON.parse(raw); totalWheelXP = d.xp||0; mysteryBoxes = d.boxes||0; }
+}
+function saveWheelState() {
+  if (!BC.addr) return;
+  localStorage.setItem('bc_wheel_' + BC.addr, JSON.stringify({ xp: totalWheelXP, boxes: mysteryBoxes }));
+}
+function useSpin() {
+  if (!BC.addr) return;
+  const k = 'bc_wsp_' + BC.addr + '_' + new Date().toDateString();
+  localStorage.setItem(k, parseInt(localStorage.getItem(k)||'0') + 1);
+  wheelSpins = Math.max(0, wheelSpins - 1);
+}
+
+/* ══════════════════════════════════════════════════
+   CANVAS DRAW
+   ══════════════════════════════════════════════════ */
+const CVS = document.getElementById('wcanvas');
+let   CTX = null;
+let   SZ  = 0;
+
+function initCanvas() {
+  const wrap = document.getElementById('wcanvas').parentElement;
+  SZ  = wrap.offsetWidth || 300;
+  CVS.width  = SZ;
+  CVS.height = SZ;
+  CTX = CVS.getContext('2d');
+}
+
+function hexToRgb(hex) {
+  return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+}
+
+function drawWheel(angle) {
+  if (!CTX || !SZ) return;
+  const cx = SZ / 2, cy = SZ / 2;
+  const R  = SZ * 0.46;
+  CTX.clearRect(0, 0, SZ, SZ);
+
+  SEGS.forEach((seg, i) => {
+    const startA = angle + i * ARC - TAU / 4;
+    const endA   = startA + ARC;
+    const midA   = startA + ARC / 2;
+
+    /* ── Segment fill ── */
+    CTX.beginPath();
+    CTX.moveTo(cx, cy);
+    CTX.arc(cx, cy, R, startA, endA);
+    CTX.closePath();
+
+    // Radial gradient: bright center → dark edge = 3D convex look
+    const gx = cx + Math.cos(midA) * R * 0.35;
+    const gy = cy + Math.sin(midA) * R * 0.35;
+    const g  = CTX.createRadialGradient(gx, gy, 0, gx, gy, R * 0.9);
+    g.addColorStop(0,    seg.light + 'ff');
+    g.addColorStop(0.35, seg.hex   + 'ff');
+    g.addColorStop(1,    darken(seg.hex, 55) + 'ff');
+    CTX.fillStyle = g;
+    CTX.fill();
+
+    /* ── Sheen (highlight strip near center) ── */
+    CTX.save();
+    CTX.beginPath();
+    CTX.moveTo(cx, cy);
+    CTX.arc(cx, cy, R * 0.55, startA, endA);
+    CTX.closePath();
+    CTX.fillStyle = 'rgba(255,255,255,0.07)';
+    CTX.fill();
+    CTX.restore();
+
+    /* ── Divider ── */
+    CTX.beginPath();
+    CTX.moveTo(cx, cy);
+    CTX.lineTo(cx + Math.cos(startA) * R, cy + Math.sin(startA) * R);
+    CTX.strokeStyle = 'rgba(0,0,0,.45)';
+    CTX.lineWidth   = 2;
+    CTX.stroke();
+
+    /* ── Emoji ── */
+    CTX.save();
+    CTX.translate(cx, cy);
+    CTX.rotate(midA);
+    CTX.font         = `${SZ * 0.075}px serif`;
+    CTX.textAlign    = 'center';
+    CTX.textBaseline = 'middle';
+    CTX.fillText(seg.emoji, R * 0.80, 0);
+
+    /* ── Label ── */
+    CTX.font         = `bold ${SZ * 0.053}px 'JetBrains Mono', monospace`;
+    CTX.fillStyle    = '#ffffff';
+    CTX.shadowColor  = 'rgba(0,0,0,.9)';
+    CTX.shadowBlur   = 7;
+    CTX.fillText(seg.label, R * 0.51, 0);
+    CTX.shadowBlur   = 0;
+    CTX.restore();
+  });
+
+  /* ── Outer ring ── */
+  const ringG = CTX.createLinearGradient(0, 0, SZ, SZ);
+  ringG.addColorStop(0,    '#c084fc');
+  ringG.addColorStop(.25,  '#818cf8');
+  ringG.addColorStop(.5,   '#38bdf8');
+  ringG.addColorStop(.75,  '#34d399');
+  ringG.addColorStop(1,    '#c084fc');
+  CTX.beginPath();
+  CTX.arc(cx, cy, R, 0, TAU);
+  CTX.strokeStyle = ringG;
+  CTX.lineWidth   = SZ * 0.022;
+  CTX.stroke();
+
+  /* ── Inner dark border ── */
+  CTX.beginPath();
+  CTX.arc(cx, cy, R - SZ * 0.011, 0, TAU);
+  CTX.strokeStyle = 'rgba(0,0,0,.4)';
+  CTX.lineWidth   = SZ * 0.006;
+  CTX.stroke();
+
+  /* ── Hub background ── */
+  const hubR = SZ * 0.095;
+  const hg   = CTX.createRadialGradient(cx - hubR*.3, cy - hubR*.3, 0, cx, cy, hubR);
+  hg.addColorStop(0,   '#6d28d9');
+  hg.addColorStop(.5,  '#1e0a40');
+  hg.addColorStop(1,   '#05001a');
+  CTX.beginPath();
+  CTX.arc(cx, cy, hubR, 0, TAU);
+  CTX.fillStyle = hg;
+  CTX.fill();
+  CTX.strokeStyle = 'rgba(196,132,252,.7)';
+  CTX.lineWidth   = 2.5;
+  CTX.stroke();
+
+  /* ── Hub symbol ── */
+  CTX.font         = `bold ${SZ * 0.055}px serif`;
+  CTX.textAlign    = 'center';
+  CTX.textBaseline = 'middle';
+  CTX.fillStyle    = '#c084fc';
+  CTX.shadowColor  = '#7c3aed';
+  CTX.shadowBlur   = 14;
+  CTX.fillText('✦', cx, cy);
+  CTX.shadowBlur   = 0;
+
+  /* ── Edge glow (convex rim) ── */
+  const rimG = CTX.createRadialGradient(cx, cy, R * 0.9, cx, cy, R + SZ * 0.01);
+  rimG.addColorStop(0,   'rgba(255,255,255,.0)');
+  rimG.addColorStop(.6,  'rgba(255,255,255,.05)');
+  rimG.addColorStop(1,   'rgba(255,255,255,.12)');
+  CTX.beginPath();
+  CTX.arc(cx, cy, R + 1, 0, TAU);
+  CTX.fillStyle = rimG;
+  CTX.fill();
+}
+
+/* Renk yardımcıları */
+function darken(hex, amt) {
+  const [r,g,b] = hexToRgb(hex);
+  return '#' + [r,g,b].map(v => Math.max(0, v-amt).toString(16).padStart(2,'0')).join('');
+}
+
+/* ══════════════════════════════════════════════════
+   IDLE ANIMATION — delta-time tabanlı, takılmaz
+   ══════════════════════════════════════════════════ */
+let lastTimestamp  = null;
+let idleRunning    = false;
+const IDLE_SPEED   = 0.5; // rad/saniye
+
+function idleLoop(ts) {
+  if (!idleRunning) return;
+  if (lastTimestamp !== null && !isSpinning) {
+    const dt = (ts - lastTimestamp) / 1000; // saniyeye çevir
+    // dt'yi 0.1s ile sınırla — sekme arka plana gittiğinde büyük atlama olmasın
+    wheelAngle += IDLE_SPEED * Math.min(dt, 0.1);
+    drawWheel(wheelAngle);
+  }
+  lastTimestamp = ts;
+  requestAnimationFrame(idleLoop);
+}
+
+function startIdle() {
+  if (idleRunning) return;
+  idleRunning   = true;
+  lastTimestamp = null;
+  requestAnimationFrame(idleLoop);
+}
+
+/* Sekme görünürlüğü değişince timestamp'i sıfırla — atlama önleme */
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') lastTimestamp = null;
+});
+
+/* ══════════════════════════════════════════════════
+   SPIN LOGIC — doğru segment seçme
+   ══════════════════════════════════════════════════ */
+function pickSegmentIndex() {
+  let r = Math.random(), acc = 0;
+  for (let i = 0; i < SEGS.length; i++) {
+    acc += SEGS[i].prob;
+    if (r < acc) return i;
+  }
+  return 0;
+}
+
+/*
+ * drawWheel'de: segment i'nin merkezi = angle + i*ARC + ARC/2 - TAU/4
+ * Pointer = üst = -TAU/4
+ * Denklem: targetAngle + i*ARC + ARC/2 - TAU/4 = -TAU/4
+ *          targetAngle = -(i + 0.5) * ARC
+ * En az extraTurns tur dönsün:
+ */
+function calcTargetAngle(segIdx, curAngle, extraTurns) {
+  let base = -(segIdx + 0.5) * ARC;
+  while (base <= curAngle + extraTurns * TAU) base += TAU;
+  return base;
+}
+
+/* Spin sırasında tik sesi — her segment geçişinde */
+let lastTickSeg = -1;
+function checkTick(angle) {
+  const seg = Math.floor(((angle % TAU) + TAU) % TAU / ARC) % N;
+  if (seg !== lastTickSeg) {
+    lastTickSeg = seg;
+    SFX.play('tick');
+  }
+}
+
+async function doSpin() {
+  if (!requireWallet()) return;
+  if (wheelSpins <= 0) { toast('No spins left today!', 'info'); SFX.play('error'); return; }
+  if (isSpinning) return;
+
+  const btn = document.getElementById('spin-btn');
+  btn.disabled  = true;
+  btn.innerHTML = '<span class="spin-dot-el"></span> Processing...';
+
+  SFX.play('click');
+
+  const rc = await sendTxWithFee('0.00002', 0, 'wheel_spin');
+  if (!rc) {
+    btn.disabled  = false;
+    updateSpinUI();
+    return;
+  }
+
+  isSpinning = true;
+  useSpin();
+  updateSpinUI();
+
+  SFX.play('spinStart');
+
+  const segIdx     = pickSegmentIndex();
+  const seg        = SEGS[segIdx];
+  const extraTurns = 5 + Math.floor(Math.random() * 4);
+  const targetAngle = calcTargetAngle(segIdx, wheelAngle, extraTurns);
+
+  const fromAngle = wheelAngle;
+  const dur       = 5200 + Math.random() * 600;
+  const startTime = performance.now();
+
+  // Spin animasyonu — idleLoop durdur, biz çizeceğiz
+  idleRunning = false;
+
+  await new Promise(res => {
+    function frame(now) {
+      const t    = Math.min((now - startTime) / dur, 1);
+      const ease = 1 - Math.pow(1 - t, 4.5);
+      wheelAngle = fromAngle + (targetAngle - fromAngle) * ease;
+      drawWheel(wheelAngle);
+      checkTick(wheelAngle);
+
+      // Son %15'te yavaşlama sesi
+      if (t > 0.85 && t < 0.90) SFX.play('spinEnd');
+
+      if (t < 1) requestAnimationFrame(frame);
+      else {
+        wheelAngle = targetAngle;
+        drawWheel(wheelAngle);
+        res();
+      }
+    }
+    requestAnimationFrame(frame);
+  });
+
+  // Idle'ı yeniden başlat
+  lastTimestamp = null;
+  idleRunning   = true;
+  requestAnimationFrame(idleLoop);
+  isSpinning = false;
+
+  // Ödül ver
+  totalWheelXP += seg.xp;
+  addXP(seg.xp, 'wheel_spin');
+
+  if (seg.name === 'Mystery') {
+    mysteryBoxes++;
+    saveWheelState();
+    updateSpinUI();
+    spawnConfetti('#f59e0b');
+    SFX.play('mystery');
+    setTimeout(() => document.getElementById('mystery-overlay').classList.add('open'), 400);
+  } else {
+    saveWheelState();
+    updateSpinUI();
+    if (seg.xp >= 2500) SFX.play('bigwin');
+    else SFX.play('win');
+    showWin(seg);
+  }
+
+  btn.disabled  = wheelSpins <= 0;
+  btn.innerHTML = wheelSpins > 0
+    ? '<span>✦</span> Pay via x402 &amp; Spin!'
+    : '🌙 No spins left · Come back tomorrow';
+}
+
+/* ══════════════════════════════════════════════════
+   UI
+   ══════════════════════════════════════════════════ */
+function showWin(seg) {
+  document.getElementById('win-emoji').textContent = seg.emoji;
+  document.getElementById('win-xp').textContent    = '+' + fmtXP(seg.xp) + ' XP';
+  document.getElementById('win-xp').style.color    = seg.hex;
+  document.getElementById('win-name').textContent  = seg.name + ' Prize';
+  document.getElementById('win-card').className    = 'win-card show';
+  document.getElementById('win-burst').className   = 'win-burst show';
+  document.getElementById('win-overlay').style.pointerEvents = 'all';
+  spawnConfetti(seg.hex);
+}
+function closeWin() {
+  document.getElementById('win-card').className  = 'win-card hide';
+  document.getElementById('win-burst').className = 'win-burst';
+  setTimeout(() => {
+    document.getElementById('win-overlay').style.pointerEvents = 'none';
+    document.getElementById('win-card').className = 'win-card';
+  }, 300);
+}
+function closeMysteryOverlay() {
+  document.getElementById('mystery-overlay').classList.remove('open');
+}
+
+function updateSpinUI() {
+  document.getElementById('sb-spins').textContent = wheelSpins;
+  document.getElementById('sb-boxes').textContent = mysteryBoxes;
+  document.getElementById('sb-xp').textContent    = fmtXP(totalWheelXP);
+  document.getElementById('mystery-count-inline').textContent = mysteryBoxes + (mysteryBoxes === 1 ? ' box' : ' boxes');
+
+  const dots = document.getElementById('spin-dots');
+  dots.innerHTML = '';
+  for (let i = 0; i < 3; i++) {
+    const d = document.createElement('div');
+    d.className = 'sd ' + (i < wheelSpins ? 'on' : 'off');
+    dots.appendChild(d);
+  }
+  const btn = document.getElementById('spin-btn');
+  if (wheelSpins <= 0 && !isSpinning) {
+    btn.disabled  = true;
+    btn.innerHTML = '🌙 No spins left · Come back tomorrow';
+  } else if (!isSpinning) {
+    btn.disabled  = false;
+    btn.innerHTML = '<span>✦</span> Pay via x402 &amp; Spin!';
+  }
+}
+
+function renderLegend() {
+  document.getElementById('seg-legend').innerHTML = SEGS.map(s => `
+    <div class="sl-item">
+      <div class="sl-dot" style="background:${s.hex};box-shadow:0 0 8px ${s.hex}99"></div>
+      <div>
+        <div class="sl-label">${s.emoji} ${s.label}</div>
+        <div class="sl-prob">${s.name} · ${Math.round(s.prob * 100)}%</div>
+      </div>
+    </div>`).join('');
+}
+
+/* ══════════════════════════════════════════════════
+   SOUND TOGGLE
+   ══════════════════════════════════════════════════ */
+function toggleSFX() {
+  const on = SFX.toggle();
+  document.getElementById('sfx-toggle').textContent = on ? '🔊' : '🔇';
+  if (on) SFX.play('click');
+}
+// Init icon
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('sfx-toggle').textContent = SFX.isEnabled() ? '🔊' : '🔇';
+});
+
+/* ══════════════════════════════════════════════════
+   CONFETTI
+   ══════════════════════════════════════════════════ */
+function spawnConfetti(base) {
+  const cols = [base, '#c084fc', '#818cf8', '#38bdf8', '#34d399', '#fbbf24', '#f472b6'];
+  for (let i = 0; i < 65; i++) {
+    const el = document.createElement('div');
+    el.className = 'cp';
+    el.style.cssText = `left:${Math.random()*100}%;background:${cols[~~(Math.random()*cols.length)]};--d:${1.4+Math.random()*.8}s;--dl:${Math.random()*.4}s;transform:rotate(${Math.random()*360}deg)`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2500);
+  }
+}
+
+
+/* ══════════════════════════════════════════════════
+   MY BOXES — level ödülü kutular
+   ══════════════════════════════════════════════════ */
+function renderMyBoxes() {
+  if (typeof CHAR === 'undefined') return;
+  const boxes  = CHAR.getMyBoxes();
+  const grid   = document.getElementById('my-boxes-grid');
+  const empty  = document.getElementById('my-boxes-empty');
+  if (!grid) return;
+
+  if (boxes.length === 0) {
+    grid.style.display  = 'none';
+    empty.style.display = '';
+    return;
+  }
+
+  grid.style.display  = '';
+  empty.style.display = 'none';
+
+  grid.innerHTML = boxes.map((box, idx) => {
+    const info   = CHAR.BOXES[box.type];
+    const date   = new Date(box.earnedAt).toLocaleDateString('en-US', { month:'short', day:'numeric' });
+    return `
+      <div style="
+        background:var(--card);border:1px solid ${info.color}33;
+        border-radius:16px;padding:14px 12px;text-align:center;
+        position:relative;overflow:hidden;
+        transition:all .2s;cursor:default;
+      ">
+        <div style="position:absolute;top:0;left:0;right:0;height:1px;
+          background:linear-gradient(90deg,transparent,${info.color}66,transparent);"></div>
+        <div style="display:flex;justify-content:center;margin-bottom:8px;
+          filter:drop-shadow(0 4px 12px ${info.color}44);">
+          ${CHAR.buildBoxSVG(box.type, 68, true)}
+        </div>
+        <div style="font-size:12px;font-weight:900;color:#fff;margin-bottom:2px;">${info.name}</div>
+        <div style="font-size:10px;color:${info.color};font-family:var(--mono);font-weight:700;
+          background:${info.color}18;border:1px solid ${info.color}33;
+          border-radius:20px;padding:2px 8px;display:inline-block;margin-bottom:6px;">
+          LV${box.level} REWARD
+        </div>
+        <div style="font-size:10px;color:var(--muted);font-family:var(--mono);">${date}</div>
+        <div style="margin-top:8px;padding:6px 10px;border-radius:8px;
+          background:rgba(255,255,255,.04);border:1px solid var(--border);
+          font-size:10px;font-weight:700;color:var(--muted);">
+          🔒 Coming Soon
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════
+   INIT
+   ══════════════════════════════════════════════════ */
+initNav('nft');
+renderLegend();
+
+window.addEventListener('load', () => {
+  initCanvas();
+  drawWheel(0);
+  startIdle();
+  loadWheelState();
+  updateSpinUI();
+  renderMyBoxes();
+});
+
+window.addEventListener('resize', () => {
+  initCanvas();
+  drawWheel(wheelAngle);
+});
+
+setTimeout(() => {
+  if (BC.addr) { loadWheelState(); updateSpinUI(); renderMyBoxes(); }
+}, 600);
+</script>
+</body>
+</html>

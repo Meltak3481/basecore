@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="base:app_id" content="69eb54ae345dbf0ebcf5d84c" />
+<title>GM/GN — BaseCore</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+/* ── HERO ── */
+.gm-hero{text-align:center;padding:24px 20px 20px;background:linear-gradient(135deg,rgba(245,197,24,.1),rgba(249,115,22,.06));border:1px solid rgba(245,197,24,.18);border-radius:20px;margin-bottom:20px;position:relative;overflow:hidden;}
+.gm-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--yellow),transparent);}
+.gm-time{font-size:56px;line-height:1;margin-bottom:6px;}
+.gm-greeting{font-size:24px;font-weight:900;margin-bottom:4px;}
+.gm-date{font-size:12px;color:var(--text2);font-family:var(--mono);}
+.reset-timer{display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:20px;padding:4px 14px;font-family:var(--mono);font-size:12px;color:var(--muted);}
+.reset-timer span{color:var(--cyan);}
+
+/* ── STREAK ── */
+.streak-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:20px;}
+.streak-top{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
+.streak-fire{font-size:40px;}
+.streak-info{flex:1;}
+.streak-num{font-size:36px;font-weight:900;color:var(--orange);line-height:1;}
+.streak-label{font-size:13px;color:var(--text2);margin-top:2px;}
+.streak-xp-badge{background:rgba(245,197,24,.12);border:1px solid rgba(245,197,24,.25);border-radius:12px;padding:10px 14px;text-align:center;}
+.streak-xp-val{font-size:20px;font-weight:900;color:var(--yellow);}
+.streak-xp-lbl{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px;}
+.streak-days{display:flex;gap:6px;margin-bottom:12px;}
+.sday{flex:1;height:38px;border-radius:9px;background:var(--card2);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9px;font-family:var(--mono);color:var(--muted);gap:2px;transition:all .3s;}
+.sday.done{background:rgba(249,115,22,.12);border-color:rgba(249,115,22,.3);color:var(--orange);}
+.sday.today{background:rgba(245,197,24,.12);border-color:var(--yellow);color:var(--yellow);font-weight:700;}
+.sday .sd-icon{font-size:12px;}
+
+/* ── CHECKIN BTN ── */
+.checkin-wrap{position:relative;}
+.checkin-btn{width:100%;padding:18px;border-radius:16px;border:none;cursor:pointer;font-family:var(--sans);font-size:16px;font-weight:900;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .25s;position:relative;overflow:hidden;}
+.checkin-btn.locked{background:rgba(255,255,255,.05);color:var(--muted);border:1px solid var(--border);cursor:not-allowed;}
+.checkin-btn.ready{background:linear-gradient(135deg,var(--yellow),var(--orange));color:#000;box-shadow:0 0 30px rgba(245,197,24,.4);}
+.checkin-btn.ready:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(245,197,24,.6);}
+.checkin-btn.ready::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transform:translateX(-100%);animation:shimmer 2s ease-in-out infinite;}
+@keyframes shimmer{0%{transform:translateX(-100%);}100%{transform:translateX(100%);}}
+.checkin-btn.done{background:rgba(0,232,135,.12);color:var(--green);border:1px solid rgba(0,232,135,.3);cursor:default;}
+.checkin-lock-msg{text-align:center;font-size:12px;color:var(--muted);margin-top:10px;font-family:var(--mono);}
+
+/* ── CHECKIN REWARD ANIMATION ── */
+.checkin-reward-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(16px);z-index:800;display:none;align-items:center;justify-content:center;}
+.checkin-reward-overlay.open{display:flex;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.checkin-reward-card{background:linear-gradient(135deg,#1a1000,#2a1e00);border:2px solid var(--yellow);border-radius:24px;padding:36px 32px;text-align:center;max-width:300px;width:90%;box-shadow:0 0 80px rgba(245,197,24,.35);animation:rewardPop .5s cubic-bezier(.175,.885,.32,1.275);}
+@keyframes rewardPop{from{transform:scale(0) rotate(-6deg);opacity:0;}to{transform:scale(1) rotate(0);opacity:1;}}
+.cr-fire{font-size:60px;animation:crBounce .6s ease infinite alternate;}
+@keyframes crBounce{from{transform:translateY(0) scale(1);}to{transform:translateY(-8px) scale(1.05);}}
+.cr-title{font-size:24px;font-weight:900;color:var(--yellow);margin:12px 0 4px;}
+.cr-xp{font-size:52px;font-weight:900;color:#fff;font-family:var(--mono);}
+.cr-xp-label{font-size:14px;color:var(--yellow);margin-bottom:16px;}
+.cr-streak{font-size:14px;color:var(--text2);margin-bottom:20px;}
+.cr-streak strong{color:var(--orange);}
+.cr-close{width:100%;padding:14px;border-radius:14px;border:1px solid rgba(245,197,24,.3);background:rgba(245,197,24,.1);color:var(--yellow);font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;}
+.cr-close:hover{background:rgba(245,197,24,.2);}
+.confetti-piece{position:fixed;width:10px;height:10px;border-radius:2px;pointer-events:none;z-index:850;animation:cf var(--d) ease-in var(--dl) forwards;}
+@keyframes cf{0%{transform:translateY(-20px) rotate(0);opacity:1;}100%{transform:translateY(100vh) rotate(720deg);opacity:0;}}
+
+/* ── DAILY TASKS ── */
+.task-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px;}
+.task-card-head{padding:14px 18px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02);display:flex;align-items:center;justify-content:space-between;}
+.tch-title{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;}
+.tch-progress{font-family:var(--mono);font-size:12px;color:var(--muted);}
+.task-row{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);transition:background .2s;}
+.task-row:last-child{border-bottom:none;}
+.task-row:hover{background:rgba(255,255,255,.02);}
+.tr-icon{width:40px;height:40px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.tr-info{flex:1;}
+.tr-name{font-size:14px;font-weight:700;}
+.tr-desc{font-size:12px;color:var(--text2);margin-top:2px;}
+.tr-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+
+/* Progress pill */
+.prog-pill{background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-family:var(--mono);font-size:11px;color:var(--text2);white-space:nowrap;}
+.prog-pill.complete{background:rgba(0,232,135,.1);border-color:rgba(0,232,135,.25);color:var(--green);}
+
+/* Go button */
+.go-btn{background:rgba(0,112,243,.12);border:1px solid rgba(0,112,243,.25);color:var(--blue2);border-radius:20px;padding:5px 12px;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;white-space:nowrap;transition:all .2s;}
+.go-btn:hover{background:rgba(0,112,243,.2);}
+.go-btn.orange{background:rgba(249,115,22,.12);border-color:rgba(249,115,22,.25);color:var(--orange);}
+.go-btn.orange:hover{background:rgba(249,115,22,.2);}
+
+/* Check tick */
+.tick{width:26px;height:26px;border-radius:50%;background:rgba(0,232,135,.15);border:1.5px solid var(--green);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+
+/* Progress bar */
+.prog-bar-wrap{height:4px;background:rgba(255,255,255,.06);border-radius:4px;margin-top:6px;overflow:hidden;}
+.prog-bar-fill{height:100%;border-radius:4px;transition:width .5s ease;}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+<div class="bg-grid"></div>
+
+<div class="checkin-reward-overlay" id="ci-reward-overlay">
+  <div class="checkin-reward-card">
+    <div class="cr-fire">🔥</div>
+    <div class="cr-title">Check-in Complete!</div>
+    <div class="cr-xp" id="cr-xp-val">+250</div>
+    <div class="cr-xp-label">XP Earned</div>
+    <div class="cr-streak" id="cr-streak-txt">🔥 Streak: <strong>1 day</strong></div>
+    <button class="cr-close" onclick="closeReward()">Let's go! 🚀</button>
+  </div>
+</div>
+
+<nav class="navbar">
+  <a href="index.html" class="nav-logo"><div class="nav-logo-icon">⬡</div><div class="nav-logo-text">Base<span>Core</span></div></a>
+  <div class="nav-right">
+    <div class="nav-xp" id="nav-xp" style="display:none"><span class="xp-icon">⚡</span><span id="nav-xp-val">0 XP</span></div>
+    
+    <div class="nav-user-wrap" id="nav-user-wrap" style="display:none">
+      <div class="nav-addr" id="nav-addr" onclick="toggleUserMenu()"></div>
+      <div class="user-dropdown" id="user-dropdown">
+        <button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Çıkış Yap</button>
+      </div>
+    </div>
+
+    <button class="nav-connect" id="nav-connect-btn" onclick="openWalletModal()">Connect</button>
+  </div>
+</nav>
+
+<nav class="tab-bar">
+  <a href="gm.html" class="tab-item" data-tab="gm"><div class="tab-icon-wrap">🌅</div><span class="tab-label">GM/GN</span></a>
+  <a href="dex.html" class="tab-item" data-tab="dex"><div class="tab-icon-wrap">🔄</div><span class="tab-label">DEX</span></a>
+  <a href="gaming.html" class="tab-item" data-tab="gaming"><div class="tab-icon-wrap">🎮</div><span class="tab-label">Gaming</span></a>
+  <a href="wheel.html" class="tab-item" data-tab="nft"><div class="tab-icon-wrap">🎡</div><span class="tab-label">Wheel</span></a>
+  <a href="analysis.html" class="tab-item" data-tab="analysis"><div class="tab-icon-wrap">📊</div><span class="tab-label">Analysis</span></a>
+  <a href="deploy.html" class="tab-item" data-tab="deploy"><div class="tab-icon-wrap">🚀</div><span class="tab-label">Deploy</span></a>
+  <a href="social.html" class="tab-item" data-tab="social"><div class="tab-icon-wrap">👥</div><span class="tab-label">Social</span></a>
+</nav>
+
+<div class="page-wrap">
+
+  <div class="mode-toggle" style="margin-bottom: 20px;">
+    <button id="btn-onchain" class="mode-btn active" onclick="setPaymentMode('onchain')">⛓️ On-Chain</button>
+    <button id="btn-x402" class="mode-btn" onclick="setPaymentMode('x402')">⚡ x402 Modu</button>
+  </div>
+
+  <div class="gm-hero">
+    <div class="gm-time" id="gm-emoji">🌅</div>
+    <div class="gm-greeting" id="gm-text">Good Morning</div>
+    <div class="gm-date" id="gm-date">—</div>
+    <div class="reset-timer">🕐 Resets at 03:00 · <span id="reset-countdown">—</span></div>
+  </div>
+
+  <div class="streak-card">
+    <div class="streak-top">
+      <div class="streak-fire">🔥</div>
+      <div class="streak-info">
+        <div class="streak-num" id="streak-num">0</div>
+        <div class="streak-label">Day Streak</div>
+      </div>
+      <div class="streak-xp-badge">
+        <div class="streak-xp-val" id="streak-xp-reward">+25 XP</div>
+        <div class="streak-xp-lbl">Today's Reward</div>
+      </div>
+    </div>
+    <div class="streak-days" id="streak-days"></div>
+
+    <div class="checkin-wrap">
+      <button class="checkin-btn locked" id="ci-btn" onclick="doCheckIn()">
+        🔒 Complete tasks to unlock
+      </button>
+      <div class="checkin-lock-msg" id="ci-msg">Complete Wheel Spin + 2 Games first</div>
+    </div>
+  </div>
+
+  <div class="task-card">
+    <div class="task-card-head">
+      <span class="tch-title">📋 Daily Tasks</span>
+      <span class="tch-progress" id="task-progress">0/2 done</span>
+    </div>
+
+    <div class="task-row" id="task-spin-row">
+      <div class="tr-icon" style="background:rgba(139,92,246,.15);color:var(--purple)">🎡</div>
+      <div class="tr-info">
+        <div class="tr-name">Fortune Wheel</div>
+        <div class="tr-desc">Spin daily · Earn XP</div>
+        <div class="prog-bar-wrap">
+          <div class="prog-bar-fill" id="spin-bar" style="width:0%;background:linear-gradient(90deg,var(--purple),var(--blue2))"></div>
+        </div>
+      </div>
+      <div class="tr-right">
+        <span class="prog-pill" id="spin-pill">0/3</span>
+        <span class="tick" id="spin-tick" style="display:none">✅</span>
+        <a href="wheel.html" class="go-btn" id="spin-go-btn">Go →</a>
+      </div>
+    </div>
+
+    <div class="task-row" id="task-game-row">
+      <div class="tr-icon" style="background:rgba(249,115,22,.15);color:var(--orange)">🎮</div>
+      <div class="tr-info">
+        <div class="tr-name">Play Games</div>
+        <div class="tr-desc">Play on-chain games</div>
+        <div class="prog-bar-wrap">
+          <div class="prog-bar-fill" id="game-bar" style="width:0%;background:linear-gradient(90deg,var(--orange),var(--yellow))"></div>
+        </div>
+      </div>
+      <div class="tr-right">
+        <span class="prog-pill" id="game-pill">0/2</span>
+        <span class="tick" id="game-tick" style="display:none">✅</span>
+        <a href="gaming.html" class="go-btn orange" id="game-go-btn">Go →</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section-head">
+    <div class="sh-icon" style="background:rgba(249,115,22,.1);color:var(--orange)">📈</div>
+    <div class="sh-title">Streak Rewards</div>
+  </div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-body" style="padding:12px">
+      <div id="streak-table"></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toasts"></div>
+<script src="shared.js?v=26"></script>
+<script>
+// ── DAY KEY: gece 03:00'dan 03:00'a ──
+function getDayKey() {
+  const now = new Date();
+  if (now.getHours() < 3) {
+    const prev = new Date(now);
+    prev.setDate(prev.getDate() - 1);
+    return prev.toDateString();
+  }
+  return now.toDateString();
+}
+
+function getNextReset() {
+  const now = new Date();
+  const reset = new Date(now);
+  if (now.getHours() >= 3) {
+    reset.setDate(reset.getDate() + 1);
+  }
+  reset.setHours(3, 0, 0, 0);
+  return reset;
+}
+
+// ── STREAK XP TABLE ──
+const STREAK_REWARDS = [
+  {days:1,  xp:25,   label:'Day 1'},
+  {days:2,  xp:50,   label:'Day 2'},
+  {days:3,  xp:75,   label:'Day 3'},
+  {days:5,  xp:150,  label:'Day 5'},
+  {days:7,  xp:300,  label:'Week 1 🏅'},
+  {days:14, xp:600,  label:'2 Weeks 🥈'},
+  {days:30, xp:1500, label:'Month 🥇'},
+  {days:60, xp:3500, label:'2 Months 💎'},
+  {days:100,xp:7500, label:'100 Days 👑'},
+];
+
+function getStreakXP(streak) {
+  let xp = 25;
+  for (const r of STREAK_REWARDS) {
+    if (streak >= r.days) xp = r.xp;
+  }
+  return xp;
+}
+
+function renderStreakTable() {
+  const streak = BC.streak || 0;
+  const rows = STREAK_REWARDS.map(r => {
+    const active = streak >= r.days;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+      <div style="width:70px;font-size:12px;font-weight:700;color:${active?'var(--text)':'var(--muted)'}">${r.label}</div>
+      <div style="flex:1;height:5px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden">
+        <div style="width:${active?100:0}%;height:100%;background:linear-gradient(90deg,var(--orange),var(--yellow));border-radius:4px;transition:width .5s"></div>
+      </div>
+      <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:${active?'var(--yellow)':'var(--muted)'}">+${r.xp} XP</div>
+      <div style="font-size:14px">${active?'✅':'🔒'}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('streak-table').innerHTML = rows;
+}
+
+// ── STREAK DAYS DISPLAY ──
+function renderStreakDays() {
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const now = new Date();
+  const today = now.getHours() < 3 ? ((now.getDay() + 6) % 7) : now.getDay();
+  const streak = BC.streak || 0;
+  document.getElementById('streak-num').textContent = streak;
+  const xp = getStreakXP(streak + 1);
+  document.getElementById('streak-xp-reward').textContent = '+' + xp + ' XP';
+  document.getElementById('streak-days').innerHTML = days.map((d, i) => {
+    const daysPast = (today - i + 7) % 7;
+    const done = daysPast > 0 && daysPast <= streak;
+    const isToday = i === today;
+    return `<div class="sday ${done ? 'done' : ''} ${isToday ? 'today' : ''}">
+      <div class="sd-icon">${done ? '✓' : isToday ? '●' : ''}</div>
+      <div>${d.slice(0,2)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── TASK PROGRESS ──
+function getSpinCount() {
+  if (!BC.addr) return 0;
+  const k = 'bc_wsp_' + BC.addr + '_' + getDayKey();
+  return parseInt(localStorage.getItem(k) || '0');
+}
+function getGameCount() {
+  if (!BC.addr) return 0;
+  const k = 'bc_gamecount_' + BC.addr + '_' + getDayKey();
+  return parseInt(localStorage.getItem(k) || '0');
+}
+
+function renderTasks() {
+  const spins = Math.min(getSpinCount(), 3);
+  const games = Math.min(getGameCount(), 2);
+  const spinDone = spins >= 3;
+  const gameDone = games >= 2;
+  const allDone = spinDone && gameDone;
+  const checkedIn = localStorage.getItem('bc_ci_' + BC.addr + '_' + getDayKey()) === '1';
+
+  const spinPill = document.getElementById('spin-pill');
+  spinPill.textContent = spins + '/3';
+  spinPill.className = 'prog-pill' + (spinDone ? ' complete' : '');
+  document.getElementById('spin-tick').style.display = spinDone ? '' : 'none';
+  document.getElementById('spin-go-btn').style.display = spinDone ? 'none' : '';
+  document.getElementById('spin-bar').style.width = (spins / 3 * 100) + '%';
+
+  const gamePill = document.getElementById('game-pill');
+  gamePill.textContent = games + '/2';
+  gamePill.className = 'prog-pill' + (gameDone ? ' complete' : '');
+  document.getElementById('game-tick').style.display = gameDone ? '' : 'none';
+  document.getElementById('game-go-btn').style.display = gameDone ? 'none' : '';
+  document.getElementById('game-bar').style.width = (games / 2 * 100) + '%';
+
+  const done = (spinDone ? 1 : 0) + (gameDone ? 1 : 0);
+  document.getElementById('task-progress').textContent = done + '/2 done';
+
+  const btn = document.getElementById('ci-btn');
+  const msg = document.getElementById('ci-msg');
+
+  if (checkedIn) {
+    btn.className = 'checkin-btn done';
+    btn.textContent = '✅ Checked in today!';
+    msg.textContent = 'See you tomorrow at 03:00 🌙';
+    btn.onclick = null;
+  } else if (allDone) {
+    btn.className = 'checkin-btn ready';
+    btn.innerHTML = '🌅 Claim Daily Reward!';
+    msg.textContent = '✨ All tasks complete — claim your XP!';
+    btn.onclick = doCheckIn;
+  } else {
+    btn.className = 'checkin-btn locked';
+    btn.innerHTML = '🔒 Complete tasks to unlock';
+    const remaining = [];
+    if (!spinDone) remaining.push(`${3 - spins} more spin${3 - spins > 1 ? 's' : ''}`);
+    if (!gameDone) remaining.push(`${2 - games} more game${2 - games > 1 ? 's' : ''}`);
+    msg.textContent = 'Need: ' + remaining.join(' + ');
+    btn.onclick = null;
+  }
+}
+
+// ── CHECK-IN ──
+function doCheckIn() {
+  if (!requireWallet()) return;
+  const spinDone = getSpinCount() >= 3;
+  const gameDone = getGameCount() >= 2;
+  if (!spinDone || !gameDone) { toast('Complete all tasks first!', 'error'); return; }
+
+  const ciKey = 'bc_ci_' + BC.addr + '_' + getDayKey();
+  if (localStorage.getItem(ciKey) === '1') { toast('Already checked in!', 'info'); return; }
+
+  localStorage.setItem(ciKey, '1');
+  BC.streak++;
+  const xpReward = getStreakXP(BC.streak);
+  addXP(xpReward, 'checkin');
+  saveState();
+
+  document.getElementById('cr-xp-val').textContent = '+' + xpReward;
+  document.getElementById('cr-streak-txt').innerHTML = `🔥 Streak: <strong>${BC.streak} day${BC.streak > 1 ? 's' : ''}</strong>`;
+  document.getElementById('ci-reward-overlay').classList.add('open');
+  spawnConfetti();
+
+  renderStreakDays();
+  renderTasks();
+  renderStreakTable();
+}
+
+function closeReward() {
+  document.getElementById('ci-reward-overlay').classList.remove('open');
+}
+
+// ── CONFETTI ──
+function spawnConfetti() {
+  const cols = ['#f5c518', '#ff7a00', '#00e887', '#3b8ef8', '#8b5cf6', '#fff'];
+  for (let i = 0; i < 60; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.cssText = `left:${Math.random()*100}%;background:${cols[~~(Math.random()*cols.length)]};--d:${1.5+Math.random()}s;--dl:${Math.random()*.6}s;transform:rotate(${Math.random()*360}deg)`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2500);
+  }
+}
+
+// ── GM/GN GREETING ──
+function setGMGN() {
+  const h = new Date().getHours();
+  const emoji = document.getElementById('gm-emoji');
+  const txt = document.getElementById('gm-text');
+  if (h >= 5 && h < 12)       { emoji.textContent = '🌅'; txt.textContent = 'Good Morning'; }
+  else if (h >= 12 && h < 17) { emoji.textContent = '☀️'; txt.textContent = 'Good Afternoon'; }
+  else if (h >= 17 && h < 21) { emoji.textContent = '🌆'; txt.textContent = 'Good Evening'; }
+  else                          { emoji.textContent = '🌙'; txt.textContent = 'Good Night'; }
+  document.getElementById('gm-date').textContent = new Date().toLocaleDateString('en-US', {
+    weekday:'long', year:'numeric', month:'long', day:'numeric'
+  });
+}
+
+// ── COUNTDOWN TO 03:00 ──
+function updateCountdown() {
+  const next = getNextReset();
+  const diff = next - new Date();
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  document.getElementById('reset-countdown').textContent =
+    String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+// ── INIT ──
+function renderAll() {
+  renderStreakDays();
+  renderTasks();
+  renderStreakTable();
+}
+
+setGMGN();
+updateCountdown();
+setInterval(updateCountdown, 1000);
+initNav('gm');
+renderStreakDays();
+renderStreakTable();
+setTimeout(() => { if (BC.addr) renderAll(); }, 800);
+</script>
+</body>
+</html>

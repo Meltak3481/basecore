@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Social — BaseCore</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+/* ── PROFILE CARD ── */
+.profile-hero{background:linear-gradient(135deg,rgba(0,112,243,.12),rgba(0,200,255,.07));border:1px solid rgba(0,112,243,.25);border-radius:20px;padding:24px 20px;margin-bottom:20px;position:relative;overflow:hidden;}
+.profile-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--blue2),var(--cyan),transparent);}
+.ph-top{display:flex;align-items:center;gap:16px;margin-bottom:16px;}
+.ph-avatar{width:60px;height:60px;border-radius:18px;background:linear-gradient(135deg,var(--blue),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;color:#fff;flex-shrink:0;box-shadow:0 0 24px rgba(0,112,243,.3);}
+.ph-info{flex:1;}
+.ph-addr{font-family:var(--mono);font-size:13px;color:var(--text);}
+.ph-level{font-size:12px;color:var(--text2);margin-top:4px;}
+.ph-xp-bar{height:6px;background:rgba(255,255,255,.08);border-radius:10px;margin-top:8px;overflow:hidden;}
+.ph-xp-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,var(--blue2),var(--cyan));transition:width 1s ease;}
+.ph-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.ps-item{background:rgba(0,0,0,.2);border-radius:12px;padding:12px;text-align:center;}
+.ps-val{font-size:20px;font-weight:900;}
+.ps-lbl{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:3px;}
+.badges-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;}
+.badge-chip{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:600;}
+
+/* ── REFERRAL ── */
+.ref-section{background:linear-gradient(135deg,rgba(0,232,135,.08),rgba(0,112,243,.06));border:1px solid rgba(0,232,135,.2);border-radius:20px;padding:22px 20px;margin-bottom:20px;position:relative;overflow:hidden;}
+.ref-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--green),transparent);}
+.ref-title{font-size:16px;font-weight:900;margin-bottom:4px;}
+.ref-sub{font-size:13px;color:var(--text2);margin-bottom:18px;line-height:1.5;}
+.ref-code-box{background:var(--card);border:1px solid rgba(0,232,135,.25);border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.rcb-code{flex:1;font-family:var(--mono);font-size:13px;color:var(--cyan);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rcb-copy{background:rgba(0,232,135,.12);border:1px solid rgba(0,232,135,.25);color:var(--green);border-radius:10px;padding:8px 16px;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.rcb-copy:hover{background:rgba(0,232,135,.22);}
+.rcb-copy.copied{background:rgba(0,232,135,.25);color:var(--green);}
+.ref-stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px;}
+.rsg-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;}
+.rsg-val{font-size:24px;font-weight:900;}
+.rsg-lbl{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:4px;}
+.ref-apply{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;}
+.ref-apply-title{font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text2);}
+.ref-input-row{display:flex;gap:10px;}
+.ref-input{flex:1;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:border-color .2s;}
+.ref-input:focus{border-color:var(--green);}
+.ref-apply-btn{background:linear-gradient(135deg,var(--green2),#059669);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.ref-apply-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,232,135,.3);}
+.ref-how{display:flex;gap:8px;margin-top:16px;}
+.rh-step{flex:1;background:rgba(0,0,0,.2);border-radius:10px;padding:10px;text-align:center;}
+.rh-num{width:22px;height:22px;border-radius:50%;background:rgba(0,232,135,.15);border:1px solid rgba(0,232,135,.3);color:var(--green);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;}
+.rh-txt{font-size:11px;color:var(--text2);line-height:1.4;}
+
+/* ── SHARE BTNS ── */
+.share-row{display:flex;gap:10px;margin-bottom:20px;}
+.share-btn{flex:1;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--card);font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.share-btn:hover{border-color:var(--border2);transform:translateY(-2px);}
+.share-btn.x{border-color:rgba(255,255,255,.15);}
+.share-btn.tg{border-color:rgba(0,136,204,.3);color:#0088cc;}
+
+/* ── CONNECT PROMPT ── */
+.connect-prompt{text-align:center;padding:40px 20px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:20px;}
+.cp-icon{font-size:48px;margin-bottom:14px;}
+.cp-title{font-size:18px;font-weight:800;margin-bottom:8px;}
+.cp-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+<div class="bg-grid"></div>
+
+<nav class="navbar">
+  <a href="index.html" class="nav-logo"><div class="nav-logo-icon">⬡</div><div class="nav-logo-text">Base<span>Core</span></div></a>
+  <div class="nav-right">
+    <div class="nav-xp" id="nav-xp" style="display:none"><span class="xp-icon">⚡</span><span id="nav-xp-val">0 XP</span></div>
+    <div class="nav-addr" id="nav-addr" style="display:none"></div>
+    <button class="nav-connect" id="nav-connect-btn" onclick="connectWallet().then(()=>{updateNavUI();renderAll()})">Connect</button>
+  </div>
+</nav>
+
+<nav class="tab-bar">
+  <a href="gm.html" class="tab-item" data-tab="gm"><div class="tab-icon-wrap">🌅</div><span class="tab-label">GM/GN</span></a>
+  <a href="dex.html" class="tab-item" data-tab="dex"><div class="tab-icon-wrap">🔄</div><span class="tab-label">DEX</span></a>
+  <a href="gaming.html" class="tab-item" data-tab="gaming"><div class="tab-icon-wrap">🎮</div><span class="tab-label">Gaming</span></a>
+  <a href="wheel.html" class="tab-item" data-tab="nft"><div class="tab-icon-wrap">🎡</div><span class="tab-label">Wheel</span></a>
+  <a href="analysis.html" class="tab-item" data-tab="analysis"><div class="tab-icon-wrap">📊</div><span class="tab-label">Analysis</span></a>
+  <a href="deploy.html" class="tab-item" data-tab="deploy"><div class="tab-icon-wrap">🚀</div><span class="tab-label">Deploy</span></a>
+  <a href="social.html" class="tab-item" data-tab="social"><div class="tab-icon-wrap">👥</div><span class="tab-label">Social</span></a>
+</nav>
+
+<div class="page-wrap">
+
+  <!-- CONNECT PROMPT (if no wallet) -->
+  <div id="connect-prompt" class="connect-prompt" style="display:none">
+    <div class="cp-icon">🔌</div>
+    <div class="cp-title">Connect Your Wallet</div>
+    <div class="cp-sub">Connect to see your profile, get your referral link and climb the leaderboard.</div>
+    <button class="btn btn-primary" onclick="connectWallet().then(()=>{updateNavUI();renderAll()})">Connect Wallet</button>
+  </div>
+
+  <!-- PROFILE -->
+  <div id="profile-section" style="display:none">
+    <div class="profile-hero">
+      <div class="ph-top">
+        <div class="ph-avatar" id="ph-av">?</div>
+        <div class="ph-info">
+          <div class="ph-addr" id="ph-addr">—</div>
+          <div class="ph-level" id="ph-level">Level 1 · Rookie</div>
+          <div class="ph-xp-bar"><div class="ph-xp-fill" id="ph-fill" style="width:0%"></div></div>
+        </div>
+        <div class="xp-badge" id="ph-xp">⚡ 0 XP</div>
+      </div>
+      <div class="ph-stats">
+        <div class="ps-item"><div class="ps-val" style="color:var(--blue2)" id="ph-s-xp">0</div><div class="ps-lbl">Total XP</div></div>
+        <div class="ps-item"><div class="ps-val" style="color:var(--green)" id="ph-s-streak">0</div><div class="ps-lbl">Streak</div></div>
+        <div class="ps-item"><div class="ps-val" style="color:var(--cyan)" id="ph-s-refs">0</div><div class="ps-lbl">Referrals</div></div>
+      </div>
+      <div class="badges-row" id="badges-row"></div>
+    </div>
+  </div>
+
+  <!-- REFERRAL SECTION -->
+  <div id="ref-section" style="display:none">
+    <div class="ref-section">
+      <div class="ref-title">🔗 Referral Program</div>
+      <div class="ref-sub">Share your unique link. Earn <strong style="color:var(--green)">5,000 XP</strong> for every friend who connects their wallet using your code.</div>
+
+      <div class="ref-code-box">
+        <span class="rcb-code" id="ref-link">—</span>
+        <button class="rcb-copy" id="copy-btn" onclick="copyRef()">📋 Copy</button>
+      </div>
+
+      <div class="ref-stats-grid">
+        <div class="rsg-item">
+          <div class="rsg-val" style="color:var(--green)" id="ref-invited">0</div>
+          <div class="rsg-lbl">Invited</div>
+        </div>
+        <div class="rsg-item">
+          <div class="rsg-val" style="color:var(--yellow)" id="ref-xp-earned">0</div>
+          <div class="rsg-lbl">XP Earned</div>
+        </div>
+        <div class="rsg-item">
+          <div class="rsg-val" style="color:var(--cyan)" id="ref-code-display">—</div>
+          <div class="rsg-lbl">Your Code</div>
+        </div>
+      </div>
+
+      <div class="ref-apply">
+        <div class="ref-apply-title">🎁 Have a referral code?</div>
+        <div class="ref-input-row">
+          <input class="ref-input" id="ref-input" placeholder="Paste code or link..." />
+          <button class="ref-apply-btn" onclick="applyRef()">Apply +5K XP</button>
+        </div>
+      </div>
+
+      <div class="ref-how">
+        <div class="rh-step"><div class="rh-num">1</div><div class="rh-txt">Copy your link</div></div>
+        <div class="rh-step"><div class="rh-num">2</div><div class="rh-txt">Share with friends</div></div>
+        <div class="rh-step"><div class="rh-num">3</div><div class="rh-txt">They connect wallet</div></div>
+        <div class="rh-step"><div class="rh-num">4</div><div class="rh-txt">+5K XP each!</div></div>
+      </div>
+    </div>
+
+    <!-- SHARE BUTTONS -->
+    <div class="share-row">
+      <button class="share-btn x" onclick="shareX()">𝕏 Share on X</button>
+      <button class="share-btn tg" onclick="shareTG()">✈️ Telegram</button>
+    </div>
+  </div>
+
+</div>
+
+<div id="toasts"></div>
+<script src="shared.js?v=3"></script>
+<script>
+const LEVELS = ['Rookie','Explorer','Builder','Veteran','Elite','Master','Legend','God'];
+
+// ── GENERATE UNIQUE REF CODE from wallet address ──
+function genRefCode(addr) {
+  if (!addr) return '—';
+  // Use chars from address to make a readable code
+  const part1 = addr.slice(2, 6).toUpperCase();
+  const part2 = addr.slice(-4).toUpperCase();
+  return 'BC-' + part1 + part2;
+}
+
+function getRefLink() {
+  const code = genRefCode(BC.addr);
+  return 'basecore.fun/?ref=' + code;
+}
+
+// ── RENDER PROFILE ──
+function renderProfile() {
+  if (!BC.addr) return;
+  document.getElementById('connect-prompt').style.display = 'none';
+  document.getElementById('profile-section').style.display = '';
+  document.getElementById('ref-section').style.display = '';
+
+  const av = document.getElementById('ph-av');
+  av.textContent = BC.addr.slice(2, 4).toUpperCase();
+
+  document.getElementById('ph-addr').textContent = BC.shortAddr;
+  const lvlName = LEVELS[Math.min(BC.level - 1, LEVELS.length - 1)];
+  document.getElementById('ph-level').textContent = 'Level ' + BC.level + ' · ' + lvlName;
+  document.getElementById('ph-xp').textContent = '⚡ ' + BC.xp.toLocaleString() + ' XP';
+
+  // XP bar
+  const cur = LVL[BC.level - 1] || 0;
+  const next = LVL[BC.level] || LVL[LVL.length - 1];
+  const pct = Math.min(100, ((BC.xp - cur) / (next - cur)) * 100);
+  document.getElementById('ph-fill').style.width = pct + '%';
+
+  document.getElementById('ph-s-xp').textContent = BC.xp.toLocaleString();
+  document.getElementById('ph-s-streak').textContent = BC.streak;
+  document.getElementById('ph-s-refs').textContent = BC.refs;
+
+  // Badges
+  const badges = [];
+  if (BC.tasks.connect) badges.push(['🔌', 'Connected']);
+  if (BC.tasks.checkin) badges.push(['📅', 'Checked In']);
+  if (BC.tasks.deploy) badges.push(['🚀', 'Builder']);
+  if (BC.tasks.game) badges.push(['🎮', 'Gamer']);
+  if (BC.tasks.swap) badges.push(['🔄', 'Trader']);
+  if (BC.xp >= 1000) badges.push(['⚡', '1K XP']);
+  if (BC.xp >= 10000) badges.push(['💫', '10K XP']);
+  if (BC.streak >= 7) badges.push(['🔥', '7-Day Streak']);
+  document.getElementById('badges-row').innerHTML = badges.map(b =>
+    `<div class="badge-chip">${b[0]} ${b[1]}</div>`
+  ).join('');
+
+  // Referral
+  const code = genRefCode(BC.addr);
+  const link = getRefLink();
+  document.getElementById('ref-link').textContent = link;
+  document.getElementById('ref-code-display').textContent = code;
+  document.getElementById('ref-invited').textContent = BC.refs;
+  document.getElementById('ref-xp-earned').textContent = fmtXP(BC.refs * 5000);
+
+  // Check URL for ref param on load
+  checkUrlRef();
+}
+
+// ── COPY REF ──
+function copyRef() {
+  const link = getRefLink();
+  navigator.clipboard.writeText(link).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '✅ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('copied'); }, 2000);
+    toast('📋 Referral link copied!', 'success');
+  });
+}
+
+// ── APPLY REF ──
+function applyRef() {
+  const v = document.getElementById('ref-input').value.trim();
+  if (!v) { toast('Enter a referral code or link', 'error'); return; }
+  if (!requireWallet()) return;
+
+  // Check already applied
+  if (localStorage.getItem('bc_ref_applied_' + BC.addr)) {
+    toast('You already applied a referral code', 'info'); return;
+  }
+
+  // Extract code from link if needed
+  const code = v.includes('ref=') ? v.split('ref=')[1] : v.trim();
+
+  // Don't allow own code
+  if (code === genRefCode(BC.addr)) {
+    toast("You can't use your own referral code 😄", 'error'); return;
+  }
+
+  localStorage.setItem('bc_ref_applied_' + BC.addr, code);
+  addXP(5000, 'referral');
+  BC.refs = (BC.refs || 0);
+  saveState();
+
+  document.getElementById('ref-input').value = '';
+  toast('🎉 Referral applied! +5,000 XP', 'success');
+  renderProfile();
+}
+
+// ── CHECK URL FOR REF PARAM ──
+function checkUrlRef() {
+  if (!BC.addr) return;
+  const params = new URLSearchParams(window.location.search);
+  const ref = params.get('ref');
+  if (!ref) return;
+  if (localStorage.getItem('bc_ref_applied_' + BC.addr)) return;
+  if (ref === genRefCode(BC.addr)) return;
+
+  // Auto-fill ref input
+  document.getElementById('ref-input').value = ref;
+  toast('🎁 Referral code detected! Click Apply to claim 5,000 XP', 'info');
+}
+
+// ── SHARE ──
+function shareX() {
+  const link = getRefLink();
+  const text = encodeURIComponent(`I'm farming XP on BaseCore — the ultimate Base ecosystem platform! 🚀 Join me and earn XP, play on-chain games, deploy contracts & get ready for the Base airdrop. Use my ref link:`);
+  const url = encodeURIComponent('https://' + link);
+  window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+}
+function shareTG() {
+  const link = 'https://' + getRefLink();
+  const text = encodeURIComponent('Join me on BaseCore — earn XP on Base blockchain! 🚀⚡');
+  window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${text}`, '_blank');
+}
+
+// ── INIT ──
+function renderAll() {
+  if (BC.addr) renderProfile();
+  else {
+    document.getElementById('connect-prompt').style.display = '';
+    document.getElementById('profile-section').style.display = 'none';
+    document.getElementById('ref-section').style.display = 'none';
+  }
+}
+
+initNav('social');
+renderAll();
+setTimeout(() => { if (BC.addr) renderAll(); }, 800);
+</script>
+</body>
+</html>

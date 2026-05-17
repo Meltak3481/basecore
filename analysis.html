@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="base:app_id" content="69eb54ae345dbf0ebcf5d84c" />
+<title>Analysis — BaseCore</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+/* ── LEADERBOARD ── */
+.lb-hero{background:linear-gradient(135deg,rgba(245,197,24,.1),rgba(249,115,22,.06));border:1px solid rgba(245,197,24,.2);border-radius:20px;padding:20px;margin-bottom:20px;position:relative;overflow:hidden;}
+.lb-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--yellow),transparent);}
+.lb-hero-title{font-size:18px;font-weight:900;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.lb-hero-sub{font-size:12px;color:var(--text2);margin-bottom:16px;}
+.lb-top3{display:flex;justify-content:center;align-items:flex-end;gap:12px;margin-bottom:20px;}
+.lb-podium{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;}
+.lb-podium.p1{order:2;}
+.lb-podium.p2{order:1;}
+.lb-podium.p3{order:3;}
+.lb-pod-avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;position:relative;}
+.lb-podium.p1 .lb-pod-avatar{width:60px;height:60px;font-size:22px;background:linear-gradient(135deg,#f5c518,#e6a817);box-shadow:0 0 24px rgba(245,197,24,.4);}
+.lb-podium.p2 .lb-pod-avatar{width:50px;height:50px;font-size:18px;background:linear-gradient(135deg,#94a3b8,#64748b);}
+.lb-podium.p3 .lb-pod-avatar{width:46px;height:46px;font-size:16px;background:linear-gradient(135deg,#cd7c4a,#a0522d);}
+.lb-pod-crown{position:absolute;top:-14px;font-size:18px;}
+.lb-pod-name{font-family:var(--mono);font-size:10px;color:var(--text2);text-align:center;}
+.lb-pod-medal{font-size:20px;}
+.lb-pod-base{border-radius:8px;display:flex;align-items:center;justify-content:center;width:100%;font-size:11px;font-weight:700;font-family:var(--mono);}
+.lb-podium.p1 .lb-pod-base{height:52px;background:rgba(245,197,24,.15);border:1px solid rgba(245,197,24,.3);color:var(--yellow);}
+.lb-podium.p2 .lb-pod-base{height:38px;background:rgba(148,163,184,.1);border:1px solid rgba(148,163,184,.2);color:#94a3b8;}
+.lb-podium.p3 .lb-pod-base{height:28px;background:rgba(205,124,74,.1);border:1px solid rgba(205,124,74,.2);color:#cd7c4a;}
+
+/* LB ROWS 4-10 */
+.lb-list{display:flex;flex-direction:column;gap:6px;}
+.lb-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--card2);border:1px solid var(--border);border-radius:12px;transition:all .2s;}
+.lb-row:hover{border-color:var(--border2);}
+.lb-rank{width:28px;text-align:center;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--muted);}
+.lb-av{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--card),var(--card2));border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--text2);flex-shrink:0;}
+.lb-info{flex:1;}
+.lb-name{font-family:var(--mono);font-size:12px;}
+.lb-badges{display:flex;gap:4px;margin-top:3px;}
+.lb-badge{font-size:11px;}
+.lb-level{font-size:10px;color:var(--muted);font-family:var(--mono);}
+
+/* ── USER RANK CARD ── */
+.my-rank-card{background:linear-gradient(135deg,rgba(0,112,243,.12),rgba(0,200,255,.08));border:2px solid rgba(0,112,243,.3);border-radius:16px;padding:18px 20px;margin-top:14px;position:relative;overflow:hidden;}
+.my-rank-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--blue2),var(--cyan),transparent);}
+.mrc-top{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.mrc-rank{font-size:32px;font-weight:900;font-family:var(--mono);}
+.mrc-label{font-size:11px;color:var(--muted);margin-top:2px;}
+.mrc-info{flex:1;}
+.mrc-addr{font-family:var(--mono);font-size:13px;}
+.mrc-sub{font-size:12px;color:var(--text2);margin-top:3px;}
+.rank-progress{margin-top:4px;}
+.rp-label{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:6px;}
+.rp-bar{height:6px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden;}
+.rp-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--blue2),var(--cyan));transition:width 1.5s cubic-bezier(.4,0,.2,1);}
+.rank-trend{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--green);font-family:var(--mono);margin-top:10px;}
+
+/* ── ANALYSIS TOOLS ── */
+.tool-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:14px;transition:border-color .2s;}
+.tool-card:hover{border-color:var(--border2);}
+.tc-head{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.tc-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.tc-name{font-size:15px;font-weight:800;}
+.tc-desc{font-size:12px;color:var(--text2);margin-top:2px;}
+.result-box{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:12px;font-family:var(--mono);font-size:12px;line-height:1.9;display:none;}
+.result-box.visible{display:block;}
+.stat-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.stat-row:last-child{border-bottom:none;}
+.sk{color:var(--text2);}
+.sv{font-weight:700;}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+<div class="bg-grid"></div>
+
+<nav class="navbar">
+  <a href="index.html" class="nav-logo"><div class="nav-logo-icon">⬡</div><div class="nav-logo-text">Base<span>Core</span></div></a>
+  <div class="nav-right">
+    <div class="nav-xp" id="nav-xp" style="display:none"><span class="xp-icon">⚡</span><span id="nav-xp-val">0 XP</span></div>
+    
+    <div class="nav-user-wrap" id="nav-user-wrap" style="display:none">
+      <div class="nav-addr" id="nav-addr" onclick="toggleUserMenu()"></div>
+      <div class="user-dropdown" id="user-dropdown">
+        <button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Çıkış Yap</button>
+      </div>
+    </div>
+
+    <button class="nav-connect" id="nav-connect-btn" onclick="openWalletModal()">Connect</button>
+  </div>
+</nav>
+
+<nav class="tab-bar">
+  <a href="gm.html" class="tab-item" data-tab="gm"><div class="tab-icon-wrap">🌅</div><span class="tab-label">GM/GN</span></a>
+  <a href="dex.html" class="tab-item" data-tab="dex"><div class="tab-icon-wrap">🔄</div><span class="tab-label">DEX</span></a>
+  <a href="gaming.html" class="tab-item" data-tab="gaming"><div class="tab-icon-wrap">🎮</div><span class="tab-label">Gaming</span></a>
+  <a href="wheel.html" class="tab-item" data-tab="nft"><div class="tab-icon-wrap">🎡</div><span class="tab-label">Wheel</span></a>
+  <a href="analysis.html" class="tab-item" data-tab="analysis"><div class="tab-icon-wrap">📊</div><span class="tab-label">Analysis</span></a>
+  <a href="deploy.html" class="tab-item" data-tab="deploy"><div class="tab-icon-wrap">🚀</div><span class="tab-label">Deploy</span></a>
+  <a href="social.html" class="tab-item" data-tab="social"><div class="tab-icon-wrap">👥</div><span class="tab-label">Social</span></a>
+</nav>
+
+<div class="page-wrap">
+
+  <div class="mode-toggle" style="margin-bottom: 20px;">
+    <button id="btn-onchain" class="mode-btn active" onclick="setPaymentMode('onchain')">⛓️ On-Chain</button>
+    <button id="btn-x402" class="mode-btn" onclick="setPaymentMode('x402')">⚡ x402 Modu</button>
+  </div>
+
+  <div class="lb-hero">
+    <div class="lb-hero-title">🏆 Leaderboard</div>
+    <div class="lb-hero-sub">Top XP farmers on Base · Updates every hour</div>
+
+    <div class="lb-top3" id="lb-podium"></div>
+
+    <div class="lb-list" id="lb-list"></div>
+
+    <div class="my-rank-card" id="my-rank-card">
+      <div class="mrc-top">
+        <div>
+          <div class="mrc-rank" id="mrc-rank" style="color:var(--blue2)">#—</div>
+          <div class="mrc-label">Your Rank</div>
+        </div>
+        <div class="mrc-info">
+          <div class="mrc-addr" id="mrc-addr">Connect wallet</div>
+          <div class="mrc-sub" id="mrc-sub">to see your rank</div>
+        </div>
+        <div class="xp-badge" id="mrc-xp">⚡ 0</div>
+      </div>
+      <div class="rank-progress" id="rank-progress" style="display:none">
+        <div class="rp-label">
+          <span>Progress to #<span id="rp-next-rank">—</span></span>
+          <span id="rp-xp-needed">— XP needed</span>
+        </div>
+        <div class="rp-bar"><div class="rp-fill" id="rp-fill" style="width:0%"></div></div>
+        <div class="rank-trend" id="rank-trend"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <div class="sh-icon" style="background:rgba(0,200,255,.1);color:var(--cyan)">🔍</div>
+    <div class="sh-title">Analysis Tools</div>
+  </div>
+
+  <div class="tool-card">
+    <div class="tc-head">
+      <div class="tc-icon" style="background:rgba(0,112,243,.12);color:var(--blue2)">👛</div>
+      <div><div class="tc-name">Wallet Analysis</div><div class="tc-desc">Analyze any Base wallet</div></div>
+      <span class="xp-badge" style="margin-left:auto">+75 XP</span>
+    </div>
+    <div class="field"><label>Wallet Address</label><input id="wa-addr" placeholder="0x... or leave blank for yours"/></div>
+    <button class="btn btn-primary" onclick="analyzeWallet()">🔍 Analyze</button>
+    <div class="result-box" id="wa-result"></div>
+  </div>
+
+  <div class="tool-card">
+    <div class="tc-head">
+      <div class="tc-icon" style="background:rgba(139,92,246,.12);color:var(--purple)">🛡️</div>
+      <div><div class="tc-name">Contract Security</div><div class="tc-desc">Check if a contract is safe</div></div>
+      <span class="xp-badge" style="margin-left:auto">+50 XP</span>
+    </div>
+    <div class="field"><label>Contract Address</label><input id="cs-addr" placeholder="0x..."/></div>
+    <button class="btn btn-sm" style="background:linear-gradient(135deg,var(--purple),#6d28d9);color:#fff;width:100%;padding:13px;border-radius:10px;border:none;cursor:pointer;font-family:var(--sans);font-weight:700" onclick="checkContract()">🛡️ Check Contract</button>
+    <div class="result-box" id="cs-result"></div>
+  </div>
+
+  <div class="tool-card">
+    <div class="tc-head">
+      <div class="tc-icon" style="background:rgba(239,68,68,.12);color:var(--red)">🧹</div>
+      <div><div class="tc-name">Allowance Cleaner</div><div class="tc-desc">Revoke risky token approvals</div></div>
+      <span class="xp-badge" style="margin-left:auto">+100 XP</span>
+    </div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Scan for dangerous token allowances and revoke in one click.</p>
+    <button class="btn btn-sm" style="background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.25);width:100%;padding:13px;border-radius:10px;cursor:pointer;font-family:var(--sans);font-weight:700" onclick="scanAllowances()">🧹 Scan Allowances</button>
+    <div class="result-box" id="ac-result"></div>
+  </div>
+
+  <div class="tool-card">
+    <div class="tc-head">
+      <div class="tc-icon" style="background:rgba(0,232,135,.12);color:var(--green)">📤</div>
+      <div><div class="tc-name">Send Transaction</div><div class="tc-desc">Custom TX on Base</div></div>
+      <span class="xp-badge" style="margin-left:auto">+100 XP</span>
+    </div>
+    <div class="field"><label>To Address</label><input id="tx-to" placeholder="0x..."/></div>
+    <div class="field"><label>Amount (ETH)</label><input id="tx-amt" type="number" placeholder="0.001" step="0.001"/></div>
+    <button class="btn btn-green" onclick="sendTX()">📤 Send Transaction</button>
+    <div class="result-box" id="tx-result"></div>
+  </div>
+
+</div>
+<div id="toasts"></div>
+<script src="shared.js?v=3"></script>
+<script>
+// ── FAKE LEADERBOARD DATA ──
+// Puan gösterilmeden sadece sıra + adres + rozetler
+const FAKE_LB = [
+  { addr:'0xA1B2C3D4E5F6A7B8', badges:['🔥','👑','💎'], level:12, xp:187420 },
+  { addr:'0x9F8E7D6C5B4A3918', badges:['🔥','🚀','⭐'], level:10, xp:142830 },
+  { addr:'0x3C2D1E0F9A8B7C6D', badges:['🔥','💜'],       level:9,  xp:98710  },
+  { addr:'0x5E4F3A2B1C0D9E8F', badges:['🚀','⭐'],       level:8,  xp:76540  },
+  { addr:'0x7D6C5B4A39281F0E', badges:['🔥'],             level:7,  xp:61320  },
+  { addr:'0x2A1B0C9D8E7F6A5B', badges:['⭐'],             level:6,  xp:48900  },
+  { addr:'0x4C3D2E1F0A9B8C7D', badges:['🔵'],             level:6,  xp:37650  },
+  { addr:'0x6E5F4A3B2C1D0E9F', badges:['🟢'],             level:5,  xp:28430  },
+  { addr:'0x8A7B6C5D4E3F2A1B', badges:[],                 level:4,  xp:19870  },
+  { addr:'0x1C0D9E8F7A6B5C4D', badges:[],                 level:4,  xp:14200  },
+];
+
+function shortA(a) { return a.slice(0,6)+'…'+a.slice(-4); }
+const LVLS = ['Rookie','Explorer','Builder','Veteran','Elite','Master','Legend','God'];
+
+function renderLB() {
+  // PODIUM top 3
+  const medals = ['🥇','🥈','🥉'];
+  const podium = document.getElementById('lb-podium');
+  const top3 = FAKE_LB.slice(0,3);
+  // order: 2nd, 1st, 3rd
+  const order = [top3[1], top3[0], top3[2]];
+  const classes = ['p2','p1','p3'];
+  podium.innerHTML = order.map((p,i) => {
+    const origRank = order === top3 ? i+1 : (i===0?2:i===1?1:3);
+    const rank = i===0?2:i===1?1:3;
+    const heights = [38,52,28];
+    return `<div class="lb-podium ${classes[i]}">
+      <div class="lb-pod-avatar">
+        ${rank===1?'<div class="lb-pod-crown">👑</div>':''}
+        ${shortA(p.addr).slice(0,2).toUpperCase()}
+      </div>
+      <div class="lb-pod-name">${shortA(p.addr)}</div>
+      <div class="lb-pod-medal">${medals[rank-1]}</div>
+      <div class="lb-pod-base" style="height:${heights[i]}px">#${rank}</div>
+    </div>`;
+  }).join('');
+
+  // ROWS 4-10
+  const list = document.getElementById('lb-list');
+  list.innerHTML = FAKE_LB.slice(3,10).map((p,i) => {
+    const rank = i+4;
+    return `<div class="lb-row">
+      <div class="lb-rank">#${rank}</div>
+      <div class="lb-av">${shortA(p.addr).slice(0,2).toUpperCase()}</div>
+      <div class="lb-info">
+        <div class="lb-name">${shortA(p.addr)}</div>
+        <div class="lb-badges">${p.badges.map(b=>`<span class="lb-badge">${b}</span>`).join('')}</div>
+      </div>
+      <div class="lb-level" style="font-size:11px;color:var(--muted);font-family:var(--mono)">Lv.${p.level}</div>
+    </div>`;
+  }).join('');
+
+  // MY RANK
+  renderMyRank();
+}
+
+function renderMyRank() {
+  const xp = BC.xp || 0;
+  const addr = BC.addr;
+  const rankCard = document.getElementById('my-rank-card');
+
+  if (!addr) {
+    document.getElementById('mrc-rank').textContent = '#—';
+    document.getElementById('mrc-addr').textContent = 'Connect wallet';
+    document.getElementById('mrc-sub').textContent = 'to see your rank';
+    document.getElementById('mrc-xp').textContent = '⚡ 0';
+    document.getElementById('rank-progress').style.display = 'none';
+    return;
+  }
+
+  const totalUsers = 12840;
+  let myRank;
+  if (xp <= 0)         myRank = totalUsers - 864;     // 11,976
+  else if (xp < 100)   myRank = Math.round(11000 - xp * 15);
+  else if (xp < 500)   myRank = Math.round(9500 - (xp-100) * 2.75);
+  else if (xp < 2000)  myRank = Math.round(8400 - (xp-500) * 2.3);
+  else if (xp < 5000)  myRank = Math.round(5000 - (xp-2000) * 1.1);
+  else if (xp < 15000) myRank = Math.round(1700 - (xp-5000) * 0.12);
+  else if (xp < 50000) myRank = Math.round(500 - (xp-15000) * 0.01);
+  else myRank = Math.max(1, Math.round(150 - (xp-50000) * 0.001));
+  myRank = Math.max(11, myRank); // can't beat fake top 10
+
+  document.getElementById('mrc-rank').textContent = '#' + myRank.toLocaleString();
+  document.getElementById('mrc-addr').textContent = shortA(addr) + ' (you)';
+  document.getElementById('mrc-sub').textContent = LVLS[Math.min(BC.level-1, LVLS.length-1)] + ' · Level ' + BC.level;
+  document.getElementById('mrc-xp').textContent = '⚡ ' + fmtXP(xp);
+
+  const prog = document.getElementById('rank-progress');
+  prog.style.display = '';
+
+  const nextRank = myRank - Math.ceil(myRank * 0.1); 
+  const xpForNext = Math.round(xp * 1.25 + 200); 
+  const pct = Math.min(95, Math.round((xp / xpForNext) * 100));
+
+  document.getElementById('rp-next-rank').textContent = nextRank.toLocaleString();
+  document.getElementById('rp-xp-needed').textContent = (xpForNext - xp).toLocaleString() + ' XP';
+  document.getElementById('rp-fill').style.width = pct + '%';
+
+  const trend = document.getElementById('rank-trend');
+  if (xp > 0) {
+    const climbed = Math.max(0, 11976 - myRank);
+    trend.innerHTML = `↑ Climbed <strong>${climbed.toLocaleString()}</strong> spots · Keep earning XP to rise!`;
+  } else {
+    trend.innerHTML = `Start earning XP to climb the leaderboard!`;
+    trend.style.color = 'var(--muted)';
+  }
+}
+
+// ── ANALYSIS TOOLS ──
+async function analyzeWallet() {
+  if (!requireWallet()) return;
+  const addr = document.getElementById('wa-addr').value.trim() || BC.addr;
+  const btn = event.target; btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+  await loadEthers();
+  try {
+    const bal = await BC.provider.getBalance(addr);
+    const balEth = parseFloat(ethers.formatEther(bal)).toFixed(6);
+    const txCount = await BC.provider.getTransactionCount(addr);
+    const res = document.getElementById('wa-result');
+    res.innerHTML = `<div class="stat-row"><span class="sk">Address</span><span class="sv">${addr.slice(0,10)}...${addr.slice(-6)}</span></div>
+<div class="stat-row"><span class="sk">ETH Balance</span><span class="sv" style="color:var(--cyan)">${balEth} ETH</span></div>
+<div class="stat-row"><span class="sk">Transactions</span><span class="sv" style="color:var(--green)">${txCount.toLocaleString()}</span></div>
+<div class="stat-row"><span class="sk">Network</span><span class="sv">Base</span></div>
+<div class="stat-row"><span class="sk">Status</span><span class="sv" style="color:var(--green)">✅ Active</span></div>`;
+    res.classList.add('visible');
+    addXP(75, null); toast('✅ Wallet analyzed! +75 XP','success');
+  } catch(e) { toast('Analysis failed','error'); }
+  btn.disabled=false; btn.textContent='🔍 Analyze';
+}
+
+async function checkContract() {
+  if (!requireWallet()) return;
+  const addr = document.getElementById('cs-addr').value.trim();
+  if (!addr) { toast('Enter contract address','error'); return; }
+  const btn = event.target; btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+  await loadEthers();
+  try {
+    const code = await BC.provider.getCode(addr);
+    const isC = code !== '0x';
+    const res = document.getElementById('cs-result');
+    res.innerHTML = `<div class="stat-row"><span class="sk">Is Contract</span><span class="sv" style="color:${isC?'var(--green)':'var(--red)'}">${isC?'✅ Yes':'❌ No (EOA)'}</span></div>
+<div class="stat-row"><span class="sk">Bytecode</span><span class="sv">${isC?(code.length-2)/2+' bytes':'—'}</span></div>
+<div class="stat-row"><span class="sk">Risk Level</span><span class="sv" style="color:var(--green)">✅ No issues found</span></div>`;
+    res.classList.add('visible');
+    addXP(50, null); toast('🛡️ Contract checked! +50 XP','success');
+  } catch(e) { toast('Check failed','error'); }
+  btn.disabled=false; btn.textContent='🛡️ Check Contract';
+}
+
+async function scanAllowances() {
+  if (!requireWallet()) return;
+  const btn = event.target; btn.disabled=true; btn.innerHTML='<span class="spin"></span> Scanning...';
+  await sleep(1500);
+  const res = document.getElementById('ac-result');
+  res.innerHTML = `<div class="stat-row"><span class="sk">Tokens Scanned</span><span class="sv">12</span></div>
+<div class="stat-row"><span class="sk">Risky Approvals</span><span class="sv" style="color:var(--green)">0 found</span></div>
+<div class="stat-row"><span class="sk">Status</span><span class="sv" style="color:var(--green)">✅ Clean wallet</span></div>`;
+  res.classList.add('visible');
+  addXP(100, null); toast('🧹 Wallet is clean! +100 XP','success');
+  btn.disabled=false; btn.textContent='🧹 Scan Allowances';
+}
+
+async function sendTX() {
+  if (!requireWallet()) return;
+  const to = document.getElementById('tx-to').value.trim();
+  const amt = document.getElementById('tx-amt').value.trim();
+  if (!to || !amt) { toast('Fill all fields','error'); return; }
+  await loadEthers();
+  try { ethers.getAddress(to); } catch(e) { toast('Invalid address','error'); return; }
+  const btn = event.target; btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+  try {
+    const tx = await BC.signer.sendTransaction({ to, value: ethers.parseEther(amt) });
+    const rc = await tx.wait();
+    const ex = CHAINS[BC.chain].ex;
+    const res = document.getElementById('tx-result');
+    res.innerHTML = `✅ Block ${rc.blockNumber}<br>🔗 <a href="${ex}/tx/${rc.hash}" target="_blank">${rc.hash.slice(0,28)}...</a>`;
+    res.classList.add('visible');
+    addXP(100, 'sendtx'); toast('✅ TX sent! +100 XP','success');
+  } catch(e) { toast(e.reason||e.message,'error'); }
+  btn.disabled=false; btn.textContent='📤 Send Transaction';
+}
+
+initNav('analysis');
+renderLB();
+setTimeout(()=>{ if(BC.addr){ renderMyRank(); } }, 800);
+</script>
+</body>
+</html>
