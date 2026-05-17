@@ -240,17 +240,13 @@ function disconnectWallet() {
   localStorage.removeItem('bc_wallet_type');
   localStorage.removeItem('bc_payment_mode');
 
-  const keysToRemove = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
-    if (k?.startsWith('bc_')) keysToRemove.push(k);
-  }
-  keysToRemove.forEach(k => localStorage.removeItem(k));
+  // Sadece oturum bilgilerini sil — XP, state, spin verileri KORUNUYOR
+  // bc_last_addr, bc_wallet_type, bc_payment_mode zaten üstte silindi
 
   const d = document.getElementById('user-dropdown');
   if (d) d.style.display = 'none';
   updateNavUI();
-  showNotification('Bağlantı Kesildi', `${addr} adresi bağlantısı kesildi.`, 'info');
+  showNotification('Disconnected', `${addr} disconnected.`, 'info');
   if (typeof showConnect === 'function') showConnect();
 }
 
@@ -346,12 +342,12 @@ function showDisconnectConfirm() {
   popup.innerHTML = `
     <div style="background:var(--card);border:1px solid var(--border2);border-radius:20px;padding:24px;width:100%;max-width:300px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.8);">
       <div style="width:52px;height:52px;border-radius:50%;background:rgba(255,60,60,.12);border:1px solid rgba(255,60,60,.3);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 14px;">🔌</div>
-      <div style="font-size:16px;font-weight:800;margin-bottom:6px;">Bağlantıyı Kes</div>
+      <div style="font-size:16px;font-weight:800;margin-bottom:6px;">Disconnect</div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:6px;">${BC.shortAddr}</div>
       <div style="font-size:12px;color:var(--text2);margin-bottom:22px;opacity:.7;">Bu cüzdanın bağlantısını kesmek istediğinizden emin misiniz?</div>
       <div style="display:flex;gap:10px;">
         <button onclick="document.getElementById('disconnect-popup').remove()" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--border2);color:var(--text2);font-weight:700;font-size:14px;cursor:pointer;">İptal</button>
-        <button onclick="document.getElementById('disconnect-popup').remove();disconnectWallet();" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,50,50,.15);border:1px solid rgba(255,50,50,.35);color:#ff6b6b;font-weight:800;font-size:14px;cursor:pointer;">Bağlantıyı Kes</button>
+        <button onclick="document.getElementById('disconnect-popup').remove();disconnectWallet();" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,50,50,.15);border:1px solid rgba(255,50,50,.35);color:#ff6b6b;font-weight:800;font-size:14px;cursor:pointer;">Disconnect</button>
       </div>
     </div>
   `;
