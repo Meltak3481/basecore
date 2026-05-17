@@ -129,6 +129,16 @@
 .xm-bar{height:5px;background:rgba(255,255,255,.06);border-radius:6px;margin:6px 0 4px;overflow:hidden;}
 .xm-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--blue2),var(--cyan));transition:width 1s ease;}
 .xm-meta{font-size:11px;color:var(--muted);font-family:var(--mono);}
+
+.char-widget{
+  background:linear-gradient(135deg,rgba(30,58,138,.18),rgba(37,99,235,.1));
+  border:1px solid rgba(37,99,235,.28);border-radius:18px;padding:14px 16px;
+  margin-bottom:20px;display:flex;align-items:center;gap:14px;
+  position:relative;overflow:hidden;transition:all .25s;cursor:pointer;
+}
+.char-widget::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(96,165,250,.5),rgba(59,130,246,.4),transparent);}
+.char-widget:hover{transform:translateY(-2px);border-color:rgba(96,165,250,.4);box-shadow:0 8px 28px rgba(37,99,235,.15);}
 </style>
 </head>
 <body>
@@ -183,10 +193,10 @@
     <div class="hm-item-info"><div class="hm-item-name">Gaming</div><div class="hm-item-desc">8 on-chain games</div></div>
     <span class="hm-item-badge" style="background:rgba(249,115,22,.1);color:var(--orange)">HOT</span>
   </a>
-  <a href="wheel.html" class="hm-item" onclick="closeHMenu()">
+  <a href="nft.html" class="hm-item" onclick="closeHMenu()">
     <div class="hm-item-icon" style="background:rgba(139,92,246,.12)">🎡</div>
-    <div class="hm-item-info"><div class="hm-item-name">Fortune Wheel</div><div class="hm-item-desc">Spin daily · Earn XP · Mystery Boxes</div></div>
-    <span class="hm-item-badge" style="background:rgba(139,92,246,.1);color:var(--purple)">🎡</span>
+    <div class="hm-item-info"><div class="hm-item-name">NFT Spin</div><div class="hm-item-desc">Spin & collect NFTs</div></div>
+    <span class="hm-item-badge" style="background:rgba(139,92,246,.1);color:var(--purple)">NFT</span>
   </a>
 
   <div class="hm-section">Tools</div>
@@ -223,7 +233,7 @@
     <div class="nav-user-wrap" id="nav-user-wrap" style="display:none">
       <div class="nav-addr" id="nav-addr" onclick="toggleUserMenu()"></div>
       <div class="user-dropdown" id="user-dropdown">
-        <button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Çıkış Yap</button>
+        <button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Disconnect</button>
       </div>
     </div>
 
@@ -238,7 +248,7 @@
   <a href="gm.html" class="tab-item" data-tab="gm"><div class="tab-icon-wrap">🌅</div><span class="tab-label">GM/GN</span></a>
   <a href="dex.html" class="tab-item" data-tab="dex"><div class="tab-icon-wrap">🔄</div><span class="tab-label">DEX</span></a>
   <a href="gaming.html" class="tab-item" data-tab="gaming"><div class="tab-icon-wrap">🎮</div><span class="tab-label">Gaming</span></a>
-  <a href="wheel.html" class="tab-item" data-tab="nft"><div class="tab-icon-wrap">🎡</div><span class="tab-label">Wheel</span></a>
+  <a href="nft.html" class="tab-item" data-tab="nft"><div class="tab-icon-wrap">🖼️</div><span class="tab-label">NFT</span></a>
   <a href="analysis.html" class="tab-item" data-tab="analysis"><div class="tab-icon-wrap">📊</div><span class="tab-label">Analysis</span></a>
   <a href="deploy.html" class="tab-item" data-tab="deploy"><div class="tab-icon-wrap">🚀</div><span class="tab-label">Deploy</span></a>
 </nav>
@@ -281,9 +291,9 @@
       <div class="fc-chips"><span class="fc-chip" style="background:rgba(249,115,22,.15);color:var(--orange)">Real TX</span><span class="fc-chip" style="background:rgba(245,197,24,.12);color:var(--yellow)">XP Rewards</span></div>
       <span class="fc-arrow">→</span>
     </a>
-    <a href="wheel.html" class="featured-card" style="background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.15);--fc:var(--purple)">
-      <div class="fc-top"><span class="fc-icon">🎡</span><div><div class="fc-title">Fortune Wheel</div><div class="fc-sub">Spin daily · Earn XP · Find Mystery Boxes</div></div></div>
-      <div class="fc-chips"><span class="fc-chip" style="background:rgba(139,92,246,.15);color:var(--purple)">3 Spins / Day</span></div>
+    <a href="nft.html" class="featured-card" style="background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.15);--fc:var(--purple)">
+      <div class="fc-top"><span class="fc-icon">🎡</span><div><div class="fc-title">NFT Spin & Collect</div><div class="fc-sub">Spin daily · Rare NFTs · Mythic cards</div></div></div>
+      <div class="fc-chips"><span class="fc-chip" style="background:rgba(139,92,246,.15);color:var(--purple)">Common → Mythic</span></div>
       <span class="fc-arrow">→</span>
     </a>
     <a href="deploy.html" class="featured-card" style="background:rgba(0,232,135,.06);border:1px solid rgba(0,232,135,.12);--fc:var(--green)">
@@ -298,9 +308,12 @@
 
     <div class="mode-toggle" style="margin-bottom: 20px;">
       <button id="btn-onchain" class="mode-btn active" onclick="setPaymentMode('onchain')">⛓️ On-Chain</button>
-      <button id="btn-x402" class="mode-btn" onclick="setPaymentMode('x402')">⚡ x402 Modu</button>
+      <button id="btn-x402" class="mode-btn" onclick="setPaymentMode('x402')">⚡ x402 Mode</button>
     </div>
 
+    <div class="char-widget" id="char-widget" onclick="if(typeof CHAR!=='undefined')CHAR.openModal()">
+      <div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text2);">Connect wallet to view character</div></div>
+    </div>
     <div class="user-hero">
       <div class="uh-top">
         <div class="uh-av" id="uh-av">?</div>
@@ -332,8 +345,8 @@
       <a href="gaming.html" class="qa-card" style="background:rgba(249,115,22,.06);--qc:rgba(249,115,22,.1)">
         <span class="qa-icon">🎮</span><span class="qa-name">Games</span><span class="qa-badge" style="background:rgba(239,68,68,.12);color:var(--red)">HOT 🔥</span>
       </a>
-      <a href="wheel.html" class="qa-card" style="background:rgba(139,92,246,.06);--qc:rgba(139,92,246,.1)">
-        <span class="qa-icon">🎡</span><span class="qa-name">Wheel</span><span class="qa-badge" style="background:rgba(139,92,246,.12);color:var(--purple)">3/day</span>
+      <a href="nft.html" class="qa-card" style="background:rgba(139,92,246,.06);--qc:rgba(139,92,246,.1)">
+        <span class="qa-icon">🎡</span><span class="qa-name">NFT Spin</span><span class="qa-badge" style="background:rgba(139,92,246,.12);color:var(--purple)">3/day</span>
       </a>
       <a href="deploy.html" class="qa-card" style="background:rgba(0,232,135,.06);--qc:rgba(0,232,135,.1)">
         <span class="qa-icon">🚀</span><span class="qa-name">Deploy</span><span class="qa-badge" style="background:rgba(0,232,135,.1);color:var(--green)">+500 XP</span>
@@ -352,9 +365,9 @@
       <div class="card-body" style="padding:14px">
         <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
           <div style="width:34px;height:34px;border-radius:10px;background:rgba(139,92,246,.12);display:flex;align-items:center;justify-content:center;font-size:16px">🎡</div>
-          <div style="flex:1"><div style="font-size:13px;font-weight:700">Fortune Wheel</div><div style="font-size:11px;color:var(--muted);margin-top:2px" id="task-spin-status">0/3 spins done</div></div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700">NFT Spin</div><div style="font-size:11px;color:var(--muted);margin-top:2px" id="task-spin-status">0/3 spins done</div></div>
           <span id="task-spin-check" style="font-size:18px;display:none">✅</span>
-          <a href="wheel.html" id="task-spin-go" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);color:var(--purple);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:700;text-decoration:none">Go →</a>
+          <a href="nft.html" id="task-spin-go" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);color:var(--purple);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:700;text-decoration:none">Go →</a>
         </div>
         <div style="display:flex;align-items:center;gap:10px;padding:10px 0">
           <div style="width:34px;height:34px;border-radius:10px;background:rgba(249,115,22,.12);display:flex;align-items:center;justify-content:center;font-size:16px">🎮</div>
@@ -370,6 +383,8 @@
 
 <div id="toasts"></div>
 <script src="shared.js?v=3"></script>
+<script src="sfx.js"></script>
+<script src="character.js"></script>
 <script>
 const LVLS = ['Rookie','Explorer','Builder','Veteran','Elite','Master','Legend','God'];
 
@@ -432,7 +447,7 @@ function updateDashboard() {
   document.getElementById('uh-rank').textContent = '#'+rank.toLocaleString();
   document.getElementById('qa-rank').textContent = '#'+rank.toLocaleString();
   const dayKey = new Date().getHours()<3 ? (()=>{const d=new Date();d.setDate(d.getDate()-1);return d.toDateString();})() : new Date().toDateString();
-  const spins = Math.min(3, parseInt(localStorage.getItem('bc_wsp_'+BC.addr+'_'+dayKey)||'0'));
+  const spins = Math.min(3, parseInt(localStorage.getItem('bc_nftsp_'+BC.addr+'_'+dayKey)||'0'));
   const games = Math.min(2, parseInt(localStorage.getItem('bc_gamecount_'+BC.addr+'_'+dayKey)||'0'));
   document.getElementById('task-spin-status').textContent = spins+'/3 spins done';
   document.getElementById('task-game-status').textContent = games+'/2 games done';
@@ -441,6 +456,7 @@ function updateDashboard() {
   document.getElementById('task-spin-go').style.display = spins>=3?'none':'';
   document.getElementById('task-game-go').style.display = games>=2?'none':'';
   updateNavUI();
+  if(typeof CHAR!=="undefined")CHAR.renderWidget(BC.xp);
 }
 
 initNav('home');
