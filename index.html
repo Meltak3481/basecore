@@ -129,16 +129,6 @@
 .xm-bar{height:5px;background:rgba(255,255,255,.06);border-radius:6px;margin:6px 0 4px;overflow:hidden;}
 .xm-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--blue2),var(--cyan));transition:width 1s ease;}
 .xm-meta{font-size:11px;color:var(--muted);font-family:var(--mono);}
-
-.char-widget{
-  background:linear-gradient(135deg,rgba(30,58,138,.18),rgba(37,99,235,.1));
-  border:1px solid rgba(37,99,235,.28);border-radius:18px;padding:14px 16px;
-  margin-bottom:20px;display:flex;align-items:center;gap:14px;
-  position:relative;overflow:hidden;transition:all .25s;cursor:pointer;
-}
-.char-widget::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(96,165,250,.5),rgba(59,130,246,.4),transparent);}
-.char-widget:hover{transform:translateY(-2px);border-color:rgba(96,165,250,.4);box-shadow:0 8px 28px rgba(37,99,235,.15);}
 </style>
 </head>
 <body>
@@ -195,7 +185,7 @@
   </a>
   <a href="nft.html" class="hm-item" onclick="closeHMenu()">
     <div class="hm-item-icon" style="background:rgba(139,92,246,.12)">🎡</div>
-    <div class="hm-item-info"><div class="hm-item-name">NFT Spin</div><div class="hm-item-desc">Spin & collect NFTs</div></div>
+    <div class="hm-item-info"><div class="hm-item-name">Fortune Wheel</div><div class="hm-item-desc">Spin daily · Earn XP · Mystery Boxes</div></div>
     <span class="hm-item-badge" style="background:rgba(139,92,246,.1);color:var(--purple)">NFT</span>
   </a>
 
@@ -248,7 +238,7 @@
   <a href="gm.html" class="tab-item" data-tab="gm"><div class="tab-icon-wrap">🌅</div><span class="tab-label">GM/GN</span></a>
   <a href="dex.html" class="tab-item" data-tab="dex"><div class="tab-icon-wrap">🔄</div><span class="tab-label">DEX</span></a>
   <a href="gaming.html" class="tab-item" data-tab="gaming"><div class="tab-icon-wrap">🎮</div><span class="tab-label">Gaming</span></a>
-  <a href="nft.html" class="tab-item" data-tab="nft"><div class="tab-icon-wrap">🖼️</div><span class="tab-label">NFT</span></a>
+  <a href="wheel.html" class="tab-item" data-tab="nft"><div class="tab-icon-wrap">🎡</div><span class="tab-label">Wheel</span></a>
   <a href="analysis.html" class="tab-item" data-tab="analysis"><div class="tab-icon-wrap">📊</div><span class="tab-label">Analysis</span></a>
   <a href="deploy.html" class="tab-item" data-tab="deploy"><div class="tab-icon-wrap">🚀</div><span class="tab-label">Deploy</span></a>
 </nav>
@@ -292,7 +282,7 @@
       <span class="fc-arrow">→</span>
     </a>
     <a href="nft.html" class="featured-card" style="background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.15);--fc:var(--purple)">
-      <div class="fc-top"><span class="fc-icon">🎡</span><div><div class="fc-title">NFT Spin & Collect</div><div class="fc-sub">Spin daily · Rare NFTs · Mythic cards</div></div></div>
+      <div class="fc-top"><span class="fc-icon">🎡</span><div><div class="fc-title">Fortune Wheel</div><div class="fc-sub">Spin daily · Earn XP · Mystery Boxes</div></div></div>
       <div class="fc-chips"><span class="fc-chip" style="background:rgba(139,92,246,.15);color:var(--purple)">Common → Mythic</span></div>
       <span class="fc-arrow">→</span>
     </a>
@@ -312,7 +302,7 @@
     </div>
 
     <div class="char-widget" id="char-widget" onclick="if(typeof CHAR!=='undefined')CHAR.openModal()">
-      <div style="flex:1;min-width:0;"><div style="font-size:13px;color:var(--text2);">Connect wallet to view character</div></div>
+      <div style="font-size:13px;color:var(--text2);">Connect wallet to view your character</div>
     </div>
     <div class="user-hero">
       <div class="uh-top">
@@ -346,7 +336,7 @@
         <span class="qa-icon">🎮</span><span class="qa-name">Games</span><span class="qa-badge" style="background:rgba(239,68,68,.12);color:var(--red)">HOT 🔥</span>
       </a>
       <a href="nft.html" class="qa-card" style="background:rgba(139,92,246,.06);--qc:rgba(139,92,246,.1)">
-        <span class="qa-icon">🎡</span><span class="qa-name">NFT Spin</span><span class="qa-badge" style="background:rgba(139,92,246,.12);color:var(--purple)">3/day</span>
+        <span class="qa-icon">🎡</span><span class="qa-name">Wheel</span><span class="qa-badge" style="background:rgba(139,92,246,.12);color:var(--purple)">3/day</span>
       </a>
       <a href="deploy.html" class="qa-card" style="background:rgba(0,232,135,.06);--qc:rgba(0,232,135,.1)">
         <span class="qa-icon">🚀</span><span class="qa-name">Deploy</span><span class="qa-badge" style="background:rgba(0,232,135,.1);color:var(--green)">+500 XP</span>
@@ -365,9 +355,9 @@
       <div class="card-body" style="padding:14px">
         <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
           <div style="width:34px;height:34px;border-radius:10px;background:rgba(139,92,246,.12);display:flex;align-items:center;justify-content:center;font-size:16px">🎡</div>
-          <div style="flex:1"><div style="font-size:13px;font-weight:700">NFT Spin</div><div style="font-size:11px;color:var(--muted);margin-top:2px" id="task-spin-status">0/3 spins done</div></div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700">Fortune Wheel</div><div style="font-size:11px;color:var(--muted);margin-top:2px" id="task-spin-status">0/3 spins done</div></div>
           <span id="task-spin-check" style="font-size:18px;display:none">✅</span>
-          <a href="nft.html" id="task-spin-go" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);color:var(--purple);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:700;text-decoration:none">Go →</a>
+          <a href="wheel.html" id="task-spin-go" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);color:var(--purple);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:700;text-decoration:none">Go →</a>
         </div>
         <div style="display:flex;align-items:center;gap:10px;padding:10px 0">
           <div style="width:34px;height:34px;border-radius:10px;background:rgba(249,115,22,.12);display:flex;align-items:center;justify-content:center;font-size:16px">🎮</div>
