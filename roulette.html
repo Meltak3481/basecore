@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Roulette — BaseCore</title>
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="games.css">
+<style>
+.roulette-wrap{position:relative;width:280px;height:280px;margin:0 auto 16px;}
+canvas#rw{border-radius:50%;display:block;}
+canvas#rb{position:absolute;inset:0;pointer-events:none;}
+.roulette-result{text-align:center;font-family:var(--mono);font-size:22px;font-weight:900;min-height:32px;margin-bottom:14px;}
+.roulette-board{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px;}
+.rb-btn{padding:12px 4px;border-radius:10px;border:1px solid var(--border);background:var(--card2);cursor:pointer;text-align:center;font-size:12px;font-weight:700;transition:all .2s;}
+.rb-btn:hover{transform:scale(1.05);}
+.rb-btn.sel{border-width:2px;}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div><div class="bg-grid"></div>
+
+<div class="win-overlay" id="win-overlay">
+  <div class="win-burst" id="win-burst"></div>
+  <div class="win-card" id="win-card">
+    <span class="win-emoji" id="win-emoji">🎡</span>
+    <div class="win-title" id="win-title">WIN!</div>
+    <div class="win-xp" id="win-xp">+250 XP</div>
+    <div class="win-sub" id="win-sub"></div>
+    <button class="play-btn" style="background:linear-gradient(135deg,var(--green2),#059669);color:#fff;margin-top:16px;padding:12px" onclick="closeWin()">Spin Again! 🎡</button>
+  </div>
+  <div class="lose-card" id="lose-card">
+    <span class="lose-emoji">😔</span>
+    <div class="lose-title" id="lose-title">Not this time</div>
+    <div class="lose-sub">Try again</div>
+    <button class="play-btn" style="background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);margin-top:14px;padding:12px" onclick="closeWin()">Try Again</button>
+  </div>
+</div>
+
+<nav class="navbar">
+  <a href="index.html" class="nav-logo"><div class="nav-logo-icon">⬡</div><div class="nav-logo-text">Base<span>Core</span></div></a>
+  <div class="nav-right">
+    <div class="nav-xp" id="nav-xp" style="display:none"><span class="xp-icon">⚡</span><span id="nav-xp-val">0 XP</span></div>
+    <div class="nav-user-wrap" id="nav-user-wrap" style="display:none">
+      <div class="nav-addr" id="nav-addr" onclick="toggleUserMenu()"></div>
+      <div class="user-dropdown" id="user-dropdown"><button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Disconnect</button></div>
+    </div>
+    <button class="nav-connect" id="nav-connect-btn" onclick="openWalletModal()">Connect</button>
+  </div>
+</nav>
+
+<nav class="tab-bar">
+  <a href="gm.html"       class="tab-item" data-tab="gm">      <div class="tab-icon-wrap">🌅</div><span class="tab-label">GM/GN</span></a>
+  <a href="dex.html"      class="tab-item" data-tab="dex">     <div class="tab-icon-wrap">🔄</div><span class="tab-label">DEX</span></a>
+  <a href="gaming.html"   class="tab-item active" data-tab="gaming"><div class="tab-icon-wrap">🎮</div><span class="tab-label">Gaming</span></a>
+  <a href="wheel.html"    class="tab-item" data-tab="nft">      <div class="tab-icon-wrap">🎡</div><span class="tab-label">Wheel</span></a>
+  <a href="analysis.html" class="tab-item" data-tab="analysis"><div class="tab-icon-wrap">📊</div><span class="tab-label">Analysis</span></a>
+  <a href="deploy.html"   class="tab-item" data-tab="deploy">  <div class="tab-icon-wrap">🚀</div><span class="tab-label">Deploy</span></a>
+  <a href="social.html"   class="tab-item" data-tab="social">  <div class="tab-icon-wrap">👥</div><span class="tab-label">Social</span></a>
+</nav>
+
+<div class="game-page">
+  <div class="mode-toggle" style="margin-bottom:20px;">
+    <button id="btn-onchain" class="mode-btn active" onclick="setPaymentMode('onchain')">⛓️ On-Chain</button>
+    <button id="btn-x402" class="mode-btn" onclick="setPaymentMode('x402')">⚡ x402 Mode</button>
+  </div>
+  <a href="gaming.html" class="back-btn">← Back to Games</a>
+  <div class="game-header">
+    <span class="game-header-icon">🎡</span>
+    <div class="game-header-title">Roulette</div>
+    <div class="game-header-sub">Pick color or number range</div>
+    <div class="game-header-rewards"><span class="xp-badge">⚡ 125 XP</span><span style="color:var(--green);font-weight:700">🏆 up to 1000 XP</span></div>
+  </div>
+
+  <div class="roulette-wrap">
+    <canvas id="rw" width="280" height="280"></canvas>
+    <canvas id="rb" width="280" height="280"></canvas>
+  </div>
+  <div class="roulette-result" id="roulette-result">—</div>
+
+  <div class="roulette-board">
+    <div class="rb-btn sel" id="rb-red"   style="background:rgba(239,68,68,.15);color:var(--red);border-color:var(--red)"     onclick="rpick('red',this)">🔴 Red</div>
+    <div class="rb-btn" id="rb-black"     style="color:#94a3b8"                                                                onclick="rpick('black',this)">⚫ Black</div>
+    <div class="rb-btn" id="rb-green"     style="background:rgba(0,232,135,.1);color:var(--green)"                            onclick="rpick('green',this)">🟢 Green</div>
+    <div class="rb-btn" id="rb-odd"       style="color:var(--blue2)"                                                          onclick="rpick('odd',this)">Odd</div>
+    <div class="rb-btn" id="rb-even"      style="color:var(--purple)"                                                         onclick="rpick('even',this)">Even</div>
+    <div class="rb-btn" id="rb-low"       style="color:var(--cyan)"                                                           onclick="rpick('low',this)">1-18</div>
+    <div class="rb-btn" id="rb-high"      style="color:var(--yellow)"                                                         onclick="rpick('high',this)">19-36</div>
+    <div class="rb-btn" id="rb-d1"        style="color:var(--text2)"                                                          onclick="rpick('d1',this)">1st 12</div>
+  </div>
+
+  <button class="play-btn" id="roulette-play" style="background:linear-gradient(135deg,#be185d,#9d174d);color:#fff;margin-bottom:10px" onclick="playRoulette()">
+    🎡 Spin · 0.00002 ETH
+  </button>
+  <button class="share-x-btn" onclick="shareX('Playing Roulette on-chain at BaseCore! 🔴 Red or Black on Base!')">𝕏 Share on X</button>
+</div>
+
+<script src="shared.js"></script>
+<script src="sfx.js"></script>
+<script>
+const NUMS = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+const COLS = {0:'green',1:'red',2:'black',3:'red',4:'black',5:'red',6:'black',7:'red',8:'black',9:'red',10:'black',11:'black',12:'red',13:'black',14:'red',15:'black',16:'red',17:'black',18:'red',19:'red',20:'black',21:'red',22:'black',23:'red',24:'black',25:'red',26:'black',27:'red',28:'black',29:'black',30:'red',31:'black',32:'red',33:'black',34:'red',35:'black',36:'red'};
+let rPick = 'red';
+let wheelAngle = 0;
+let ballAngle  = -Math.PI / 2;
+let ballRadius = 118;
+let rwCtx = null, rbCtx = null;
+
+function initRoulette() {
+  const rw = document.getElementById('rw');
+  const rb = document.getElementById('rb');
+  if (!rw || !rb) return;
+  rwCtx = rw.getContext('2d');
+  rbCtx = rb.getContext('2d');
+  drawWheel(0);
+  drawBall(ballAngle, ballRadius);
+}
+
+function drawWheel(angle) {
+  if (!rwCtx) return;
+  const cx = 140, cy = 140, R = 136, innerR = 48;
+  const ctx = rwCtx, n = NUMS.length;
+  ctx.clearRect(0, 0, 280, 280);
+
+  // Dış rim
+  ctx.beginPath(); ctx.arc(cx, cy, R + 2, 0, Math.PI * 2);
+  const rim = ctx.createLinearGradient(0,0,280,280);
+  rim.addColorStop(0,'#fbbf24');rim.addColorStop(.5,'#d97706');rim.addColorStop(1,'#92400e');
+  ctx.fillStyle = rim; ctx.fill();
+
+  // Segmentler
+  for (let i = 0; i < n; i++) {
+    const sA = angle + (i/n)*Math.PI*2 - Math.PI/2;
+    const eA = angle + ((i+1)/n)*Math.PI*2 - Math.PI/2;
+    const num = NUMS[i], col = COLS[num];
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,sA,eA);ctx.closePath();
+    ctx.fillStyle = col==='red'?'#dc2626':col==='black'?'#1e293b':'#16a34a';
+    ctx.fill();
+    ctx.strokeStyle='rgba(251,191,36,.35)';ctx.lineWidth=0.8;ctx.stroke();
+    // Numara
+    const mid=(sA+eA)/2;
+    const tx=cx+Math.cos(mid)*R*.78,ty=cy+Math.sin(mid)*R*.78;
+    ctx.save();ctx.translate(tx,ty);ctx.rotate(mid+Math.PI/2);
+    ctx.fillStyle='#fff';ctx.font=`bold ${n>25?7:9}px sans-serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(num,0,0);ctx.restore();
+  }
+
+  // Merkez disk
+  ctx.beginPath();ctx.arc(cx,cy,innerR,0,Math.PI*2);
+  const ig=ctx.createRadialGradient(cx-12,cy-12,0,cx,cy,innerR);
+  ig.addColorStop(0,'#2d1f00');ig.addColorStop(1,'#080500');
+  ctx.fillStyle=ig;ctx.fill();
+  ctx.strokeStyle='rgba(251,191,36,.5)';ctx.lineWidth=2;ctx.stroke();
+
+  // Merkez nokta
+  ctx.beginPath();ctx.arc(cx,cy,10,0,Math.PI*2);
+  ctx.fillStyle='#fbbf24';ctx.fill();
+
+  // Pointer (üstte sabit)
+  ctx.beginPath();
+  ctx.moveTo(cx,cy-R-2);ctx.lineTo(cx-7,cy-R+14);ctx.lineTo(cx+7,cy-R+14);ctx.closePath();
+  ctx.fillStyle='#fbbf24';ctx.fill();
+}
+
+function drawBall(angle, radius) {
+  if (!rbCtx) return;
+  const cx=140,cy=140,ctx=rbCtx;
+  ctx.clearRect(0,0,280,280);
+  const bx=cx+Math.cos(angle)*radius, by=cy+Math.sin(angle)*radius;
+  // Gölge
+  ctx.beginPath();ctx.arc(bx+1.5,by+1.5,7,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,.35)';ctx.fill();
+  // Top
+  const g=ctx.createRadialGradient(bx-3,by-3,0,bx,by,7);
+  g.addColorStop(0,'#fff');g.addColorStop(.5,'#e2e8f0');g.addColorStop(1,'#94a3b8');
+  ctx.beginPath();ctx.arc(bx,by,7,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+}
+
+function rpick(p,el) {
+  rPick=p;
+  document.querySelectorAll('.rb-btn').forEach(b=>{b.classList.remove('sel');b.style.borderWidth='1px';});
+  el.classList.add('sel');el.style.borderWidth='2px';
+  SFX.play('click');
+}
+
+async function playRoulette() {
+  if (!requireWallet()) return;
+  const btn=document.getElementById('roulette-play');
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span>';
+  document.getElementById('roulette-result').textContent='—';
+
+  const rc=await sendTxWithFee('0.00002',125,'game');
+  if(!rc){btn.disabled=false;btn.textContent='🎡 Spin · 0.00002 ETH';return;}
+
+  const resultIdx=Math.floor(Math.random()*NUMS.length);
+  const num=NUMS[resultIdx];
+
+  // Hedef çark açısı — sonuç segment üstte gelsin
+  const segAngle = (resultIdx/NUMS.length)*Math.PI*2;
+  const turns    = (4+Math.random()*2)*Math.PI*2;
+  const targetWA = wheelAngle + turns - segAngle;
+
+  SFX.play('roulette');
+
+  const dur=5000, startTime=performance.now();
+  const startWA=wheelAngle, startBA=ballAngle;
+  let   curBR=ballRadius;
+
+  await new Promise(res=>{
+    function frame(now){
+      const t=Math.min((now-startTime)/dur,1);
+      const ease=1-Math.pow(1-t,4);
+      wheelAngle=startWA+(targetWA-startWA)*ease;
+      // Top çarkın tersine döner, yavaşlayınca içe çekiliyor
+      const bSpeed=(1-ease)*0.12;
+      ballAngle -= bSpeed;
+      curBR=ballRadius-(ballRadius-60)*ease; // 118 → 60
+      drawWheel(wheelAngle);
+      drawBall(ballAngle,curBR);
+      if(t<1)requestAnimationFrame(frame);
+      else{drawWheel(wheelAngle);drawBall(ballAngle,curBR);res();}
+    }
+    requestAnimationFrame(frame);
+  });
+
+  const col=COLS[num];
+  const isR=col==='red',isB=col==='black';
+  const colEmoji=num===0?'🟢':isR?'🔴':'⚫';
+  document.getElementById('roulette-result').textContent=`${colEmoji} ${num}`;
+  document.getElementById('roulette-result').style.color=num===0?'#16a34a':isR?'#ef4444':'#94a3b8';
+
+  const wins={red:isR,black:isB,green:num===0,odd:num>0&&num%2!==0,even:num>0&&num%2===0,low:num>=1&&num<=18,high:num>=19&&num<=36,d1:num>=1&&num<=12};
+  const xpm={red:250,black:250,green:1000,odd:250,even:250,low:250,high:250,d1:375};
+
+  if(wins[rPick]){
+    const xp=xpm[rPick]||250;
+    addXP(xp,null);showWin(xp+125,`${num} — YOU WIN!`,colEmoji);
+  }else{
+    showLose(`Number ${num}!`,`You bet on ${rPick}`);
+  }
+
+  recordGamePlayed();
+  btn.disabled=false;btn.textContent='🎡 Spin · 0.00002 ETH';
+}
+
+function showWin(xp,title,emoji){document.getElementById('win-emoji').textContent=emoji||'🎡';document.getElementById('win-title').textContent=title;document.getElementById('win-xp').textContent='+'+xp.toLocaleString()+' XP';document.getElementById('win-card').className='win-card show';document.getElementById('lose-card').className='lose-card';document.getElementById('win-burst').className='win-burst show';document.getElementById('win-overlay').style.pointerEvents='all';spawnConfetti();SFX.play('win');}
+function showLose(msg,sub){document.getElementById('lose-title').textContent=msg;document.getElementById('lose-sub').textContent=sub;document.getElementById('lose-card').className='lose-card show';document.getElementById('win-card').className='win-card';document.getElementById('win-burst').className='win-burst';document.getElementById('win-overlay').style.pointerEvents='all';SFX.play('lose');}
+function closeWin(){document.getElementById('win-card').className='win-card hide';document.getElementById('lose-card').className='lose-card hide';setTimeout(()=>{document.getElementById('win-overlay').style.pointerEvents='none';document.getElementById('win-card').className='win-card';document.getElementById('lose-card').className='lose-card';},300);}
+function spawnConfetti(){const cols=['#f5c518','#00e887','#0070f3','#ec4899','#8b5cf6'];for(let i=0;i<50;i++){const el=document.createElement('div');el.className='confetti-piece';el.style.cssText=`left:${Math.random()*100}%;background:${cols[~~(Math.random()*cols.length)]};--dur:${1.5+Math.random()}s;--delay:${Math.random()*.4}s;transform:rotate(${Math.random()*360}deg)`;document.body.appendChild(el);setTimeout(()=>el.remove(),2500);}}
+function shareX(t){window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(t+' ⬡ @BaseCoreFun #Base')}&url=${encodeURIComponent('https://basecore.fun')}`,'_blank');}
+
+initNav('gaming');
+initRoulette();
+</script>
+</body>
+</html>

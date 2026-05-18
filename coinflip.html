@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Coin Flip — BaseCore</title>
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="games.css">
+<style>
+.coin-scene{width:150px;height:150px;perspective:700px;margin:0 auto 24px;}
+.coin-3d{width:100%;height:100%;position:relative;transform-style:preserve-3d;}
+.coin-face{position:absolute;width:100%;height:100%;border-radius:50%;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;}
+.coin-heads{
+  background:conic-gradient(from 0deg,#f5c518,#ffd700,#f5c518,#d4940e,#fde68a,#e6a817,#f5c518);
+  box-shadow:0 0 0 6px rgba(245,197,24,.35),0 8px 32px rgba(0,0,0,.6),inset 0 0 30px rgba(255,255,255,.15);
+}
+.coin-tails{
+  background:conic-gradient(from 0deg,#94a3b8,#cbd5e1,#94a3b8,#475569,#e2e8f0,#64748b,#94a3b8);
+  box-shadow:0 0 0 6px rgba(148,163,184,.35),0 8px 32px rgba(0,0,0,.6),inset 0 0 30px rgba(255,255,255,.1);
+  transform:rotateY(180deg);
+}
+.coin-icon{font-size:56px;line-height:1;}
+.coin-label{font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(0,0,0,.5);}
+.coin-tails .coin-label{color:rgba(255,255,255,.4);}
+.coin-edge{
+  position:absolute;width:100%;height:100%;border-radius:50%;
+  background:conic-gradient(from 0deg,#b45309,#d97706,#92400e,#d97706,#b45309);
+  transform:scaleX(1.04) rotateY(90deg);
+  display:none;
+}
+@keyframes coinFlipFwd{
+  0%  {transform:rotateY(0);}
+  100%{transform:rotateY(var(--rot));}
+}
+.coin-flipping{animation:coinFlipFwd var(--dur) cubic-bezier(.45,0,.25,1) forwards;}
+.cf-choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+.cf-btn{padding:20px;border-radius:16px;border:2px solid var(--border);background:var(--card2);cursor:pointer;text-align:center;transition:all .22s;}
+.cf-btn:hover{border-color:var(--border2);transform:translateY(-2px);}
+.cf-btn.sel{border-color:var(--yellow);background:rgba(245,197,24,.1);transform:translateY(-2px);}
+.cf-btn .cb-icon{font-size:32px;margin-bottom:8px;display:block;}
+.cf-btn .cb-name{font-size:15px;font-weight:900;}
+.result-badge{text-align:center;font-size:13px;color:var(--text2);font-family:var(--mono);min-height:20px;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div><div class="bg-grid"></div>
+
+<div class="win-overlay" id="win-overlay">
+  <div class="win-burst" id="win-burst"></div>
+  <div class="win-card" id="win-card">
+    <span class="win-emoji" id="win-emoji">🎉</span>
+    <div class="win-title" id="win-title">YOU WON!</div>
+    <div class="win-xp" id="win-xp">+500 XP</div>
+    <div class="win-sub" id="win-sub"></div>
+    <button class="play-btn" style="background:linear-gradient(135deg,var(--green2),#059669);color:#fff;margin-top:16px;padding:12px" onclick="closeWin()">Awesome! 🔥</button>
+  </div>
+  <div class="lose-card" id="lose-card">
+    <span class="lose-emoji">😔</span>
+    <div class="lose-title" id="lose-title">Better luck!</div>
+    <div class="lose-sub" id="lose-sub">Try again</div>
+    <button class="play-btn" style="background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);margin-top:14px;padding:12px" onclick="closeWin()">Try Again</button>
+  </div>
+</div>
+
+<nav class="navbar">
+  <a href="index.html" class="nav-logo"><div class="nav-logo-icon">⬡</div><div class="nav-logo-text">Base<span>Core</span></div></a>
+  <div class="nav-right">
+    <div class="nav-xp" id="nav-xp" style="display:none"><span class="xp-icon">⚡</span><span id="nav-xp-val">0 XP</span></div>
+    <div class="nav-user-wrap" id="nav-user-wrap" style="display:none">
+      <div class="nav-addr" id="nav-addr" onclick="toggleUserMenu()"></div>
+      <div class="user-dropdown" id="user-dropdown"><button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Disconnect</button></div>
+    </div>
+    <button class="nav-connect" id="nav-connect-btn" onclick="openWalletModal()">Connect</button>
+  </div>
+</nav>
+
+<nav class="tab-bar">
+  <a href="gm.html"       class="tab-item" data-tab="gm">      <div class="tab-icon-wrap">🌅</div><span class="tab-label">GM/GN</span></a>
+  <a href="dex.html"      class="tab-item" data-tab="dex">     <div class="tab-icon-wrap">🔄</div><span class="tab-label">DEX</span></a>
+  <a href="gaming.html"   class="tab-item active" data-tab="gaming"><div class="tab-icon-wrap">🎮</div><span class="tab-label">Gaming</span></a>
+  <a href="wheel.html"    class="tab-item" data-tab="nft">      <div class="tab-icon-wrap">🎡</div><span class="tab-label">Wheel</span></a>
+  <a href="analysis.html" class="tab-item" data-tab="analysis"><div class="tab-icon-wrap">📊</div><span class="tab-label">Analysis</span></a>
+  <a href="deploy.html"   class="tab-item" data-tab="deploy">  <div class="tab-icon-wrap">🚀</div><span class="tab-label">Deploy</span></a>
+  <a href="social.html"   class="tab-item" data-tab="social">  <div class="tab-icon-wrap">👥</div><span class="tab-label">Social</span></a>
+</nav>
+
+<div class="game-page">
+  <div class="mode-toggle" style="margin-bottom:20px;">
+    <button id="btn-onchain" class="mode-btn active" onclick="setPaymentMode('onchain')">⛓️ On-Chain</button>
+    <button id="btn-x402" class="mode-btn" onclick="setPaymentMode('x402')">⚡ x402 Mode</button>
+  </div>
+
+  <a href="gaming.html" class="back-btn">← Back to Games</a>
+
+  <div class="game-header">
+    <span class="game-header-icon">🪙</span>
+    <div class="game-header-title">Coin Flip</div>
+    <div class="game-header-sub">50/50 on Base</div>
+    <div class="game-header-rewards">
+      <span class="xp-badge">⚡ 150 XP</span>
+      <span style="color:var(--green);font-weight:700">🏆 +500 XP win</span>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="sb-item"><div class="sb-val" id="cf-w" style="color:var(--green)">0</div><div class="sb-lbl">Wins</div></div>
+    <div class="sb-item"><div class="sb-val" id="cf-l" style="color:var(--red)">0</div><div class="sb-lbl">Losses</div></div>
+    <div class="sb-item"><div class="sb-val" id="cf-s" style="color:var(--yellow)">0</div><div class="sb-lbl">Streak</div></div>
+  </div>
+
+  <!-- 3D Coin -->
+  <div class="coin-scene">
+    <div class="coin-3d" id="coin3d">
+      <div class="coin-face coin-heads">
+        <span class="coin-icon">🏛️</span>
+        <span class="coin-label">HEADS</span>
+      </div>
+      <div class="coin-face coin-tails">
+        <span class="coin-icon">⭐</span>
+        <span class="coin-label">TAILS</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-badge" id="result-badge"></div>
+
+  <div class="cf-choices">
+    <div class="cf-btn sel" id="cf-h" onclick="cfPick('heads')">
+      <span class="cb-icon">🏛️</span>
+      <span class="cb-name">HEADS</span>
+    </div>
+    <div class="cf-btn" id="cf-t" onclick="cfPick('tails')">
+      <span class="cb-icon">⭐</span>
+      <span class="cb-name">TAILS</span>
+    </div>
+  </div>
+
+  <button class="play-btn" id="cf-play" style="background:linear-gradient(135deg,#d4a017,#f5c518);color:#000;margin-bottom:10px" onclick="playCoinflip()">
+    🪙 Flip Heads · 0.00002 ETH
+  </button>
+  <button class="share-x-btn" onclick="shareX('Flipping coins on-chain at BaseCore! 🪙 Heads or tails on Base!')">𝕏 Share on X</button>
+</div>
+
+<script src="shared.js"></script>
+<script src="sfx.js"></script>
+<script>
+let cfSide = 'heads', cfW = 0, cfL = 0, cfStr = 0;
+
+function cfPick(s) {
+  cfSide = s;
+  document.getElementById('cf-h').classList.toggle('sel', s === 'heads');
+  document.getElementById('cf-t').classList.toggle('sel', s === 'tails');
+  document.getElementById('cf-play').textContent = `🪙 Flip ${s.charAt(0).toUpperCase()+s.slice(1)} · 0.00002 ETH`;
+  SFX.play('click');
+}
+
+async function playCoinflip() {
+  if (!requireWallet()) return;
+  const btn = document.getElementById('cf-play');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>';
+  document.getElementById('result-badge').textContent = '';
+
+  const rc = await sendTxWithFee('0.00002', 150, 'game');
+  if (!rc) { btn.disabled = false; btn.textContent = `🪙 Flip ${cfSide} · 0.00002 ETH`; return; }
+
+  // Sonucu önceden belirle
+  const result  = Math.random() < 0.5 ? 'heads' : 'tails';
+  const coin    = document.getElementById('coin3d');
+
+  // heads = 0° (çift), tails = 180° (tek)
+  const baseTurns = (4 + Math.floor(Math.random() * 4)) * 360;
+  const faceAngle = result === 'heads' ? 0 : 180;
+  const totalRot  = baseTurns + faceAngle;
+
+  coin.style.setProperty('--rot', totalRot + 'deg');
+  coin.style.setProperty('--dur', '1.6s');
+  coin.classList.add('coin-flipping');
+  SFX.play('flip');
+
+  await sleep(1600);
+  coin.classList.remove('coin-flipping');
+  coin.style.transform = `rotateY(${faceAngle}deg)`;
+
+  document.getElementById('result-badge').textContent = result === 'heads' ? '🏛️ HEADS' : '⭐ TAILS';
+  recordGamePlayed();
+
+  if (result === cfSide) {
+    cfW++; cfStr++;
+    addXP(500, null);
+    showWin(650, 'YOU WON!', result === 'heads' ? '🏛️' : '⭐');
+  } else {
+    cfL++; cfStr = 0;
+    showLose(`It was ${result.toUpperCase()}!`, 'Streak reset · Try again');
+  }
+
+  document.getElementById('cf-w').textContent = cfW;
+  document.getElementById('cf-l').textContent = cfL;
+  document.getElementById('cf-s').textContent = cfStr;
+  btn.disabled  = false;
+  btn.textContent = `🪙 Flip ${cfSide.charAt(0).toUpperCase()+cfSide.slice(1)} · 0.00002 ETH`;
+}
+
+function showWin(xp, title, emoji) {
+  document.getElementById('win-emoji').textContent = emoji||'🎉';
+  document.getElementById('win-title').textContent = title||'YOU WON!';
+  document.getElementById('win-xp').textContent    = '+'+xp.toLocaleString()+' XP';
+  document.getElementById('win-card').className    = 'win-card show';
+  document.getElementById('lose-card').className   = 'lose-card';
+  document.getElementById('win-burst').className   = 'win-burst show';
+  document.getElementById('win-overlay').style.pointerEvents = 'all';
+  spawnConfetti();
+  SFX.play('win');
+}
+function showLose(msg, sub) {
+  document.getElementById('lose-title').textContent = msg||'Better luck!';
+  document.getElementById('lose-sub').textContent   = sub||'Try again';
+  document.getElementById('lose-card').className    = 'lose-card show';
+  document.getElementById('win-card').className     = 'win-card';
+  document.getElementById('win-burst').className    = 'win-burst';
+  document.getElementById('win-overlay').style.pointerEvents = 'all';
+  SFX.play('lose');
+}
+function closeWin() {
+  document.getElementById('win-card').className  = 'win-card hide';
+  document.getElementById('lose-card').className = 'lose-card hide';
+  setTimeout(() => {
+    document.getElementById('win-overlay').style.pointerEvents = 'none';
+    document.getElementById('win-card').className  = 'win-card';
+    document.getElementById('lose-card').className = 'lose-card';
+  }, 300);
+}
+function spawnConfetti() {
+  const cols = ['#f5c518','#00e887','#0070f3','#ec4899','#8b5cf6'];
+  for (let i = 0; i < 50; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.cssText = `left:${Math.random()*100}%;background:${cols[~~(Math.random()*cols.length)]};--dur:${1.5+Math.random()}s;--delay:${Math.random()*.4}s;transform:rotate(${Math.random()*360}deg)`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2500);
+  }
+}
+function shareX(t) {
+  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(t+' ⬡ @BaseCoreFun #Base')}&url=${encodeURIComponent('https://basecore.fun')}`, '_blank');
+}
+
+initNav('gaming');
+</script>
+</body>
+</html>

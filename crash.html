@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Crash — BaseCore</title>
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="games.css">
+<style>
+.crash-display{
+  background:linear-gradient(135deg,#030b18,#050d20);
+  border:1px solid var(--border2);border-radius:18px;
+  height:220px;position:relative;overflow:hidden;margin-bottom:16px;
+}
+.crash-grid-bg{
+  position:absolute;inset:0;
+  background-image:linear-gradient(rgba(0,112,243,.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,112,243,.05) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+canvas#crash-canvas{position:absolute;inset:0;width:100%;height:100%;}
+.crash-mult{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  font-size:56px;font-weight:900;font-family:var(--mono);
+  color:var(--green);text-shadow:0 0 30px rgba(0,232,135,.4);
+  transition:color .15s;pointer-events:none;text-align:center;line-height:1;
+}
+.crash-mult.danger{color:var(--red);text-shadow:0 0 30px rgba(239,68,68,.5);}
+.crash-mult.crashed{font-size:32px;}
+.crash-rocket{
+  position:absolute;font-size:28px;
+  filter:drop-shadow(0 0 10px rgba(0,232,135,.6));
+  transition:left .1s linear, bottom .1s linear;
+  pointer-events:none;
+}
+.crash-trail{position:absolute;pointer-events:none;}
+
+.crash-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.crash-input{
+  background:var(--card2);border:1px solid var(--border);
+  border-radius:12px;padding:14px;color:var(--text);
+  font-family:var(--mono);font-size:16px;font-weight:700;
+  outline:none;text-align:center;width:100%;
+  transition:border-color .2s;
+}
+.crash-input:focus{border-color:var(--blue2);}
+.cashout-btn{
+  padding:14px;border-radius:12px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--green2),#059669);color:#fff;
+  font-family:var(--sans);font-size:14px;font-weight:800;
+  transition:all .2s;
+}
+.cashout-btn:disabled{opacity:.35;cursor:not-allowed;}
+.cashout-btn:not(:disabled):hover{transform:translateY(-2px);}
+
+.history-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.history-chip{
+  font-size:11px;font-weight:800;font-family:var(--mono);
+  padding:3px 10px;border-radius:20px;
+}
+.hc-low{background:rgba(239,68,68,.15);color:#f87171;}
+.hc-mid{background:rgba(245,197,24,.15);color:#fbbf24;}
+.hc-high{background:rgba(0,232,135,.15);color:#34d399;}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div><div class="bg-grid"></div>
+
+<div class="win-overlay" id="win-overlay">
+  <div class="win-burst" id="win-burst"></div>
+  <div class="win-card" id="win-card">
+    <span class="win-emoji" id="win-emoji">🚀</span>
+    <div class="win-title" id="win-title">CASHED OUT!</div>
+    <div class="win-xp" id="win-xp">+200 XP</div>
+    <div class="win-sub" id="win-sub"></div>
+    <button class="play-btn" style="background:linear-gradient(135deg,var(--green2),#059669);color:#fff;margin-top:16px;padding:12px" onclick="closeWin()">Play Again 🚀</button>
+  </div>
+  <div class="lose-card" id="lose-card">
+    <span class="lose-emoji">💥</span>
+    <div class="lose-title" id="lose-title">CRASHED!</div>
+    <div class="lose-sub" id="lose-sub">Cash out faster next time!</div>
+    <button class="play-btn" style="background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);margin-top:14px;padding:12px" onclick="closeWin()">Try Again</button>
+  </div>
+</div>
+
+<nav class="navbar">
+  <a href="index.html" class="nav-logo"><div class="nav-logo-icon">⬡</div><div class="nav-logo-text">Base<span>Core</span></div></a>
+  <div class="nav-right">
+    <div class="nav-xp" id="nav-xp" style="display:none"><span class="xp-icon">⚡</span><span id="nav-xp-val">0 XP</span></div>
+    <div class="nav-user-wrap" id="nav-user-wrap" style="display:none">
+      <div class="nav-addr" id="nav-addr" onclick="toggleUserMenu()"></div>
+      <div class="user-dropdown" id="user-dropdown"><button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Disconnect</button></div>
+    </div>
+    <button class="nav-connect" id="nav-connect-btn" onclick="openWalletModal()">Connect</button>
+  </div>
+</nav>
+
+<nav class="tab-bar">
+  <a href="gm.html"       class="tab-item" data-tab="gm">      <div class="tab-icon-wrap">🌅</div><span class="tab-label">GM/GN</span></a>
+  <a href="dex.html"      class="tab-item" data-tab="dex">     <div class="tab-icon-wrap">🔄</div><span class="tab-label">DEX</span></a>
+  <a href="gaming.html"   class="tab-item active" data-tab="gaming"><div class="tab-icon-wrap">🎮</div><span class="tab-label">Gaming</span></a>
+  <a href="wheel.html"    class="tab-item" data-tab="nft">      <div class="tab-icon-wrap">🎡</div><span class="tab-label">Wheel</span></a>
+  <a href="analysis.html" class="tab-item" data-tab="analysis"><div class="tab-icon-wrap">📊</div><span class="tab-label">Analysis</span></a>
+  <a href="deploy.html"   class="tab-item" data-tab="deploy">  <div class="tab-icon-wrap">🚀</div><span class="tab-label">Deploy</span></a>
+  <a href="social.html"   class="tab-item" data-tab="social">  <div class="tab-icon-wrap">👥</div><span class="tab-label">Social</span></a>
+</nav>
+
+<div class="game-page">
+  <div class="mode-toggle" style="margin-bottom:20px;">
+    <button id="btn-onchain" class="mode-btn active" onclick="setPaymentMode('onchain')">⛓️ On-Chain</button>
+    <button id="btn-x402" class="mode-btn" onclick="setPaymentMode('x402')">⚡ x402 Mode</button>
+  </div>
+  <a href="gaming.html" class="back-btn">← Back to Games</a>
+  <div class="game-header">
+    <span class="game-header-icon">🚀</span>
+    <div class="game-header-title">Crash</div>
+    <div class="game-header-sub">Cash out before it crashes!</div>
+    <div class="game-header-rewards"><span class="xp-badge">⚡ 200 XP</span><span style="color:var(--green);font-weight:700">🏆 up to 2000 XP</span></div>
+  </div>
+
+  <!-- Crash display -->
+  <div class="crash-display">
+    <div class="crash-grid-bg"></div>
+    <canvas id="crash-canvas"></canvas>
+    <div class="crash-mult" id="crash-mult">1.00x</div>
+    <div class="crash-rocket" id="crash-rocket" style="left:20px;bottom:20px;">🚀</div>
+  </div>
+
+  <!-- History -->
+  <div class="history-row" id="crash-history"></div>
+
+  <!-- Controls -->
+  <div class="crash-controls">
+    <input class="crash-input" id="crash-auto" type="number" placeholder="Auto cash-out at..." step="0.1" min="1.1" value="2.0"/>
+    <button class="cashout-btn" id="crash-cashout" onclick="crashCashout()" disabled>💰 Cash Out</button>
+  </div>
+
+  <button class="play-btn" id="crash-play" style="background:linear-gradient(135deg,var(--red),#b91c1c);color:#fff;margin-bottom:10px" onclick="playCrash()">
+    🚀 Start · 0.00002 ETH
+  </button>
+  <button class="share-x-btn" onclick="shareX('Playing Crash at BaseCore! 🚀 Cashing out before it crashes on Base!')">𝕏 Share on X</button>
+</div>
+
+<script src="shared.js"></script>
+<script src="sfx.js"></script>
+<script>
+let crashIv       = null;
+let crashMult     = 1.0;
+let crashRunning  = false;
+let crashCashedOut= false;
+let crashTarget   = 2.0;
+let crashPoints   = [];
+let crashHistory  = [];
+
+function genCrashTarget() {
+  // Gerçekçi crash dağılımı
+  const r = Math.random();
+  if      (r < 0.30) return 1.05 + Math.random() * 0.45;  // %30: 1.05-1.5x
+  else if (r < 0.55) return 1.5  + Math.random() * 1.5;   // %25: 1.5-3x
+  else if (r < 0.75) return 3.0  + Math.random() * 4.0;   // %20: 3-7x
+  else if (r < 0.90) return 7.0  + Math.random() * 8.0;   // %15: 7-15x
+  else               return 15.0 + Math.random() * 35.0;  // %10: 15-50x
+}
+
+function drawCrashGraph(crashed) {
+  const c   = document.getElementById('crash-canvas');
+  if (!c) return;
+  const W   = c.offsetWidth || 400;
+  const H   = c.offsetHeight || 220;
+  if (c.width !== W) c.width = W;
+  if (c.height !== H) c.height = H;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+  if (crashPoints.length < 2) return;
+
+  // Grafik alanı
+  const padL = 40, padB = 30, padR = 20, padT = 20;
+  const gW   = W - padL - padR;
+  const gH   = H - padT - padB;
+
+  // Scale
+  const maxX = crashPoints[crashPoints.length - 1].t;
+  const maxY = Math.max(crashMult * 1.1, 2);
+
+  function toCanvasX(t) { return padL + (t / maxX) * gW; }
+  function toCanvasY(m) { return H - padB - ((m - 1) / (maxY - 1)) * gH; }
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,.04)';
+  ctx.lineWidth   = 1;
+  for (let m = 1; m <= maxY; m += Math.ceil((maxY-1)/4)) {
+    const y = toCanvasY(m);
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.3)';
+    ctx.font      = '10px monospace';
+    ctx.fillText(m.toFixed(0) + 'x', 4, y + 4);
+  }
+
+  // Çizgi
+  ctx.beginPath();
+  ctx.moveTo(toCanvasX(crashPoints[0].t), toCanvasY(crashPoints[0].m));
+  for (const p of crashPoints) ctx.lineTo(toCanvasX(p.t), toCanvasY(p.m));
+
+  ctx.strokeStyle = crashed ? '#ef4444' : '#00e887';
+  ctx.lineWidth   = 3;
+  ctx.shadowColor = crashed ? 'rgba(239,68,68,.5)' : 'rgba(0,232,135,.4)';
+  ctx.shadowBlur  = 8;
+  ctx.stroke();
+  ctx.shadowBlur  = 0;
+
+  // Alan dolgusu
+  ctx.lineTo(toCanvasX(crashPoints[crashPoints.length-1].t), H - padB);
+  ctx.lineTo(toCanvasX(crashPoints[0].t), H - padB);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, padT, 0, H - padB);
+  grad.addColorStop(0, crashed ? 'rgba(239,68,68,.25)' : 'rgba(0,232,135,.18)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.fill();
+}
+
+function updateRocket(pct, crashed) {
+  const rocket = document.getElementById('crash-rocket');
+  const c      = document.getElementById('crash-canvas');
+  if (!rocket || !c) return;
+  const W = c.offsetWidth || 400;
+  const H = c.offsetHeight || 220;
+  const x = 30 + pct * (W - 80);
+  const y = H - 40 - pct * (H - 80);
+  rocket.style.left   = x + 'px';
+  rocket.style.bottom = (H - y - 28) + 'px';
+  rocket.textContent  = crashed ? '💥' : '🚀';
+}
+
+function addHistory(mult, cashedOut) {
+  crashHistory.unshift({ mult: mult.toFixed(2), cashedOut });
+  if (crashHistory.length > 8) crashHistory.pop();
+  const el = document.getElementById('crash-history');
+  el.innerHTML = crashHistory.map(h => {
+    const cls = h.cashedOut ? 'hc-high' :
+                parseFloat(h.mult) < 2 ? 'hc-low' :
+                parseFloat(h.mult) < 5 ? 'hc-mid' : 'hc-high';
+    return `<div class="history-chip ${cls}">${h.mult}x</div>`;
+  }).join('');
+}
+
+async function playCrash() {
+  if (!requireWallet()) return;
+  const btn = document.getElementById('crash-play');
+  const co  = document.getElementById('crash-cashout');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+
+  const rc = await sendTxWithFee('0.00002', 200, 'game');
+  if (!rc) { btn.disabled = false; btn.textContent = '🚀 Start · 0.00002 ETH'; return; }
+
+  crashTarget    = genCrashTarget();
+  crashRunning   = true;
+  crashCashedOut = false;
+  crashMult      = 1.0;
+  crashPoints    = [];
+
+  co.disabled       = false;
+  btn.style.display = 'none';
+
+  const multEl  = document.getElementById('crash-mult');
+  const autoVal = parseFloat(document.getElementById('crash-auto').value);
+  let elapsed   = 0;
+
+  SFX.play('crashStart');
+
+  crashIv = setInterval(() => {
+    elapsed    += 0.1;
+    crashMult   = Math.pow(Math.E, elapsed * 0.18);
+
+    const pct   = Math.min(crashMult / (crashTarget * 1.1), 0.95);
+    crashPoints.push({ t: elapsed, m: crashMult });
+
+    multEl.textContent = crashMult.toFixed(2) + 'x';
+    multEl.className   = 'crash-mult' + (crashMult > crashTarget * 0.75 ? ' danger' : '');
+
+    drawCrashGraph(false);
+    updateRocket(pct, false);
+
+    // Auto cashout — tam girilen değerde
+    if (!isNaN(autoVal) && autoVal >= 1.1 && crashMult >= autoVal && !crashCashedOut) {
+      crashCashout();
+      return;
+    }
+
+    if (crashMult >= crashTarget) {
+      clearInterval(crashIv);
+      crashRunning = false;
+      multEl.textContent = `💥 ${crashTarget.toFixed(2)}x`;
+      multEl.className   = 'crash-mult crashed danger';
+      co.disabled        = true;
+      btn.style.display  = 'flex';
+      btn.disabled       = false;
+      btn.textContent    = '🚀 Start · 0.00002 ETH';
+      drawCrashGraph(true);
+      updateRocket(1, true);
+      SFX.play('crashBoom');
+      addHistory(crashTarget, false);
+      if (!crashCashedOut) showLose(`Crashed at ${crashTarget.toFixed(2)}x!`, 'Cash out faster next time!');
+    }
+  }, 100);
+}
+
+function crashCashout() {
+  if (!crashRunning || crashCashedOut) return;
+  crashCashedOut = true;
+  clearInterval(crashIv);
+  crashRunning   = false;
+  const co  = document.getElementById('crash-cashout');
+  const btn = document.getElementById('crash-play');
+  co.disabled       = true;
+  btn.style.display = 'flex';
+  btn.disabled      = false;
+  btn.textContent   = '🚀 Start · 0.00002 ETH';
+
+  const xp = Math.min(2000, Math.round(200 * crashMult));
+  addXP(xp, null);
+  SFX.play('cashout');
+  addHistory(crashMult, true);
+  showWin(xp, `Cashed out at ${crashMult.toFixed(2)}x! 🎯`, '🚀');
+}
+
+function showWin(xp,title,emoji){
+  document.getElementById('win-emoji').textContent=emoji||'🚀';
+  document.getElementById('win-title').textContent=title;
+  document.getElementById('win-xp').textContent='+'+xp.toLocaleString()+' XP';
+  document.getElementById('win-card').className='win-card show';
+  document.getElementById('lose-card').className='lose-card';
+  document.getElementById('win-burst').className='win-burst show';
+  document.getElementById('win-overlay').style.pointerEvents='all';
+  spawnConfetti();SFX.play('win');
+}
+function showLose(msg,sub){
+  document.getElementById('lose-title').textContent=msg;
+  document.getElementById('lose-sub').textContent=sub;
+  document.getElementById('lose-card').className='lose-card show';
+  document.getElementById('win-card').className='win-card';
+  document.getElementById('win-burst').className='win-burst';
+  document.getElementById('win-overlay').style.pointerEvents='all';
+  SFX.play('lose');
+}
+function closeWin(){
+  document.getElementById('win-card').className='win-card hide';
+  document.getElementById('lose-card').className='lose-card hide';
+  setTimeout(()=>{document.getElementById('win-overlay').style.pointerEvents='none';document.getElementById('win-card').className='win-card';document.getElementById('lose-card').className='lose-card';},300);
+}
+function spawnConfetti(){const cols=['#f5c518','#00e887','#0070f3','#ec4899','#8b5cf6'];for(let i=0;i<50;i++){const el=document.createElement('div');el.className='confetti-piece';el.style.cssText=`left:${Math.random()*100}%;background:${cols[~~(Math.random()*cols.length)]};--dur:${1.5+Math.random()}s;--delay:${Math.random()*.4}s;transform:rotate(${Math.random()*360}deg)`;document.body.appendChild(el);setTimeout(()=>el.remove(),2500);}}
+function shareX(t){window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(t+' ⬡ @BaseCoreFun #Base')}&url=${encodeURIComponent('https://basecore.fun')}`,'_blank');}
+
+// Canvas boyutu ayarla
+window.addEventListener('resize', () => {
+  const c = document.getElementById('crash-canvas');
+  if (c) { c.width = c.offsetWidth; c.height = c.offsetHeight; }
+});
+
+initNav('gaming');
+</script>
+</body>
+</html>

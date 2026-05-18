@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Plinko — BaseCore</title>
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="games.css">
+<style>
+.plinko-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:16px;}
+canvas#plinko{display:block;border-radius:16px;box-shadow:0 0 40px rgba(0,112,243,.2),0 8px 32px rgba(0,0,0,.5);}
+.plinko-buckets{display:flex;gap:3px;width:300px;margin-top:0;}
+.pb{flex:1;text-align:center;padding:8px 2px;border-radius:0 0 8px 8px;font-family:var(--mono);font-size:10px;font-weight:800;transition:all .3s;}
+.pb.hit{transform:scaleY(1.2);filter:brightness(1.8) drop-shadow(0 0 8px currentColor);}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div><div class="bg-grid"></div>
+
+<div class="win-overlay" id="win-overlay">
+  <div class="win-burst" id="win-burst"></div>
+  <div class="win-card" id="win-card">
+    <span class="win-emoji" id="win-emoji">🔵</span>
+    <div class="win-title" id="win-title">WIN!</div>
+    <div class="win-xp" id="win-xp">+100 XP</div>
+    <div class="win-sub" id="win-sub"></div>
+    <button class="play-btn" style="background:linear-gradient(135deg,var(--green2),#059669);color:#fff;margin-top:16px;padding:12px" onclick="closeWin()">Drop Again! 🔵</button>
+  </div>
+  <div class="lose-card" id="lose-card">
+    <span class="lose-emoji">😔</span>
+    <div class="lose-title" id="lose-title">No win</div>
+    <div class="lose-sub">Try again</div>
+    <button class="play-btn" style="background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);margin-top:14px;padding:12px" onclick="closeWin()">Try Again</button>
+  </div>
+</div>
+
+<nav class="navbar">
+  <a href="index.html" class="nav-logo"><div class="nav-logo-icon">⬡</div><div class="nav-logo-text">Base<span>Core</span></div></a>
+  <div class="nav-right">
+    <div class="nav-xp" id="nav-xp" style="display:none"><span class="xp-icon">⚡</span><span id="nav-xp-val">0 XP</span></div>
+    <div class="nav-user-wrap" id="nav-user-wrap" style="display:none">
+      <div class="nav-addr" id="nav-addr" onclick="toggleUserMenu()"></div>
+      <div class="user-dropdown" id="user-dropdown"><button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Disconnect</button></div>
+    </div>
+    <button class="nav-connect" id="nav-connect-btn" onclick="openWalletModal()">Connect</button>
+  </div>
+</nav>
+
+<nav class="tab-bar">
+  <a href="gm.html"       class="tab-item" data-tab="gm">      <div class="tab-icon-wrap">🌅</div><span class="tab-label">GM/GN</span></a>
+  <a href="dex.html"      class="tab-item" data-tab="dex">     <div class="tab-icon-wrap">🔄</div><span class="tab-label">DEX</span></a>
+  <a href="gaming.html"   class="tab-item active" data-tab="gaming"><div class="tab-icon-wrap">🎮</div><span class="tab-label">Gaming</span></a>
+  <a href="wheel.html"    class="tab-item" data-tab="nft">      <div class="tab-icon-wrap">🎡</div><span class="tab-label">Wheel</span></a>
+  <a href="analysis.html" class="tab-item" data-tab="analysis"><div class="tab-icon-wrap">📊</div><span class="tab-label">Analysis</span></a>
+  <a href="deploy.html"   class="tab-item" data-tab="deploy">  <div class="tab-icon-wrap">🚀</div><span class="tab-label">Deploy</span></a>
+  <a href="social.html"   class="tab-item" data-tab="social">  <div class="tab-icon-wrap">👥</div><span class="tab-label">Social</span></a>
+</nav>
+
+<div class="game-page">
+  <div class="mode-toggle" style="margin-bottom:20px;">
+    <button id="btn-onchain" class="mode-btn active" onclick="setPaymentMode('onchain')">⛓️ On-Chain</button>
+    <button id="btn-x402" class="mode-btn" onclick="setPaymentMode('x402')">⚡ x402 Mode</button>
+  </div>
+  <a href="gaming.html" class="back-btn">← Back to Games</a>
+  <div class="game-header">
+    <span class="game-header-icon">🔵</span>
+    <div class="game-header-title">Plinko</div>
+    <div class="game-header-sub">Drop the ball · Real physics on Base</div>
+    <div class="game-header-rewards"><span class="xp-badge">⚡ 100 XP</span><span style="color:var(--yellow);font-weight:700">🏆 MEGA 5K</span></div>
+  </div>
+
+  <div class="plinko-wrap">
+    <canvas id="plinko" width="300" height="320"></canvas>
+    <div class="plinko-buckets" id="plinko-buckets"></div>
+  </div>
+
+  <button class="play-btn" id="plinko-play" style="background:linear-gradient(135deg,var(--orange),#c2410c);color:#fff;margin-bottom:10px" onclick="playPlinko()">
+    🔵 Drop Ball · 0.00002 ETH
+  </button>
+  <button class="share-x-btn" onclick="shareX('Playing Plinko at BaseCore! 🔵 Real physics on Base!')">𝕏 Share on X</button>
+</div>
+
+<script src="shared.js"></script>
+<script src="sfx.js"></script>
+<script>
+const W = 300, H = 320;
+const ROWS   = 9;
+const PIN_R  = 5;
+const BALL_R = 8;
+const BUCKET_H = 36;
+const BUCKETS = ['3.5K','7K','MEGA','7K','3.5K'];
+const BUCKET_XP= [3500,7000,5000,7000,3500];
+const BUCKET_C = ['#2563eb','#059669','#d97706','#059669','#2563eb'];
+let pins = [], pCtx = null, dropping = false;
+
+function initPlinko() {
+  const c = document.getElementById('plinko');
+  if (!c) return;
+  pCtx = c.getContext('2d');
+  pins = [];
+  for (let row = 0; row < ROWS; row++) {
+    const cols   = row + 3;
+    const xStart = W / 2 - (cols - 1) * 24;
+    const y      = 28 + row * 30;
+    for (let col = 0; col < cols; col++) {
+      pins.push({ x: xStart + col * 48, y });
+    }
+  }
+  // Buckets
+  const bEl = document.getElementById('plinko-buckets');
+  if (bEl) {
+    bEl.innerHTML = BUCKETS.map((b,i) => `
+      <div class="pb" id="pb-${i}" style="background:${BUCKET_C[i]}22;color:${BUCKET_C[i]};border:1px solid ${BUCKET_C[i]}55">${b}</div>
+    `).join('');
+  }
+  drawScene(null, null);
+}
+
+function drawScene(bx, by) {
+  if (!pCtx) return;
+  const ctx = pCtx;
+  ctx.clearRect(0, 0, W, H);
+
+  // Arka plan
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#060e1a');
+  bg.addColorStop(1, '#040a12');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Yan duvarlar
+  ctx.fillStyle = 'rgba(37,99,235,.12)';
+  ctx.fillRect(0, 0, 10, H - BUCKET_H);
+  ctx.fillRect(W - 10, 0, 10, H - BUCKET_H);
+
+  // Bucket bölücüler
+  const bW = W / BUCKETS.length;
+  for (let i = 1; i < BUCKETS.length; i++) {
+    ctx.fillStyle = 'rgba(255,255,255,.08)';
+    ctx.fillRect(i * bW - 1, H - BUCKET_H, 2, BUCKET_H);
+  }
+
+  // Pinler
+  pins.forEach(p => {
+    // Dış halka parlaması
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, PIN_R + 2, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(96,165,250,.08)';
+    ctx.fill();
+
+    // Pin
+    const g = ctx.createRadialGradient(p.x - 1.5, p.y - 1.5, 0, p.x, p.y, PIN_R);
+    g.addColorStop(0, '#93c5fd');
+    g.addColorStop(1, '#1d4ed8');
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, PIN_R, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(147,197,253,.4)';
+    ctx.lineWidth   = 1;
+    ctx.stroke();
+  });
+
+  // Top
+  if (bx !== null && by !== null) {
+    // Iz (glow trail)
+    const tg = ctx.createRadialGradient(bx, by + 6, 0, bx, by + 6, BALL_R * 2.5);
+    tg.addColorStop(0, 'rgba(59,130,246,.3)');
+    tg.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(bx, by + 6, BALL_R * 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = tg;
+    ctx.fill();
+
+    // Top
+    const bg2 = ctx.createRadialGradient(bx - BALL_R * 0.3, by - BALL_R * 0.3, 0, bx, by, BALL_R);
+    bg2.addColorStop(0, '#93c5fd');
+    bg2.addColorStop(0.5, '#2563eb');
+    bg2.addColorStop(1, '#1e3a8a');
+    ctx.beginPath();
+    ctx.arc(bx, by, BALL_R, 0, Math.PI * 2);
+    ctx.fillStyle = bg2;
+    ctx.shadowColor = '#3b82f6';
+    ctx.shadowBlur  = 24;
+    ctx.fill();
+    ctx.shadowBlur  = 0;
+
+    // Parlama
+    ctx.beginPath();
+    ctx.arc(bx - BALL_R * 0.3, by - BALL_R * 0.35, BALL_R * 0.38, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,.55)';
+    ctx.fill();
+  }
+}
+
+async function playPlinko() {
+  if (!requireWallet()) return;
+  if (dropping) return;
+  const btn = document.getElementById('plinko-play');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+
+  const rc = await sendTxWithFee('0.00002', 100, 'game');
+  if (!rc) { btn.disabled = false; btn.textContent = '🔵 Drop Ball · 0.00002 ETH'; return; }
+
+  dropping = true;
+
+  // Gerçek fizik simülasyonu
+  let bx  = W / 2 + (Math.random() - 0.5) * 20;
+  let by  = 5;
+  let vx  = (Math.random() - 0.5) * 1.0;
+  let vy  = 0;
+  const gravity  = 0.35;
+  const friction = 0.985;
+  const restitution = 0.4;
+
+  // Sonuç bucket'ı önceden belirle
+  const resultBucket = Math.floor(Math.random() * BUCKETS.length);
+
+  await new Promise(resolve => {
+    let frame = 0;
+    const maxFrames = 400;
+
+    function step() {
+      vy += gravity;
+      vx *= friction;
+      bx += vx;
+      by += vy;
+
+      // Pin çarpışması — gerçek fizik
+      for (const p of pins) {
+        const dx = bx - p.x;
+        const dy = by - p.y;
+        const d  = Math.sqrt(dx * dx + dy * dy);
+        if (d < PIN_R + BALL_R + 1) {
+          const nx    = dx / d;
+          const ny    = dy / d;
+          const overlap = PIN_R + BALL_R + 1 - d;
+          bx += nx * overlap * 0.5;
+          by += ny * overlap * 0.5;
+          const dot = vx * nx + vy * ny;
+          vx = (vx - 2 * dot * nx) * restitution;
+          vy = (vy - 2 * dot * ny) * restitution;
+          // Rastgele sapma (gerçekçilik için)
+          vx += (Math.random() - 0.5) * 1.8;
+          SFX.play('plink');
+        }
+      }
+
+      // Duvar sınırları
+      if (bx < BALL_R + 10)        { bx = BALL_R + 10;        vx = Math.abs(vx) * restitution; }
+      if (bx > W - BALL_R - 10)    { bx = W - BALL_R - 10;    vx = -Math.abs(vx) * restitution; }
+
+      drawScene(bx, by);
+
+      // Bucket alanına yaklaştığında yönlendir
+      const bucketTop = H - BUCKET_H - BALL_R;
+      if (by >= bucketTop * 0.85 && frame > 50) {
+        const targetX = (resultBucket + 0.5) * (W / BUCKETS.length);
+        vx += (targetX - bx) * 0.025;
+      }
+
+      // Bucket'a düşünce bitir
+      if (by >= H - BUCKET_H - BALL_R || frame >= maxFrames) {
+        const finalX = (resultBucket + 0.5) * (W / BUCKETS.length);
+        drawScene(finalX, H - BUCKET_H - BALL_R);
+        resolve();
+        return;
+      }
+
+      frame++;
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  });
+
+  // Sonuç
+  const xp = BUCKET_XP[resultBucket];
+  document.querySelectorAll('.pb').forEach((el, i) => el.classList.toggle('hit', i === resultBucket));
+  addXP(xp, null);
+  showWin(xp + 100, xp >= 5000 ? 'MEGA WIN! 🎊' : 'WIN!', xp >= 5000 ? '💫' : '🔵');
+
+  setTimeout(() => {
+    document.querySelectorAll('.pb').forEach(el => el.classList.remove('hit'));
+    drawScene(null, null);
+  }, 1500);
+
+  dropping = false;
+  btn.disabled = false;
+  btn.textContent = '🔵 Drop Ball · 0.00002 ETH';
+}
+
+function showWin(xp,title,emoji){
+  document.getElementById('win-emoji').textContent=emoji||'🔵';
+  document.getElementById('win-title').textContent=title;
+  document.getElementById('win-xp').textContent='+'+xp.toLocaleString()+' XP';
+  document.getElementById('win-card').className='win-card show';
+  document.getElementById('lose-card').className='lose-card';
+  document.getElementById('win-burst').className='win-burst show';
+  document.getElementById('win-overlay').style.pointerEvents='all';
+  spawnConfetti();SFX.play(xp>=5000?'bigwin':'win');
+}
+function closeWin(){
+  document.getElementById('win-card').className='win-card hide';
+  document.getElementById('lose-card').className='lose-card hide';
+  setTimeout(()=>{document.getElementById('win-overlay').style.pointerEvents='none';document.getElementById('win-card').className='win-card';document.getElementById('lose-card').className='lose-card';},300);
+}
+function spawnConfetti(){const cols=['#f5c518','#00e887','#0070f3','#ec4899','#8b5cf6'];for(let i=0;i<50;i++){const el=document.createElement('div');el.className='confetti-piece';el.style.cssText=`left:${Math.random()*100}%;background:${cols[~~(Math.random()*cols.length)]};--dur:${1.5+Math.random()}s;--delay:${Math.random()*.4}s;transform:rotate(${Math.random()*360}deg)`;document.body.appendChild(el);setTimeout(()=>el.remove(),2500);}}
+function shareX(t){window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(t+' ⬡ @BaseCoreFun #Base')}&url=${encodeURIComponent('https://basecore.fun')}`,'_blank');}
+
+initNav('gaming');
+initPlinko();
+</script>
+</body>
+</html>

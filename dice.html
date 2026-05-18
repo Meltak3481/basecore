@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Dice Roll — BaseCore</title>
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="games.css">
+<style>
+.dice-stage{display:flex;justify-content:center;align-items:center;height:160px;margin-bottom:20px;perspective:600px;}
+.dice-3d{width:110px;height:110px;transform-style:preserve-3d;transform:rotateX(-25deg) rotateY(25deg);transition:transform 0.1s;}
+.dice-face{position:absolute;width:110px;height:110px;border-radius:18px;display:grid;place-items:center;backface-visibility:hidden;}
+.face-front {transform:translateZ(55px);}
+.face-back  {transform:rotateY(180deg) translateZ(55px);}
+.face-right {transform:rotateY(90deg)  translateZ(55px);}
+.face-left  {transform:rotateY(-90deg) translateZ(55px);}
+.face-top   {transform:rotateX(90deg)  translateZ(55px);}
+.face-bottom{transform:rotateX(-90deg) translateZ(55px);}
+.dice-face canvas{border-radius:14px;}
+@keyframes diceRollAnim{
+  0%  {transform:rotateX(-25deg) rotateY(25deg);}
+  20% {transform:rotateX(200deg) rotateY(100deg) scale(1.15);}
+  40% {transform:rotateX(400deg) rotateY(-80deg) scale(.9);}
+  60% {transform:rotateX(600deg) rotateY(200deg) scale(1.05);}
+  80% {transform:rotateX(720deg) rotateY(300deg) scale(.95);}
+  100%{transform:rotateX(var(--rx)) rotateY(var(--ry));}
+}
+.dice-rolling{animation:diceRollAnim 1.2s cubic-bezier(.4,0,.2,1) forwards;}
+
+.dice-picks{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+.dp-btn{aspect-ratio:1;border-radius:14px;border:2px solid var(--border);background:var(--card2);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;transition:all .2s;padding:10px;}
+.dp-btn:hover{border-color:var(--border2);transform:scale(1.05);}
+.dp-btn.sel{border-color:var(--green);background:rgba(0,232,135,.1);}
+.dp-btn span{font-size:12px;font-weight:800;font-family:var(--mono);color:var(--text2);}
+.result-num{text-align:center;font-size:56px;font-weight:900;font-family:var(--mono);min-height:70px;display:flex;align-items:center;justify-content:center;color:var(--cyan);margin:8px 0;}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div><div class="bg-grid"></div>
+
+<div class="win-overlay" id="win-overlay">
+  <div class="win-burst" id="win-burst"></div>
+  <div class="win-card" id="win-card">
+    <span class="win-emoji" id="win-emoji">🎲</span>
+    <div class="win-title" id="win-title">CORRECT!</div>
+    <div class="win-xp" id="win-xp">+1500 XP</div>
+    <div class="win-sub" id="win-sub"></div>
+    <button class="play-btn" style="background:linear-gradient(135deg,var(--green2),#059669);color:#fff;margin-top:16px;padding:12px" onclick="closeWin()">Awesome! 🔥</button>
+  </div>
+  <div class="lose-card" id="lose-card">
+    <span class="lose-emoji">😔</span>
+    <div class="lose-title" id="lose-title">Wrong number!</div>
+    <div class="lose-sub" id="lose-sub">Try again</div>
+    <button class="play-btn" style="background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);margin-top:14px;padding:12px" onclick="closeWin()">Try Again</button>
+  </div>
+</div>
+
+<nav class="navbar">
+  <a href="index.html" class="nav-logo"><div class="nav-logo-icon">⬡</div><div class="nav-logo-text">Base<span>Core</span></div></a>
+  <div class="nav-right">
+    <div class="nav-xp" id="nav-xp" style="display:none"><span class="xp-icon">⚡</span><span id="nav-xp-val">0 XP</span></div>
+    <div class="nav-user-wrap" id="nav-user-wrap" style="display:none">
+      <div class="nav-addr" id="nav-addr" onclick="toggleUserMenu()"></div>
+      <div class="user-dropdown" id="user-dropdown"><button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Disconnect</button></div>
+    </div>
+    <button class="nav-connect" id="nav-connect-btn" onclick="openWalletModal()">Connect</button>
+  </div>
+</nav>
+
+<nav class="tab-bar">
+  <a href="gm.html"       class="tab-item" data-tab="gm">      <div class="tab-icon-wrap">🌅</div><span class="tab-label">GM/GN</span></a>
+  <a href="dex.html"      class="tab-item" data-tab="dex">     <div class="tab-icon-wrap">🔄</div><span class="tab-label">DEX</span></a>
+  <a href="gaming.html"   class="tab-item active" data-tab="gaming"><div class="tab-icon-wrap">🎮</div><span class="tab-label">Gaming</span></a>
+  <a href="wheel.html"    class="tab-item" data-tab="nft">      <div class="tab-icon-wrap">🎡</div><span class="tab-label">Wheel</span></a>
+  <a href="analysis.html" class="tab-item" data-tab="analysis"><div class="tab-icon-wrap">📊</div><span class="tab-label">Analysis</span></a>
+  <a href="deploy.html"   class="tab-item" data-tab="deploy">  <div class="tab-icon-wrap">🚀</div><span class="tab-label">Deploy</span></a>
+  <a href="social.html"   class="tab-item" data-tab="social">  <div class="tab-icon-wrap">👥</div><span class="tab-label">Social</span></a>
+</nav>
+
+<div class="game-page">
+  <div class="mode-toggle" style="margin-bottom:20px;">
+    <button id="btn-onchain" class="mode-btn active" onclick="setPaymentMode('onchain')">⛓️ On-Chain</button>
+    <button id="btn-x402" class="mode-btn" onclick="setPaymentMode('x402')">⚡ x402 Mode</button>
+  </div>
+  <a href="gaming.html" class="back-btn">← Back to Games</a>
+  <div class="game-header">
+    <span class="game-header-icon">🎲</span>
+    <div class="game-header-title">Dice Roll</div>
+    <div class="game-header-sub">1 in 6 · Pick the right number</div>
+    <div class="game-header-rewards"><span class="xp-badge">⚡ 150 XP</span><span style="color:var(--green);font-weight:700">🏆 +1500 XP win</span></div>
+  </div>
+
+  <!-- 3D Dice -->
+  <div class="dice-stage">
+    <div class="dice-3d" id="dice3d">
+      <div class="dice-face face-front" ><canvas id="df-front"  width="110" height="110"></canvas></div>
+      <div class="dice-face face-back"  ><canvas id="df-back"   width="110" height="110"></canvas></div>
+      <div class="dice-face face-right" ><canvas id="df-right"  width="110" height="110"></canvas></div>
+      <div class="dice-face face-left"  ><canvas id="df-left"   width="110" height="110"></canvas></div>
+      <div class="dice-face face-top"   ><canvas id="df-top"    width="110" height="110"></canvas></div>
+      <div class="dice-face face-bottom"><canvas id="df-bottom" width="110" height="110"></canvas></div>
+    </div>
+  </div>
+
+  <p style="text-align:center;font-size:14px;color:var(--text2);margin-bottom:14px;">Pick your number</p>
+  <div class="dice-picks" id="dice-picks"></div>
+
+  <button class="play-btn" id="dice-play" style="background:linear-gradient(135deg,var(--green2),#059669);color:#fff;margin-bottom:10px" onclick="playDice()">
+    🎲 Roll for 1 · 0.00002 ETH
+  </button>
+  <button class="share-x-btn" onclick="shareX('Rolling dice on-chain at BaseCore! 🎲 1 in 6 chance!')">𝕏 Share on X</button>
+</div>
+
+<script src="shared.js"></script>
+<script src="sfx.js"></script>
+<script>
+let dicePick = 1;
+
+// Zar nokta pozisyonları
+const DOTS = {
+  1:[[.5,.5]],
+  2:[[.25,.25],[.75,.75]],
+  3:[[.25,.25],[.5,.5],[.75,.75]],
+  4:[[.25,.25],[.75,.25],[.25,.75],[.75,.75]],
+  5:[[.25,.25],[.75,.25],[.5,.5],[.25,.75],[.75,.75]],
+  6:[[.25,.22],[.75,.22],[.25,.5],[.75,.5],[.25,.78],[.75,.78]],
+};
+
+// Standard zar yüz düzeni (karşılıklı = 7)
+// Front=1 Back=6 Right=3 Left=4 Top=2 Bottom=5
+const FACE_VALS = { front:1, back:6, right:3, left:4, top:2, bottom:5 };
+
+function drawDiceFace(canvasId, val, color='#f1f5f9') {
+  const c   = document.getElementById(canvasId);
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const W   = c.width, H = c.height;
+  const pad = W * 0.1, r = W * 0.12;
+  const S   = W - pad * 2;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Yüz arka planı
+  const bg = ctx.createLinearGradient(pad, pad, pad+S, pad+S);
+  bg.addColorStop(0, color === '#f1f5f9' ? '#ffffff' : lighten(color, 30));
+  bg.addColorStop(1, color);
+  roundRect(ctx, pad, pad, S, S, r);
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,.18)';
+  ctx.lineWidth   = 2;
+  ctx.stroke();
+
+  // 3D kenar efekti
+  ctx.globalAlpha = 0.12;
+  roundRect(ctx, pad+2, pad+2, S-4, S-4, r-1);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // Noktalar
+  const dots = DOTS[val] || DOTS[1];
+  const dotR  = W * 0.07;
+  dots.forEach(([dx, dy]) => {
+    const cx = pad + dx * S, cy = pad + dy * S;
+    // Gölge
+    ctx.beginPath(); ctx.arc(cx+1.5, cy+1.5, dotR, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fill();
+    // Dot
+    const dg = ctx.createRadialGradient(cx-dotR*.3, cy-dotR*.3, 0, cx, cy, dotR);
+    dg.addColorStop(0, '#475569');
+    dg.addColorStop(1, '#0f172a');
+    ctx.beginPath(); ctx.arc(cx, cy, dotR, 0, Math.PI*2);
+    ctx.fillStyle = dg; ctx.fill();
+  });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y); ctx.arcTo(x+w, y, x+w, y+r, r);
+  ctx.lineTo(x+w, y+h-r); ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
+  ctx.lineTo(x+r, y+h); ctx.arcTo(x, y+h, x, y+h-r, r);
+  ctx.lineTo(x, y+r); ctx.arcTo(x, y, x+r, y, r);
+  ctx.closePath();
+}
+
+function lighten(hex, amt) {
+  try {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return `rgb(${Math.min(255,r+amt)},${Math.min(255,g+amt)},${Math.min(255,b+amt)})`;
+  } catch { return hex; }
+}
+
+function initDice() {
+  // Tüm yüzleri çiz
+  drawDiceFace('df-front',  FACE_VALS.front);
+  drawDiceFace('df-back',   FACE_VALS.back);
+  drawDiceFace('df-right',  FACE_VALS.right);
+  drawDiceFace('df-left',   FACE_VALS.left);
+  drawDiceFace('df-top',    FACE_VALS.top);
+  drawDiceFace('df-bottom', FACE_VALS.bottom);
+
+  // Seçim butonları
+  const picks = document.getElementById('dice-picks');
+  picks.innerHTML = '';
+  for (let v = 1; v <= 6; v++) {
+    const btn = document.createElement('div');
+    btn.className = 'dp-btn' + (v === dicePick ? ' sel' : '');
+    btn.onclick   = () => pickDice(v);
+
+    const mini = document.createElement('canvas');
+    mini.width  = 56; mini.height = 56;
+    mini.id     = 'pick-canvas-' + v;
+    drawDiceFace('pick-canvas-' + v + '_tmp', v); // geçici
+    // Direkt canvas'a çiz
+    const mctx = mini.getContext('2d');
+    const W = 56, pad = W*.1, r = W*.12, S = W-pad*2;
+    mctx.clearRect(0,0,W,W);
+    const bg = mctx.createLinearGradient(pad,pad,pad+S,pad+S);
+    bg.addColorStop(0,'#ffffff'); bg.addColorStop(1,'#f1f5f9');
+    roundRect(mctx,pad,pad,S,S,r); mctx.fillStyle=bg; mctx.fill();
+    mctx.strokeStyle='rgba(0,0,0,.15)'; mctx.lineWidth=1.5; mctx.stroke();
+    const dots2 = DOTS[v]||DOTS[1];
+    dots2.forEach(([dx,dy])=>{
+      const cx=pad+dx*S,cy=pad+dy*S,dotR=W*.065;
+      mctx.beginPath();mctx.arc(cx,cy,dotR,0,Math.PI*2);
+      mctx.fillStyle='#1e293b';mctx.fill();
+    });
+
+    const lbl = document.createElement('span');
+    lbl.textContent = v;
+
+    btn.appendChild(mini);
+    btn.appendChild(lbl);
+    picks.appendChild(btn);
+  }
+}
+
+function pickDice(v) {
+  dicePick = v;
+  document.getElementById('dice-play').textContent = `🎲 Roll for ${v} · 0.00002 ETH`;
+  document.querySelectorAll('.dp-btn').forEach((b, i) => b.classList.toggle('sel', i+1 === v));
+  SFX.play('click');
+}
+
+// 3D zar yüz rotasyonları (hangi yüz öne gelir)
+const FACE_ROTATIONS = {
+  1: 'rotateX(-25deg) rotateY(25deg)',   // front
+  6: 'rotateX(-25deg) rotateY(-155deg)', // back
+  3: 'rotateX(-25deg) rotateY(-65deg)',  // right
+  4: 'rotateX(-25deg) rotateY(115deg)',  // left
+  2: 'rotateX(-115deg) rotateY(25deg)', // top
+  5: 'rotateX(65deg) rotateY(25deg)',   // bottom
+};
+
+async function playDice() {
+  if (!requireWallet()) return;
+  const btn = document.getElementById('dice-play');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+
+  const rc = await sendTxWithFee('0.00002', 150, 'game');
+  if (!rc) { btn.disabled = false; btn.textContent = `🎲 Roll for ${dicePick} · 0.00002 ETH`; return; }
+
+  const result = 1 + Math.floor(Math.random() * 6);
+  const dice3d = document.getElementById('dice3d');
+
+  // Intermediate rolls (hızlı görsel)
+  SFX.play('dice');
+  for (let i = 0; i < 5; i++) {
+    const tmp = 1 + Math.floor(Math.random() * 6);
+    dice3d.style.transition = 'transform 0.15s';
+    dice3d.style.transform  = FACE_ROTATIONS[tmp] || FACE_ROTATIONS[1];
+    await sleep(120 + i * 30);
+  }
+
+  // Final pozisyon
+  dice3d.style.transition = 'transform 0.5s cubic-bezier(.34,1.56,.64,1)';
+  dice3d.style.transform  = FACE_ROTATIONS[result] || FACE_ROTATIONS[1];
+  await sleep(600);
+
+  recordGamePlayed();
+
+  if (result === dicePick) {
+    addXP(1500, null);
+    showWin(1650, `Rolled ${result} — CORRECT! 🎯`, '🎲');
+  } else {
+    showLose(`Rolled ${result}!`, `You picked ${dicePick}`);
+  }
+
+  btn.disabled  = false;
+  btn.textContent = `🎲 Roll for ${dicePick} · 0.00002 ETH`;
+}
+
+function showWin(xp, title, emoji) {
+  document.getElementById('win-emoji').textContent = emoji||'🎲';
+  document.getElementById('win-title').textContent = title;
+  document.getElementById('win-xp').textContent    = '+'+xp.toLocaleString()+' XP';
+  document.getElementById('win-card').className    = 'win-card show';
+  document.getElementById('lose-card').className   = 'lose-card';
+  document.getElementById('win-burst').className   = 'win-burst show';
+  document.getElementById('win-overlay').style.pointerEvents = 'all';
+  spawnConfetti(); SFX.play('bigwin');
+}
+function showLose(msg, sub) {
+  document.getElementById('lose-title').textContent = msg;
+  document.getElementById('lose-sub').textContent   = sub;
+  document.getElementById('lose-card').className    = 'lose-card show';
+  document.getElementById('win-card').className     = 'win-card';
+  document.getElementById('win-burst').className    = 'win-burst';
+  document.getElementById('win-overlay').style.pointerEvents = 'all';
+  SFX.play('lose');
+}
+function closeWin() {
+  document.getElementById('win-card').className  = 'win-card hide';
+  document.getElementById('lose-card').className = 'lose-card hide';
+  setTimeout(() => {
+    document.getElementById('win-overlay').style.pointerEvents = 'none';
+    document.getElementById('win-card').className  = 'win-card';
+    document.getElementById('lose-card').className = 'lose-card';
+  }, 300);
+}
+function spawnConfetti() {
+  const cols=['#f5c518','#00e887','#0070f3','#ec4899','#8b5cf6'];
+  for(let i=0;i<50;i++){const el=document.createElement('div');el.className='confetti-piece';el.style.cssText=`left:${Math.random()*100}%;background:${cols[~~(Math.random()*cols.length)]};--dur:${1.5+Math.random()}s;--delay:${Math.random()*.4}s;transform:rotate(${Math.random()*360}deg)`;document.body.appendChild(el);setTimeout(()=>el.remove(),2500);}
+}
+function shareX(t){window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(t+' ⬡ @BaseCoreFun #Base')}&url=${encodeURIComponent('https://basecore.fun')}`,'_blank');}
+
+initNav('gaming');
+initDice();
+</script>
+</body>
+</html>

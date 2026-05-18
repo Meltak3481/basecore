@@ -162,7 +162,7 @@ canvas#plinko{display:block;border-radius:16px;margin:0 auto;box-shadow:0 0 30px
     <div class="nav-user-wrap" id="nav-user-wrap" style="display:none">
       <div class="nav-addr" id="nav-addr" onclick="toggleUserMenu()"></div>
       <div class="user-dropdown" id="user-dropdown">
-        <button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Çıkış Yap</button>
+        <button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Disconnect</button>
       </div>
     </div>
 
@@ -184,7 +184,7 @@ canvas#plinko{display:block;border-radius:16px;margin:0 auto;box-shadow:0 0 30px
 
   <div class="mode-toggle" style="margin-bottom: 20px;">
     <button id="btn-onchain" class="mode-btn active" onclick="setPaymentMode('onchain')">⛓️ On-Chain</button>
-    <button id="btn-x402" class="mode-btn" onclick="setPaymentMode('x402')">⚡ x402 Modu</button>
+    <button id="btn-x402" class="mode-btn" onclick="setPaymentMode('x402')">⚡ x402 Mode</button>
   </div>
 
   <div class="section-head" style="margin-top:0">
@@ -193,43 +193,43 @@ canvas#plinko{display:block;border-radius:16px;margin:0 auto;box-shadow:0 0 30px
     <span class="sh-badge">8 Games</span>
   </div>
   <div class="game-grid">
-    <div class="game-card" style="background:rgba(245,197,24,.06);--gc:rgba(245,197,24,.1)" onclick="openGame('coinflip')">
+    <div class="game-card" style="background:rgba(245,197,24,.06);--gc:rgba(245,197,24,.1)" onclick="window.location.href='coinflip.html'">
       <div class="gc-icon">🪙</div><div class="gc-name">Coin Flip</div>
       <div class="gc-desc">50/50 · Beat the odds</div>
       <div class="gc-rewards"><span class="gc-xp" style="background:rgba(245,197,24,.15);color:var(--yellow)">⚡ 150</span><span class="gc-win">🏆 +500</span></div>
     </div>
-    <div class="game-card" style="background:rgba(0,232,135,.06);--gc:rgba(0,232,135,.1)" onclick="openGame('dice')">
+    <div class="game-card" style="background:rgba(0,232,135,.06);--gc:rgba(0,232,135,.1)" onclick="window.location.href='dice.html'">
       <div class="gc-icon">🎲</div><div class="gc-name">Dice Roll</div>
       <div class="gc-desc">1/6 chance · Big reward</div>
       <div class="gc-rewards"><span class="gc-xp" style="background:rgba(0,232,135,.15);color:var(--green)">⚡ 150</span><span class="gc-win">🏆 +1500</span></div>
     </div>
-    <div class="game-card" style="background:rgba(139,92,246,.06);--gc:rgba(139,92,246,.1)" onclick="openGame('slots')">
+    <div class="game-card" style="background:rgba(139,92,246,.06);--gc:rgba(139,92,246,.1)" onclick="window.location.href='slots.html'">
       <div class="gc-icon">🎰</div><div class="gc-name">Slots</div>
       <div class="gc-desc">Match 3 · Jackpot 10K</div>
       <div class="gc-rewards"><span class="gc-xp" style="background:rgba(139,92,246,.15);color:var(--purple)">⚡ 100</span><span class="gc-win">💎 10K</span></div>
     </div>
-    <div class="game-card" style="background:rgba(0,200,255,.06);--gc:rgba(0,200,255,.1)" onclick="openGame('wheel')">
+    <div class="game-card" style="background:rgba(0,200,255,.06);--gc:rgba(0,200,255,.1)" onclick="window.location.href='wheel.html'">
       <div class="gc-icon">🎡</div><div class="gc-name">Wheel</div>
       <div class="gc-desc">Spin daily · Up to 5K</div>
       <div class="gc-rewards"><span class="gc-xp" style="background:rgba(0,200,255,.15);color:var(--cyan)">3/day</span><span class="gc-win">🏆 5K</span></div>
     </div>
-    <div class="game-card" style="background:rgba(249,115,22,.06);--gc:rgba(249,115,22,.1)" onclick="openGame('plinko')">
+    <div class="game-card" style="background:rgba(249,115,22,.06);--gc:rgba(249,115,22,.1)" onclick="window.location.href='plinko.html'">
       <div class="gc-icon">🔵</div><div class="gc-name">Plinko</div>
       <div class="gc-desc">Physics · Random slot</div>
       <div class="gc-rewards"><span class="gc-xp" style="background:rgba(249,115,22,.15);color:var(--orange)">⚡ 100</span><span class="gc-win">🏆 5K</span></div>
     </div>
-    <div class="game-card" style="background:rgba(239,68,68,.06);--gc:rgba(239,68,68,.1)" onclick="openGame('crash')">
+    <div class="game-card" style="background:rgba(239,68,68,.06);--gc:rgba(239,68,68,.1)" onclick="window.location.href='crash.html'">
       <div class="gc-icon">🚀</div><div class="gc-name">Crash</div>
       <div class="gc-desc">Cash out before crash!</div>
       <div class="gc-rewards"><span class="gc-xp" style="background:rgba(239,68,68,.15);color:var(--red)">⚡ 200</span><span class="gc-win">🏆 2K</span></div>
       <div class="gc-badge" style="background:var(--red);color:#fff">HOT</div>
     </div>
-    <div class="game-card" style="background:rgba(236,72,153,.06);--gc:rgba(236,72,153,.1)" onclick="openGame('roulette')">
+    <div class="game-card" style="background:rgba(236,72,153,.06);--gc:rgba(236,72,153,.1)" onclick="window.location.href='roulette.html'">
       <div class="gc-icon">🔴</div><div class="gc-name">Roulette</div>
       <div class="gc-desc">Red / Black / Green</div>
       <div class="gc-rewards"><span class="gc-xp" style="background:rgba(236,72,153,.15);color:var(--pink)">⚡ 125</span><span class="gc-win">🏆 1K</span></div>
     </div>
-    <div class="game-card" style="background:rgba(0,112,243,.06);--gc:rgba(0,112,243,.1)" onclick="openGame('hilo')">
+    <div class="game-card" style="background:rgba(0,112,243,.06);--gc:rgba(0,112,243,.1)" onclick="window.location.href='hilo.html'">
       <div class="gc-icon">🃏</div><div class="gc-name">Hi-Lo Cards</div>
       <div class="gc-desc">Higher or lower?</div>
       <div class="gc-rewards"><span class="gc-xp" style="background:rgba(0,112,243,.15);color:var(--blue2)">⚡ 125</span><span class="gc-win">🏆 800</span></div>
@@ -343,6 +343,7 @@ canvas#plinko{display:block;border-radius:16px;margin:0 auto;box-shadow:0 0 30px
 
 <div id="toasts"></div>
 <script src="shared.js?v=26"></script>
+<script src="sfx.js"></script>
 <script>
 let cfSide='heads',cfW=0,cfL=0,cfStr=0;
 let dicePick=1;

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Hi-Lo Cards — BaseCore</title>
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="games.css">
+<style>
+.cards-area{display:flex;align-items:center;justify-content:center;gap:24px;margin:20px 0;}
+.card-wrap{width:90px;height:130px;perspective:700px;position:relative;}
+.card-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1);}
+.card-inner.flip{transform:rotateY(180deg);}
+.card-face{position:absolute;width:100%;height:100%;border-radius:14px;backface-visibility:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:8px;}
+.card-front{
+  background:linear-gradient(145deg,#ffffff,#f1f5f9);
+  border:2px solid #e2e8f0;
+  box-shadow:4px 6px 20px rgba(0,0,0,.5),inset 0 0 0 1px rgba(255,255,255,.8);
+}
+.card-back{
+  background:linear-gradient(145deg,#1e40af,#1d4ed8);
+  border:2px solid #3b82f6;
+  transform:rotateY(180deg);
+  display:flex;align-items:center;justify-content:center;
+  background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.04) 0,rgba(255,255,255,.04) 2px,transparent 2px,transparent 10px);
+}
+.card-back::after{
+  content:'⬡';font-size:42px;color:rgba(255,255,255,.2);
+}
+.card-corner{display:flex;flex-direction:column;align-items:center;gap:0;line-height:1;}
+.card-corner.bottom{transform:rotate(180deg);}
+.cv{font-size:18px;font-weight:900;line-height:1;}
+.cs{font-size:14px;line-height:1;}
+.card-center{text-align:center;font-size:38px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
+.card-label{font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;text-align:center;margin-top:6px;}
+.vs-text{font-size:22px;color:var(--muted);font-weight:800;}
+.streak-badge{text-align:center;margin-bottom:14px;}
+.streak-val{font-size:36px;font-weight:900;font-family:var(--mono);color:var(--yellow);}
+.streak-lbl{font-size:11px;color:var(--muted);font-family:var(--mono);}
+.hilo-choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+.hc-btn{padding:18px;border-radius:16px;border:2px solid var(--border);background:var(--card2);cursor:pointer;text-align:center;transition:all .22s;font-size:15px;font-weight:800;}
+.hc-btn:hover{border-color:var(--border2);transform:translateY(-2px);}
+.hc-btn.sel{border-color:var(--blue2);background:rgba(0,112,243,.12);}
+.hc-btn .hc-icon{font-size:26px;display:block;margin-bottom:6px;}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div><div class="bg-grid"></div>
+
+<div class="win-overlay" id="win-overlay">
+  <div class="win-burst" id="win-burst"></div>
+  <div class="win-card" id="win-card">
+    <span class="win-emoji" id="win-emoji">🃏</span>
+    <div class="win-title" id="win-title">CORRECT!</div>
+    <div class="win-xp" id="win-xp">+800 XP</div>
+    <div class="win-sub" id="win-sub"></div>
+    <button class="play-btn" style="background:linear-gradient(135deg,var(--blue),#0050c8);color:#fff;margin-top:16px;padding:12px" onclick="closeWin()">Next Card! 🃏</button>
+  </div>
+  <div class="lose-card" id="lose-card">
+    <span class="lose-emoji">😔</span>
+    <div class="lose-title" id="lose-title">Wrong guess!</div>
+    <div class="lose-sub" id="lose-sub">Try again</div>
+    <button class="play-btn" style="background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);margin-top:14px;padding:12px" onclick="closeWin()">Try Again</button>
+  </div>
+</div>
+
+<nav class="navbar">
+  <a href="index.html" class="nav-logo"><div class="nav-logo-icon">⬡</div><div class="nav-logo-text">Base<span>Core</span></div></a>
+  <div class="nav-right">
+    <div class="nav-xp" id="nav-xp" style="display:none"><span class="xp-icon">⚡</span><span id="nav-xp-val">0 XP</span></div>
+    <div class="nav-user-wrap" id="nav-user-wrap" style="display:none">
+      <div class="nav-addr" id="nav-addr" onclick="toggleUserMenu()"></div>
+      <div class="user-dropdown" id="user-dropdown"><button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Disconnect</button></div>
+    </div>
+    <button class="nav-connect" id="nav-connect-btn" onclick="openWalletModal()">Connect</button>
+  </div>
+</nav>
+
+<nav class="tab-bar">
+  <a href="gm.html"       class="tab-item" data-tab="gm">      <div class="tab-icon-wrap">🌅</div><span class="tab-label">GM/GN</span></a>
+  <a href="dex.html"      class="tab-item" data-tab="dex">     <div class="tab-icon-wrap">🔄</div><span class="tab-label">DEX</span></a>
+  <a href="gaming.html"   class="tab-item active" data-tab="gaming"><div class="tab-icon-wrap">🎮</div><span class="tab-label">Gaming</span></a>
+  <a href="wheel.html"    class="tab-item" data-tab="nft">      <div class="tab-icon-wrap">🎡</div><span class="tab-label">Wheel</span></a>
+  <a href="analysis.html" class="tab-item" data-tab="analysis"><div class="tab-icon-wrap">📊</div><span class="tab-label">Analysis</span></a>
+  <a href="deploy.html"   class="tab-item" data-tab="deploy">  <div class="tab-icon-wrap">🚀</div><span class="tab-label">Deploy</span></a>
+  <a href="social.html"   class="tab-item" data-tab="social">  <div class="tab-icon-wrap">👥</div><span class="tab-label">Social</span></a>
+</nav>
+
+<div class="game-page">
+  <div class="mode-toggle" style="margin-bottom:20px;">
+    <button id="btn-onchain" class="mode-btn active" onclick="setPaymentMode('onchain')">⛓️ On-Chain</button>
+    <button id="btn-x402" class="mode-btn" onclick="setPaymentMode('x402')">⚡ x402 Mode</button>
+  </div>
+  <a href="gaming.html" class="back-btn">← Back to Games</a>
+  <div class="game-header">
+    <span class="game-header-icon">🃏</span>
+    <div class="game-header-title">Hi-Lo Cards</div>
+    <div class="game-header-sub">Higher or lower than the current card?</div>
+    <div class="game-header-rewards"><span class="xp-badge">⚡ 125 XP</span><span style="color:var(--green);font-weight:700">🏆 +800 XP win</span></div>
+  </div>
+
+  <div class="streak-badge">
+    <div class="streak-val" id="streak-val">0</div>
+    <div class="streak-lbl">🔥 streak</div>
+  </div>
+
+  <div class="cards-area">
+    <!-- Current card -->
+    <div>
+      <div class="card-wrap">
+        <div class="card-inner" id="card-current-inner">
+          <div class="card-face card-front" id="card-current-front">
+            <div class="card-corner" id="cur-tl"><div class="cv" id="cur-val">7</div><div class="cs" id="cur-suit">♠</div></div>
+            <div class="card-center" id="cur-center">♠</div>
+            <div class="card-corner bottom" id="cur-br"><div class="cv" id="cur-val2">7</div><div class="cs" id="cur-suit2">♠</div></div>
+          </div>
+          <div class="card-face card-back"></div>
+        </div>
+      </div>
+      <div class="card-label">CURRENT</div>
+    </div>
+
+    <div class="vs-text">VS</div>
+
+    <!-- Next card (face down) -->
+    <div>
+      <div class="card-wrap">
+        <div class="card-inner" id="card-next-inner">
+          <div class="card-face card-front" id="card-next-front">
+            <div class="card-corner" id="nxt-tl"><div class="cv" id="nxt-val">?</div><div class="cs" id="nxt-suit"></div></div>
+            <div class="card-center" id="nxt-center">?</div>
+            <div class="card-corner bottom"><div class="cv" id="nxt-val2">?</div><div class="cs" id="nxt-suit2"></div></div>
+          </div>
+          <div class="card-face card-back"></div>
+        </div>
+      </div>
+      <div class="card-label">NEXT</div>
+    </div>
+  </div>
+
+  <div class="hilo-choices">
+    <div class="hc-btn sel" id="hl-hi" onclick="hlpick('hi')">
+      <span class="hc-icon">⬆️</span>HIGHER
+    </div>
+    <div class="hc-btn" id="hl-lo" onclick="hlpick('lo')">
+      <span class="hc-icon">⬇️</span>LOWER
+    </div>
+  </div>
+
+  <button class="play-btn" id="hilo-play" style="background:linear-gradient(135deg,var(--blue),#0050c8);color:#fff;margin-bottom:10px" onclick="playHilo()">
+    🃏 Guess · 0.00002 ETH
+  </button>
+  <button class="share-x-btn" onclick="shareX('Playing Hi-Lo Cards at BaseCore! 🃏 Higher or Lower on Base!')">𝕏 Share on X</button>
+</div>
+
+<script src="shared.js"></script>
+<script src="sfx.js"></script>
+<script>
+const VALS  = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const SUITS = ['♠','♥','♦','♣'];
+const CV    = {A:1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,J:11,Q:12,K:13};
+const RED_SUITS = new Set(['♥','♦']);
+
+let hlGuess   = 'hi';
+let hlCurVal  = 7;
+let hlStreak  = 0;
+let curCard   = null;
+
+function randCard() {
+  return {
+    val:  VALS[Math.floor(Math.random() * VALS.length)],
+    suit: SUITS[Math.floor(Math.random() * SUITS.length)],
+  };
+}
+
+function cardColor(suit) { return RED_SUITS.has(suit) ? '#dc2626' : '#0f172a'; }
+
+function setCardFace(prefix, card, revealed) {
+  const valEls  = [document.getElementById(prefix+'-val'), document.getElementById(prefix+'-val2')];
+  const suitEls = [document.getElementById(prefix+'-suit'), document.getElementById(prefix+'-suit2')];
+  const center  = document.getElementById(prefix+'-center');
+
+  if (!revealed) {
+    valEls.forEach(e  => { if(e){e.textContent='?';e.style.color='#94a3b8';} });
+    suitEls.forEach(e => { if(e) e.textContent=''; });
+    if (center) { center.textContent='?'; center.style.color='#94a3b8'; }
+  } else {
+    const col = cardColor(card.suit);
+    valEls.forEach(e  => { if(e){e.textContent=card.val;e.style.color=col;} });
+    suitEls.forEach(e => { if(e){e.textContent=card.suit;e.style.color=col;} });
+    if (center) { center.textContent=card.suit; center.style.color=col; }
+  }
+}
+
+function initHilo() {
+  curCard = randCard();
+  setCardFace('cur', curCard, true);
+  setCardFace('nxt', null, false);
+  hlCurVal = CV[curCard.val];
+  // Next card'ı sıfırla — kapalı göster
+  const nextInner = document.getElementById('card-next-inner');
+  if (nextInner) nextInner.classList.remove('flip');
+}
+
+function hlpick(p) {
+  hlGuess = p;
+  document.getElementById('hl-hi').classList.toggle('sel', p === 'hi');
+  document.getElementById('hl-lo').classList.toggle('sel', p === 'lo');
+  SFX.play('click');
+}
+
+async function playHilo() {
+  if (!requireWallet()) return;
+  const btn = document.getElementById('hilo-play');
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+
+  const rc = await sendTxWithFee('0.00002', 125, 'game');
+  if (!rc) { btn.disabled = false; btn.textContent = '🃏 Guess · 0.00002 ETH'; return; }
+
+  const nextCard = randCard();
+  const nextVal  = CV[nextCard.val];
+
+  // Kartı hazırla (arka yüzde)
+  setCardFace('nxt', nextCard, true);
+
+  // Flip animasyonu
+  await sleep(200);
+  const nextInner = document.getElementById('card-next-inner');
+  if (nextInner) nextInner.classList.add('flip');
+  SFX.play('flip');
+  await sleep(600);
+
+  // Sonuç
+  const win = (hlGuess === 'hi' && nextVal > hlCurVal) ||
+              (hlGuess === 'lo' && nextVal < hlCurVal);
+  const equal = nextVal === hlCurVal;
+
+  recordGamePlayed();
+
+  if (win) {
+    hlStreak++;
+    const bonusXP = Math.min(hlStreak * 100, 500);
+    addXP(800 + bonusXP, null);
+    showWin(925 + bonusXP,
+      hlStreak > 1 ? `${hlStreak}x Streak! 🔥` : 'CORRECT!',
+      '🃏'
+    );
+  } else if (equal) {
+    showLose('Equal! Push!', 'Same value — try again');
+    hlStreak = 0;
+  } else {
+    showLose(
+      `Wrong! It was ${nextCard.val}${nextCard.suit}`,
+      `${nextVal > hlCurVal ? 'Higher' : 'Lower'} than ${curCard.val}`
+    );
+    hlStreak = 0;
+  }
+
+  document.getElementById('streak-val').textContent = hlStreak;
+
+  // Sonraki tur için current'ı güncelle
+  await sleep(1000);
+  curCard  = nextCard;
+  hlCurVal = nextVal;
+  setCardFace('cur', curCard, true);
+  setCardFace('nxt', null, false);
+  if (nextInner) nextInner.classList.remove('flip');
+
+  btn.disabled  = false;
+  btn.textContent = '🃏 Guess · 0.00002 ETH';
+}
+
+function showWin(xp,title,emoji){document.getElementById('win-emoji').textContent=emoji||'🃏';document.getElementById('win-title').textContent=title;document.getElementById('win-xp').textContent='+'+xp.toLocaleString()+' XP';document.getElementById('win-card').className='win-card show';document.getElementById('lose-card').className='lose-card';document.getElementById('win-burst').className='win-burst show';document.getElementById('win-overlay').style.pointerEvents='all';spawnConfetti();SFX.play('win');}
+function showLose(msg,sub){document.getElementById('lose-title').textContent=msg;document.getElementById('lose-sub').textContent=sub;document.getElementById('lose-card').className='lose-card show';document.getElementById('win-card').className='win-card';document.getElementById('win-burst').className='win-burst';document.getElementById('win-overlay').style.pointerEvents='all';SFX.play('lose');}
+function closeWin(){document.getElementById('win-card').className='win-card hide';document.getElementById('lose-card').className='lose-card hide';setTimeout(()=>{document.getElementById('win-overlay').style.pointerEvents='none';document.getElementById('win-card').className='win-card';document.getElementById('lose-card').className='lose-card';},300);}
+function spawnConfetti(){const cols=['#f5c518','#00e887','#0070f3','#ec4899','#8b5cf6'];for(let i=0;i<50;i++){const el=document.createElement('div');el.className='confetti-piece';el.style.cssText=`left:${Math.random()*100}%;background:${cols[~~(Math.random()*cols.length)]};--dur:${1.5+Math.random()}s;--delay:${Math.random()*.4}s;transform:rotate(${Math.random()*360}deg)`;document.body.appendChild(el);setTimeout(()=>el.remove(),2500);}}
+function shareX(t){window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(t+' ⬡ @BaseCoreFun #Base')}&url=${encodeURIComponent('https://basecore.fun')}`,'_blank');}
+
+initNav('gaming');
+initHilo();
+</script>
+</body>
+</html>
