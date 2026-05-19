@@ -111,7 +111,7 @@
   <button class="share-x-btn" onclick="shareX('Rolling dice on-chain at BaseCore! 🎲 1 in 6 chance!')">𝕏 Share on X</button>
 </div>
 
-<script src="shared.js"></script>
+<script src="shared.js?v=3"></script>
 <script src="sfx.js"></script>
 <script>
 let dicePick = 1;
@@ -244,14 +244,16 @@ function pickDice(v) {
   SFX.play('click');
 }
 
-// 3D zar yüz rotasyonları (hangi yüz öne gelir)
+// 3D zar yüz rotasyonları
+// Front=1, Back=6, Right=3, Left=4, Top=2, Bottom=5
+// Her değer için hangi rotation o yüzü kameraya döndürür:
 const FACE_ROTATIONS = {
-  1: 'rotateX(-25deg) rotateY(25deg)',   // front
-  6: 'rotateX(-25deg) rotateY(-155deg)', // back
-  3: 'rotateX(-25deg) rotateY(-65deg)',  // right
-  4: 'rotateX(-25deg) rotateY(115deg)',  // left
-  2: 'rotateX(-115deg) rotateY(25deg)', // top
-  5: 'rotateX(65deg) rotateY(25deg)',   // bottom
+  1: 'rotateX(0deg) rotateY(0deg)',      // front (1) öne
+  2: 'rotateX(-90deg) rotateY(0deg)',    // top (2) öne
+  3: 'rotateX(0deg) rotateY(-90deg)',    // right (3) öne
+  4: 'rotateX(0deg) rotateY(90deg)',     // left (4) öne
+  5: 'rotateX(90deg) rotateY(0deg)',     // bottom (5) öne
+  6: 'rotateX(0deg) rotateY(180deg)',    // back (6) öne
 };
 
 async function playDice() {
@@ -265,19 +267,23 @@ async function playDice() {
   const result = 1 + Math.floor(Math.random() * 6);
   const dice3d = document.getElementById('dice3d');
 
-  // Intermediate rolls (hızlı görsel)
+  // Hızlı dönüş animasyonu — ek rotasyonlar ekle (görsel efekt)
   SFX.play('dice');
-  for (let i = 0; i < 5; i++) {
-    const tmp = 1 + Math.floor(Math.random() * 6);
-    dice3d.style.transition = 'transform 0.15s';
-    dice3d.style.transform  = FACE_ROTATIONS[tmp] || FACE_ROTATIONS[1];
-    await sleep(120 + i * 30);
-  }
+  // Önce hızlı birkaç tur dönsün
+  dice3d.style.transition = 'transform 0.8s cubic-bezier(.4,0,.6,1)';
+  dice3d.style.transform  = 'rotateX(360deg) rotateY(360deg)';
+  await sleep(200);
+  dice3d.style.transition = 'transform 0.6s cubic-bezier(.4,0,.6,1)';
+  dice3d.style.transform  = 'rotateX(540deg) rotateY(180deg)';
+  await sleep(200);
+  dice3d.style.transition = 'transform 0.5s cubic-bezier(.4,0,.6,1)';
+  dice3d.style.transform  = 'rotateX(720deg) rotateY(360deg)';
+  await sleep(200);
 
-  // Final pozisyon
-  dice3d.style.transition = 'transform 0.5s cubic-bezier(.34,1.56,.64,1)';
-  dice3d.style.transform  = FACE_ROTATIONS[result] || FACE_ROTATIONS[1];
-  await sleep(600);
+  // Final pozisyon — sonuç yüzü öne gelsin
+  dice3d.style.transition = 'transform 0.6s cubic-bezier(.34,1.56,.64,1)';
+  dice3d.style.transform  = FACE_ROTATIONS[result];
+  await sleep(700);
 
   recordGamePlayed();
 
@@ -326,6 +332,7 @@ function spawnConfetti() {
 }
 function shareX(t){window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(t+' ⬡ @BaseCoreFun #Base')}&url=${encodeURIComponent('https://basecore.fun')}`,'_blank');}
 
+function showDashboard(){} // session restore için
 initNav('gaming');
 initDice();
 </script>

@@ -90,7 +90,14 @@
 }
 .lever-wrap:hover .lever-pole{transform:translateX(-2px);}
 .lever-pulled .lever-pole{animation:leverDown .35s cubic-bezier(.4,0,.2,1);}
-@keyframes leverDown{0%{transform:rotate(0);}40%{transform:rotate(35deg);}100%{transform:rotate(0);};}
+@keyframes leverDown{
+  0%  {transform:rotate(0deg);}
+  15% {transform:rotate(5deg);}
+  45% {transform:rotate(42deg);}
+  65% {transform:rotate(48deg);}
+  80% {transform:rotate(44deg);}
+  100%{transform:rotate(0deg);}
+}
 
 .slots-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
 </style>
@@ -164,7 +171,7 @@
       <div class="machine-msg" id="slots-msg"></div>
     </div>
     <div class="lever-wrap" id="lever" onclick="pullLever()">
-      <div class="lever-pole"><div class="lever-knob"></div></div>
+      <div class="lever-pole" id="lever-pole"><div class="lever-knob"></div></div>
       <div class="lever-base"></div>
     </div>
   </div>
@@ -181,7 +188,7 @@
   <button class="share-x-btn" onclick="shareX('Playing slots on-chain at BaseCore! 🎰 Chasing the 💎 jackpot!')">𝕏 Share on X</button>
 </div>
 
-<script src="shared.js"></script>
+<script src="shared.js?v=3"></script>
 <script src="sfx.js"></script>
 <script>
 const SYMS    = ['🍒','🍋','🍊','🍇','⭐','7️⃣','💎','🍀'];
@@ -205,10 +212,18 @@ function initReels(){
 
 function pullLever(){
   if(spinning)return;
-  const lever=document.getElementById('lever');
-  lever.classList.add('lever-pulled');
+  const pole=document.getElementById('lever-pole');
+  if(!pole)return;
+  // Kolu animasyonla aşağı çek
+  pole.style.transition='transform 0.15s ease-in';
+  pole.style.transformOrigin='bottom center';
+  pole.style.transform='rotate(45deg)';
   SFX.play('slots');
-  setTimeout(()=>{lever.classList.remove('lever-pulled');playSlots();},350);
+  setTimeout(()=>{
+    pole.style.transition='transform 0.25s cubic-bezier(.34,1.56,.64,1)';
+    pole.style.transform='rotate(0deg)';
+    setTimeout(()=>playSlots(),100);
+  },220);
 }
 
 async function spinReel(reelIdx, finalSym, duration){
@@ -336,6 +351,7 @@ function closeWin(){
 function spawnConfetti(){const cols=['#f5c518','#00e887','#0070f3','#ec4899','#8b5cf6'];for(let i=0;i<50;i++){const el=document.createElement('div');el.className='confetti-piece';el.style.cssText=`left:${Math.random()*100}%;background:${cols[~~(Math.random()*cols.length)]};--dur:${1.5+Math.random()}s;--delay:${Math.random()*.4}s;transform:rotate(${Math.random()*360}deg)`;document.body.appendChild(el);setTimeout(()=>el.remove(),2500);}}
 function shareX(t){window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(t+' ⬡ @BaseCoreFun #Base')}&url=${encodeURIComponent('https://basecore.fun')}`,'_blank');}
 
+function showDashboard(){} // session restore için
 initNav('gaming');
 initReels();
 </script>

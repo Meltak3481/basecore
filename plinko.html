@@ -80,7 +80,7 @@ canvas#plinko{display:block;border-radius:16px;box-shadow:0 0 40px rgba(0,112,24
   <button class="share-x-btn" onclick="shareX('Playing Plinko at BaseCore! 🔵 Real physics on Base!')">𝕏 Share on X</button>
 </div>
 
-<script src="shared.js"></script>
+<script src="shared.js?v=3"></script>
 <script src="sfx.js"></script>
 <script>
 const W = 300, H = 320;
@@ -307,6 +307,7 @@ function closeWin(){
 function spawnConfetti(){const cols=['#f5c518','#00e887','#0070f3','#ec4899','#8b5cf6'];for(let i=0;i<50;i++){const el=document.createElement('div');el.className='confetti-piece';el.style.cssText=`left:${Math.random()*100}%;background:${cols[~~(Math.random()*cols.length)]};--dur:${1.5+Math.random()}s;--delay:${Math.random()*.4}s;transform:rotate(${Math.random()*360}deg)`;document.body.appendChild(el);setTimeout(()=>el.remove(),2500);}}
 function shareX(t){window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(t+' ⬡ @BaseCoreFun #Base')}&url=${encodeURIComponent('https://basecore.fun')}`,'_blank');}
 
+function showDashboard(){} // session restore için
 initNav('gaming');
 initPlinko();
 </script>

@@ -141,7 +141,7 @@
   <button class="share-x-btn" onclick="shareX('Flipping coins on-chain at BaseCore! 🪙 Heads or tails on Base!')">𝕏 Share on X</button>
 </div>
 
-<script src="shared.js"></script>
+<script src="shared.js?v=3"></script>
 <script src="sfx.js"></script>
 <script>
 let cfSide = 'heads', cfW = 0, cfL = 0, cfStr = 0;
@@ -244,6 +244,7 @@ function shareX(t) {
   window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(t+' ⬡ @BaseCoreFun #Base')}&url=${encodeURIComponent('https://basecore.fun')}`, '_blank');
 }
 
+function showDashboard(){} // session restore için
 initNav('gaming');
 </script>
 </body>

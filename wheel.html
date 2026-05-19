@@ -306,20 +306,25 @@ let wheelAngle   = 0;
    ══════════════════════════════════════════════════ */
 function loadWheelState() {
   if (!BC.addr) return;
-  const dayKey = 'bc_wsp_' + BC.addr + '_' + new Date().toDateString();
-  wheelSpins   = Math.max(0, 3 - parseInt(localStorage.getItem(dayKey) || '0'));
-  const raw    = localStorage.getItem('bc_wheel_' + BC.addr);
+  // Adres her zaman lowercase normalize edilmeli
+  const addr   = BC.addr.toLowerCase();
+  const dayKey = 'bc_wsp_' + addr + '_' + new Date().toDateString();
+  const used   = parseInt(localStorage.getItem(dayKey) || '0');
+  wheelSpins   = Math.max(0, 3 - used);
+  const raw    = localStorage.getItem('bc_wheel_' + addr);
   if (raw) { const d = JSON.parse(raw); totalWheelXP = d.xp||0; mysteryBoxes = d.boxes||0; }
 }
 function saveWheelState() {
   if (!BC.addr) return;
-  localStorage.setItem('bc_wheel_' + BC.addr, JSON.stringify({ xp: totalWheelXP, boxes: mysteryBoxes }));
+  localStorage.setItem('bc_wheel_' + BC.addr.toLowerCase(), JSON.stringify({ xp: totalWheelXP, boxes: mysteryBoxes }));
 }
 function useSpin() {
   if (!BC.addr) return;
-  const k = 'bc_wsp_' + BC.addr + '_' + new Date().toDateString();
-  localStorage.setItem(k, parseInt(localStorage.getItem(k)||'0') + 1);
-  wheelSpins = Math.max(0, wheelSpins - 1);
+  const addr = BC.addr.toLowerCase();
+  const k    = 'bc_wsp_' + addr + '_' + new Date().toDateString();
+  const used = parseInt(localStorage.getItem(k) || '0') + 1;
+  localStorage.setItem(k, used);
+  wheelSpins = Math.max(0, 3 - used);
 }
 
 /* ══════════════════════════════════════════════════
@@ -781,7 +786,7 @@ window.addEventListener('resize', () => {
 
 setTimeout(() => {
   if (BC.addr) { loadWheelState(); updateSpinUI(); renderMyBoxes(); }
-}, 600);
+}, 1000);
 </script>
 </body>
 </html>

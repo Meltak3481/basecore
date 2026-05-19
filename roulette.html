@@ -14,7 +14,9 @@ canvas#rb{position:absolute;inset:0;pointer-events:none;}
 .roulette-board{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px;}
 .rb-btn{padding:12px 4px;border-radius:10px;border:1px solid var(--border);background:var(--card2);cursor:pointer;text-align:center;font-size:12px;font-weight:700;transition:all .2s;}
 .rb-btn:hover{transform:scale(1.05);}
-.rb-btn.sel{border-width:2px;}
+.rb-btn{cursor:pointer;transition:all .2s;user-select:none;}
+.rb-btn.sel{border-width:2px;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.5);}
+.rb-btn:active{transform:scale(.95);}
 </style>
 </head>
 <body>
@@ -78,15 +80,15 @@ canvas#rb{position:absolute;inset:0;pointer-events:none;}
   </div>
   <div class="roulette-result" id="roulette-result">—</div>
 
-  <div class="roulette-board">
-    <div class="rb-btn sel" id="rb-red"   style="background:rgba(239,68,68,.15);color:var(--red);border-color:var(--red)"     onclick="rpick('red',this)">🔴 Red</div>
-    <div class="rb-btn" id="rb-black"     style="color:#94a3b8"                                                                onclick="rpick('black',this)">⚫ Black</div>
-    <div class="rb-btn" id="rb-green"     style="background:rgba(0,232,135,.1);color:var(--green)"                            onclick="rpick('green',this)">🟢 Green</div>
-    <div class="rb-btn" id="rb-odd"       style="color:var(--blue2)"                                                          onclick="rpick('odd',this)">Odd</div>
-    <div class="rb-btn" id="rb-even"      style="color:var(--purple)"                                                         onclick="rpick('even',this)">Even</div>
-    <div class="rb-btn" id="rb-low"       style="color:var(--cyan)"                                                           onclick="rpick('low',this)">1-18</div>
-    <div class="rb-btn" id="rb-high"      style="color:var(--yellow)"                                                         onclick="rpick('high',this)">19-36</div>
-    <div class="rb-btn" id="rb-d1"        style="color:var(--text2)"                                                          onclick="rpick('d1',this)">1st 12</div>
+  <div class="roulette-board" id="roulette-board">
+    <div class="rb-btn sel" id="rb-red"   onclick="rpick('red')"  >🔴 Red</div>
+    <div class="rb-btn"     id="rb-black" onclick="rpick('black')">⚫ Black</div>
+    <div class="rb-btn"     id="rb-green" onclick="rpick('green')">🟢 Green</div>
+    <div class="rb-btn"     id="rb-odd"   onclick="rpick('odd')"  >Odd</div>
+    <div class="rb-btn"     id="rb-even"  onclick="rpick('even')" >Even</div>
+    <div class="rb-btn"     id="rb-low"   onclick="rpick('low')"  >1-18</div>
+    <div class="rb-btn"     id="rb-high"  onclick="rpick('high')" >19-36</div>
+    <div class="rb-btn"     id="rb-d1"    onclick="rpick('d1')"   >1st 12</div>
   </div>
 
   <button class="play-btn" id="roulette-play" style="background:linear-gradient(135deg,#be185d,#9d174d);color:#fff;margin-bottom:10px" onclick="playRoulette()">
@@ -95,7 +97,7 @@ canvas#rb{position:absolute;inset:0;pointer-events:none;}
   <button class="share-x-btn" onclick="shareX('Playing Roulette on-chain at BaseCore! 🔴 Red or Black on Base!')">𝕏 Share on X</button>
 </div>
 
-<script src="shared.js"></script>
+<script src="shared.js?v=3"></script>
 <script src="sfx.js"></script>
 <script>
 const NUMS = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
@@ -175,10 +177,11 @@ function drawBall(angle, radius) {
   ctx.beginPath();ctx.arc(bx,by,7,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
 }
 
-function rpick(p,el) {
-  rPick=p;
-  document.querySelectorAll('.rb-btn').forEach(b=>{b.classList.remove('sel');b.style.borderWidth='1px';});
-  el.classList.add('sel');el.style.borderWidth='2px';
+function rpick(p) {
+  rPick = p;
+  document.querySelectorAll('.rb-btn').forEach(b => b.classList.remove('sel'));
+  const el = document.getElementById('rb-' + p);
+  if (el) el.classList.add('sel');
   SFX.play('click');
 }
 
@@ -248,6 +251,7 @@ function closeWin(){document.getElementById('win-card').className='win-card hide
 function spawnConfetti(){const cols=['#f5c518','#00e887','#0070f3','#ec4899','#8b5cf6'];for(let i=0;i<50;i++){const el=document.createElement('div');el.className='confetti-piece';el.style.cssText=`left:${Math.random()*100}%;background:${cols[~~(Math.random()*cols.length)]};--dur:${1.5+Math.random()}s;--delay:${Math.random()*.4}s;transform:rotate(${Math.random()*360}deg)`;document.body.appendChild(el);setTimeout(()=>el.remove(),2500);}}
 function shareX(t){window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(t+' ⬡ @BaseCoreFun #Base')}&url=${encodeURIComponent('https://basecore.fun')}`,'_blank');}
 
+function showDashboard(){} // session restore için
 initNav('gaming');
 initRoulette();
 </script>
