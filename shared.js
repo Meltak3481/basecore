@@ -355,30 +355,113 @@ function showDisconnectConfirm() {
   document.body.appendChild(popup);
 }
 
+
+// ── WORKER URL (KV state) ──
+const WORKER_URL = (typeof location !== 'undefined' && location.hostname === 'localhost')
+  ? 'http://localhost:8787'
+  : 'https://basecore-pay.meltak34.workers.dev';
+
 // ── STATE PERSIST ──
+// KV debounce timer
+let _kvTimer = null;
+
 function saveState() {
   if (!BC.addr) return;
-  localStorage.setItem('bc_' + BC.addr.toLowerCase(), JSON.stringify({
+  const addr = BC.addr.toLowerCase();
+  // localStorage'a anında yaz
+  localStorage.setItem('bc_' + addr, JSON.stringify({
     xp: BC.xp, level: BC.level, streak: BC.streak, refs: BC.refs, tasks: BC.tasks
   }));
+  // KV'ye 2 saniye debounce ile yaz
+  clearTimeout(_kvTimer);
+  _kvTimer = setTimeout(() => _kvSync(addr), 2000);
 }
 
-function loadState() {
+function _kvSync(addr) {
+  fetch(WORKER_URL + '/state', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      address: addr,
+      xp:      BC.xp     || 0,
+      level:   BC.level  || 1,
+      streak:  BC.streak || 0,
+      refs:    BC.refs   || 0,
+      tasks:   BC.tasks  || {},
+    }),
+  }).catch(e => console.warn('[KV] sync failed:', e.message));
+}
+
+async function loadState() {
   if (!BC.addr) return;
-  const d = localStorage.getItem('bc_' + BC.addr.toLowerCase());
-  if (d) {
-    const p  = JSON.parse(d);
-    BC.xp     = p.xp     || 0;
-    BC.level  = p.level  || 1;
-    BC.streak = p.streak || 0;
-    BC.refs   = p.refs   || 0;
-    BC.tasks  = p.tasks  || {};
+  const addr = BC.addr.toLowerCase();
+
+  // 1. localStorage'dan hızlıca yükle
+  const local = localStorage.getItem('bc_' + addr);
+  if (local) {
+    try {
+      const p   = JSON.parse(local);
+      BC.xp     = p.xp     || 0;
+      BC.level  = p.level  || 1;
+      BC.streak = p.streak || 0;
+      BC.refs   = p.refs   || 0;
+      BC.tasks  = p.tasks  || {};
+      updateNavXP();
+      if (typeof CHAR !== 'undefined' && document.getElementById('char-widget')) {
+        CHAR.renderWidget(BC.xp);
+      }
+    } catch(_) {}
   }
+
+  // 2. KV'den en güncel veriyi çek
+  try {
+    const res  = await fetch(WORKER_URL + '/state?addr=' + addr);
+    if (!res.ok) return;
+    const data = await res.json();
+    const kvXP = data.xp || 0;
+
+    if (kvXP >= (BC.xp || 0)) {
+      BC.xp     = kvXP;
+      BC.level  = data.level  || 1;
+      BC.streak = data.streak || 0;
+      BC.refs   = data.refs   || 0;
+      BC.tasks  = data.tasks  || {};
+      // localStorage güncelle
+      localStorage.setItem('bc_' + addr, JSON.stringify({
+        xp: BC.xp, level: BC.level, streak: BC.streak, refs: BC.refs, tasks: BC.tasks
+      }));
+    } else {
+      // Local daha yüksek — KV'ye yaz
+      _kvSync(addr);
+    }
+
+    updateNavXP();
+    if (typeof CHAR !== 'undefined' && document.getElementById('char-widget')) {
+      CHAR.renderWidget(BC.xp);
+    }
+  } catch(e) {
+    console.warn('[KV] load failed, using localStorage:', e.message);
+  }
+}
+
+function getNFTMult() {
+  try {
+    const addr = BC.addr ? BC.addr.toLowerCase() : null;
+    if (!addr) return 1;
+    const raw = localStorage.getItem('bc_nft_' + addr);
+    if (!raw) return 1;
+    const d = JSON.parse(raw);
+    return 1 + (d.owned ? d.owned.length : 0);
+  } catch(_) { return 1; }
 }
 
 function addXP(amt, taskId) {
   if (!BC.xp) BC.xp = 0;
-  BC.xp += amt;
+  const oldLevel = BC.level || 1;
+  // NFT multiplier
+  const mult     = getNFTMult();
+  const finalAmt = amt * mult;
+  BC.xp += finalAmt;
   if (taskId) {
     if (!BC.tasks) BC.tasks = {};
     BC.tasks[taskId] = true;
@@ -386,8 +469,21 @@ function addXP(amt, taskId) {
   for (let i = LVL.length - 1; i >= 0; i--) {
     if (BC.xp >= LVL[i]) { BC.level = i + 1; break; }
   }
+  // Seviye atlama kontrolü
+  if (BC.level > oldLevel && typeof CHAR !== 'undefined') {
+    CHAR.awardLevelBox(BC.level);
+    SFX.play('bigwin');
+  }
+  // Multiplier aktifse nav XP sarı renkte yanıp sönsün
+  if (mult > 1) {
+    const el = document.getElementById('nav-xp-val');
+    if (el) { el.style.color='#fbbf24'; setTimeout(()=>{el.style.color='';},700); }
+  }
   saveState();
   updateNavXP();
+  if (typeof CHAR !== 'undefined' && document.getElementById('char-widget')) {
+    CHAR.renderWidget(BC.xp);
+  }
 }
 
 function updateNavXP() {
