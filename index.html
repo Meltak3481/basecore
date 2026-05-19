@@ -337,10 +337,24 @@
       <button id="btn-x402" class="mode-btn" onclick="setPaymentMode('x402')">⚡ x402 Mode</button>
     </div>
 
+    <!-- Character Widget -->
+    <div class="char-widget" id="char-widget" onclick="if(typeof CHAR!=='undefined')CHAR.openModal()" style="
+      background:linear-gradient(160deg,rgba(30,58,138,.28),rgba(37,99,235,.12),rgba(15,23,42,.8));
+      border:1px solid rgba(96,165,250,.38);border-radius:22px;
+      padding:22px 20px 16px;margin-bottom:20px;
+      display:flex;flex-direction:column;align-items:center;
+      position:relative;overflow:hidden;cursor:pointer;
+      box-shadow:0 0 48px rgba(37,99,235,.18),0 8px 32px rgba(0,0,0,.35);
+      transition:all .3s;
+    ">
+      <div style="position:absolute;top:0;left:0;right:0;height:1px;
+        background:linear-gradient(90deg,transparent,rgba(96,165,250,.7),rgba(147,197,253,.5),transparent);"></div>
+      <div style="font-size:13px;color:var(--text2);">Connect wallet to view your character</div>
+    </div>
     <!-- NFT MINT -->
     <div class="nft-mint-card" id="nft-mint-section">
       <div class="nft-header">
-        <div><div class="nft-title">⬡ BaseCore Pass</div><div class="nft-sub">x402 exclusive · Limited 300</div></div>
+        <div><div class="nft-title">⬡ BaseCore Pass</div><div class="nft-sub">x402 exclusive · Limited edition</div></div>
         <div class="nft-price-badge"><div class="npb-price">$2</div><div class="npb-label">USDC · x402</div></div>
       </div>
       <div class="nft-preview-wrap">
@@ -383,7 +397,6 @@
           <div id="nft-multiplier-badge" style="display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.15);border:1px solid rgba(167,139,250,.3);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:900;color:#a78bfa;font-family:var(--mono);">
             ⚡ 1x Active
           </div>
-          <div id="nft-owned-badge" style="font-size:11px;color:var(--muted);font-family:var(--mono);">0 / 5 minted</div>
         </div>
         <!-- Progress bar -->
         <div class="nft-progress-bar" style="height:10px;">
@@ -475,6 +488,8 @@
 
 <div id="toasts"></div>
 <script src="shared.js?v=3"></script>
+<script src="sfx.js"></script>
+<script src="character.js"></script>
 <script>
 const LVLS = ['Rookie','Explorer','Builder','Veteran','Elite','Master','Legend','God'];
 
@@ -582,7 +597,6 @@ function updateDashboard() {
 
     const pf = document.getElementById('nft-progress-fill');
     const mb = document.getElementById('nft-multiplier-badge');
-    const ob = document.getElementById('nft-owned-badge');
     const no = document.getElementById('ns-owned');
     const un = document.getElementById('uh-nft');
 
@@ -593,7 +607,7 @@ function updateDashboard() {
       mb.style.borderColor = mult >= 3 ? 'rgba(251,191,36,.3)' : mult >= 2 ? 'rgba(52,211,153,.3)' : 'rgba(167,139,250,.3)';
       mb.style.background  = mult >= 3 ? 'rgba(251,191,36,.1)' : mult >= 2 ? 'rgba(52,211,153,.1)' : 'rgba(124,58,237,.15)';
     }
-    if (ob) ob.textContent = owned + ' / 5 minted';
+
     if (no) no.textContent = owned + '/5';
     if (un) un.textContent = owned;
 
@@ -651,6 +665,7 @@ function updateDashboard() {
       'success'
     );
     updateNFTUI();
+  if(typeof CHAR!=='undefined' && document.getElementById('char-widget'))CHAR.renderWidget(BC.xp);
   }
 
   initNav('home');
