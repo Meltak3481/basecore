@@ -140,9 +140,9 @@
 .nft-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;}
 .nft-title{font-size:18px;font-weight:900;}
 .nft-sub{font-size:12px;color:var(--text2);margin-top:3px;}
-.nft-price-badge{background:rgba(124,58,237,.15);border:1px solid rgba(167,139,250,.3);border-radius:12px;padding:6px 12px;text-align:center;flex-shrink:0;}
-.npb-price{font-size:18px;font-weight:900;color:#a78bfa;}
-.npb-label{font-size:9px;color:var(--muted);font-family:var(--mono);}
+
+
+
 .nft-progress-wrap{margin-bottom:14px;}
 .nft-progress-labels{display:flex;justify-content:space-between;font-size:11px;font-family:var(--mono);margin-bottom:6px;}
 .npl-minted{color:#a78bfa;font-weight:800;}
@@ -354,8 +354,7 @@
     <!-- NFT MINT -->
     <div class="nft-mint-card" id="nft-mint-section">
       <div class="nft-header">
-        <div><div class="nft-title">⬡ BaseCore Pass</div><div class="nft-sub">x402 exclusive · Limited edition</div></div>
-        <div class="nft-price-badge"><div class="npb-price">$2</div><div class="npb-label">USDC · x402</div></div>
+        <div><div class="nft-title">⬡ BaseCore Pass</div><div class="nft-sub">x402 exclusive · Limited edition</div></div><div class="npb-label">USDC · x402</div></div>
       </div>
       <div class="nft-preview-wrap">
         <div class="nft-preview-glow"></div>
@@ -412,16 +411,13 @@
         <div class="ns-item"><div class="ns-val" id="ns-owned">0/5</div><div class="ns-lbl">Owned</div></div>
         <div class="ns-item"><div class="ns-val">+5K</div><div class="ns-lbl">XP / Mint</div></div>
       </div>
-      <button class="nft-mint-btn" id="nft-mint-btn" onclick="mintNFT()">✦ Mint BaseCore Pass · $2 USDC</button>
+      <button class="nft-mint-btn" id="nft-mint-btn" onclick="mintNFT()">✦ Mint x402 NFT</button>
       <div class="nft-owned" id="nft-owned-section" style="display:none">
         <div class="nft-owned-title">Your NFTs</div>
         <div class="nft-owned-grid" id="nft-owned-grid"></div>
       </div>
     </div>
 
-    <div class="user-hero">
-      <div class="uh-top">
-        <div class="uh-av" id="uh-av">?</div>
         <div class="uh-info">
           <div class="uh-addr" id="uh-addr">—</div>
           <div class="uh-level" id="uh-level">Level 1 · Rookie</div>
@@ -615,9 +611,9 @@ function updateDashboard() {
     if (!BC.addr) {
       if (btn) { btn.textContent = '✦ Connect Wallet to Mint'; btn.disabled = false; }
     } else if (owned >= 5) {
-      if (btn) { btn.textContent = '✅ Max minted (5/5) · ' + mult + 'x XP'; btn.disabled = true; }
+      if (btn) { btn.textContent = '✅ Max minted (5/5) · ' + mult + 'x XP Active'; btn.disabled = true; }
     } else {
-      if (btn) { btn.textContent = '✦ Mint · $2 USDC · Get +1x Boost'; btn.disabled = false; }
+      if (btn) { btn.textContent = '✦ Mint x402 NFT · +1x XP Boost'; btn.disabled = false; }
     }
 
     const os = document.getElementById('nft-owned-section');
