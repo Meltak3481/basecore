@@ -239,7 +239,7 @@ function initDice() {
 
 function pickDice(v) {
   dicePick = v;
-  document.getElementById('dice-play').textContent = `🎲 Roll for ${v}  · ${typeof getPayLabel==="function"?getPayLabel():"0.00002 ETH"}`;
+  document.getElementById('dice-play').textContent = `🎲 Roll for ${v} · 0.00002 ETH`;
   document.querySelectorAll('.dp-btn').forEach((b, i) => b.classList.toggle('sel', i+1 === v));
   SFX.play('click');
 }
@@ -262,7 +262,7 @@ async function playDice() {
   btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
 
   const rc = await sendTxWithFee('0.00002', 150, 'game');
-  if (!rc) { btn.disabled = false; btn.textContent = 🎲 Roll for ${dicePick} ' + getPayLabel(); return; }
+  if (!rc) { btn.disabled = false; btn.textContent = `🎲 Roll for ${dicePick} · 0.00002 ETH`; return; }
 
   const result = 1 + Math.floor(Math.random() * 6);
   const dice3d = document.getElementById('dice3d');
@@ -295,7 +295,7 @@ async function playDice() {
   }
 
   btn.disabled  = false;
-  btn.textContent = 🎲 Roll for ${dicePick} ' + getPayLabel();
+  btn.textContent = `🎲 Roll for ${dicePick} · 0.00002 ETH`;
 }
 
 function showWin(xp, title, emoji) {
@@ -336,21 +336,7 @@ function spawnConfetti() {
 function shareX(t){window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(t+' ⬡ @BaseCoreFun #Base')}&url=${encodeURIComponent('https://basecore.fun')}`,'_blank');}
 
 function showDashboard(){} // session restore için
-
-// ── Mod değişince buton metnini güncelle ──
-window.addEventListener('payModeChanged', (e) => {
-  updateGameBtn();
-});
-
-function updateGameBtn() {
-  const label = typeof getPayLabel === 'function' ? getPayLabel() : '0.00002 ETH';
-  const btn = document.getElementById('dice-play');
-  if (!btn || btn.disabled) return;
-  const pick = typeof dicePick !== 'undefined' ? dicePick : 1;
-  btn.textContent = '🎲 Roll for ' + pick + ' · ' + label;
-}
 initNav('gaming');
-  updateGameBtn();
 initDice();
 </script>
 </body>
