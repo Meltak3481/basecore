@@ -219,7 +219,7 @@
     <div class="hm-item-info"><div class="hm-item-name">Gaming</div><div class="hm-item-desc">8 on-chain games</div></div>
     <span class="hm-item-badge" style="background:rgba(249,115,22,.1);color:var(--orange)">HOT</span>
   </a>
-  <a href="nft.html" class="hm-item" onclick="closeHMenu()">
+  <a href="wheel.html" class="hm-item" onclick="closeHMenu()">
     <div class="hm-item-icon" style="background:rgba(139,92,246,.12)">🎡</div>
     <div class="hm-item-info"><div class="hm-item-name">NFT Spin</div><div class="hm-item-desc">Spin & collect NFTs</div></div>
     <span class="hm-item-badge" style="background:rgba(139,92,246,.1);color:var(--purple)">NFT</span>
@@ -274,7 +274,7 @@
   <a href="gm.html" class="tab-item" data-tab="gm"><div class="tab-icon-wrap">🌅</div><span class="tab-label">GM/GN</span></a>
   <a href="dex.html" class="tab-item" data-tab="dex"><div class="tab-icon-wrap">🔄</div><span class="tab-label">DEX</span></a>
   <a href="gaming.html" class="tab-item" data-tab="gaming"><div class="tab-icon-wrap">🎮</div><span class="tab-label">Gaming</span></a>
-  <a href="nft.html" class="tab-item" data-tab="nft"><div class="tab-icon-wrap">🖼️</div><span class="tab-label">NFT</span></a>
+  <a href="wheel.html" class="tab-item" data-tab="nft"><div class="tab-icon-wrap">🎡</div><span class="tab-label">Wheel</span></a>
   <a href="analysis.html" class="tab-item" data-tab="analysis"><div class="tab-icon-wrap">📊</div><span class="tab-label">Analysis</span></a>
   <a href="deploy.html" class="tab-item" data-tab="deploy"><div class="tab-icon-wrap">🚀</div><span class="tab-label">Deploy</span></a>
 </nav>
@@ -521,6 +521,7 @@ function updateHMenuUser() {
 }
 
 function showDashboard() {
+  setTimeout(() => updateNFTUI(), 100);
   document.getElementById('section-connect').style.display = 'none';
   document.getElementById('section-dashboard').style.display = '';
   updateDashboard();
@@ -565,7 +566,8 @@ function updateDashboard() {
   const NFT_BASE  = 247;
 
   function loadNFTState() {
-    const addr = BC.addr ? BC.addr.toLowerCase() : null;
+    // BC.addr yoksa localStorage'daki son adresi kullan
+    const addr = (BC.addr || localStorage.getItem('bc_last_addr') || '').toLowerCase();
     if (!addr) return { owned: [] };
     const raw = localStorage.getItem('bc_nft_' + addr);
     return raw ? JSON.parse(raw) : { owned: [] };
@@ -608,7 +610,8 @@ function updateDashboard() {
     if (un) un.textContent = owned;
 
     const btn = document.getElementById('nft-mint-btn');
-    if (!BC.addr) {
+    const isConnected = BC.addr || localStorage.getItem('bc_last_addr');
+    if (!isConnected) {
       if (btn) { btn.textContent = '✦ Connect Wallet to Mint'; btn.disabled = false; }
     } else if (owned >= 5) {
       if (btn) { btn.textContent = '✅ Max minted (5/5) · ' + mult + 'x XP Active'; btn.disabled = true; }
@@ -634,7 +637,8 @@ function updateDashboard() {
   }
 
   async function mintNFT() {
-    if (!requireWallet()) return;
+    // Cüzdan bağlı değilse modal aç, mint yapma
+    if (!BC.addr) { openWalletModal(); return; }
     const state = loadNFTState();
     if (state.owned.length >= 5) {
       showNotification('Max Reached', 'You already own 5 BaseCore Pass NFTs.', 'info');
@@ -666,6 +670,8 @@ function updateDashboard() {
 
   initNav('home');
   updateNFTUI();
+  // Sayfa yüklenince hemen NFT state göster
+  document.addEventListener('DOMContentLoaded', () => updateNFTUI());
 setTimeout(() => { if (BC.addr) showDashboard(); else showConnect(); }, 600);
 </script>
 </body>

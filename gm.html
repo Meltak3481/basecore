@@ -166,7 +166,7 @@
       <button class="checkin-btn locked" id="ci-btn" onclick="doCheckIn()">
         🔒 Complete tasks to unlock
       </button>
-      <div class="checkin-lock-msg" id="ci-msg">Complete Wheel Spin + 2 Games first</div>
+      <div class="checkin-lock-msg" id="ci-msg">Complete NFT Spin + 2 Games first</div>
     </div>
   </div>
 
@@ -179,8 +179,8 @@
     <div class="task-row" id="task-spin-row">
       <div class="tr-icon" style="background:rgba(139,92,246,.15);color:var(--purple)">🎡</div>
       <div class="tr-info">
-        <div class="tr-name">Fortune Wheel</div>
-        <div class="tr-desc">Spin daily · Earn XP</div>
+        <div class="tr-name">NFT Spin</div>
+        <div class="tr-desc">Spin the NFT wheel</div>
         <div class="prog-bar-wrap">
           <div class="prog-bar-fill" id="spin-bar" style="width:0%;background:linear-gradient(90deg,var(--purple),var(--blue2))"></div>
         </div>
@@ -188,7 +188,7 @@
       <div class="tr-right">
         <span class="prog-pill" id="spin-pill">0/3</span>
         <span class="tick" id="spin-tick" style="display:none">✅</span>
-        <a href="wheel.html" class="go-btn" id="spin-go-btn">Go →</a>
+        <a href="nft.html" class="go-btn" id="spin-go-btn">Go →</a>
       </div>
     </div>
 
@@ -224,6 +224,7 @@
 
 <div id="toasts"></div>
 <script src="shared.js?v=26"></script>
+<script src="sfx.js"></script>
 <script>
 // ── DAY KEY: gece 03:00'dan 03:00'a ──
 function getDayKey() {
@@ -306,7 +307,7 @@ function renderStreakDays() {
 // ── TASK PROGRESS ──
 function getSpinCount() {
   if (!BC.addr) return 0;
-  const k = 'bc_wsp_' + BC.addr + '_' + getDayKey();
+  const k = 'bc_nftsp_' + BC.addr + '_' + getDayKey();
   return parseInt(localStorage.getItem(k) || '0');
 }
 function getGameCount() {

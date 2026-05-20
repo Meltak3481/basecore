@@ -90,7 +90,7 @@ async function ensureBaseNetwork() {
     }
     return true;
   } catch (error) {
-    console.error('Ağ değiştirme hatası:', error);
+    console.error('Network switch error:', error);
     return false;
   }
 }
@@ -104,9 +104,9 @@ function openWalletModal() {
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease;';
     modal.innerHTML = `
       <div style="background:var(--card);border:1px solid var(--border2);border-radius:24px;padding:28px;width:100%;max-width:340px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.85);">
-        <div style="font-size:13px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Bağlan</div>
-        <div style="font-size:22px;font-weight:900;margin-bottom:6px;">Cüzdan Seçin</div>
-        <div style="font-size:13px;color:var(--text2);margin-bottom:24px;">Base ağına bağlanmak için cüzdanınızı seçin</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Select Wallet</div>
+        <div style="font-size:22px;font-weight:900;margin-bottom:6px;">Select Walletin</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:24px;">Connect a wallet to use Base network</div>
         <div onclick="connectWallet('coinbase')" style="display:flex;align-items:center;gap:14px;padding:16px;background:var(--card2);border:1px solid var(--border);border-radius:16px;margin-bottom:10px;cursor:pointer;transition:all .25s;" onmouseover="this.style.borderColor='var(--blue2)'" onmouseout="this.style.borderColor='var(--border)'">
           <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#0052FF,#0033FF);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🔵</div>
           <div style="text-align:left;">
@@ -123,7 +123,7 @@ function openWalletModal() {
           </div>
           <div style="margin-left:auto;font-size:18px;opacity:.4;">›</div>
         </div>
-        <button onclick="closeWalletModal()" style="width:100%;padding:13px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--text2);font-weight:700;font-size:14px;cursor:pointer;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,.09)'" onmouseout="this.style.background='rgba(255,255,255,.05)'">İptal</button>
+        <button onclick="closeWalletModal()" style="width:100%;padding:13px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid var(--border2);color:var(--text2);font-weight:700;font-size:14px;cursor:pointer;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,.09)'" onmouseout="this.style.background='rgba(255,255,255,.05)'">Cancel</button>
       </div>
     `;
     modal.addEventListener('click', (e) => { if (e.target === modal) closeWalletModal(); });
@@ -164,16 +164,16 @@ async function connectWallet(type, silent = false) {
   if (type === 'coinbase') {
     eip1193 = getCoinbaseProvider();
     if (!eip1193) {
-      showNotification('Coinbase Wallet bulunamadı', 'Lütfen Coinbase Wallet eklentisini yükleyin.', 'warning', [{
-        label: 'İndir', action: () => window.open('https://www.coinbase.com/wallet/downloads','_blank')
+      showNotification('Coinbase Wallet Not Found', 'Please install the Coinbase Wallet extension.', 'warning', [{
+        label: 'Download', action: () => window.open('https://www.coinbase.com/wallet/downloads','_blank')
       }]);
       return false;
     }
   } else {
     eip1193 = getMetaMaskProvider() || window.ethereum;
     if (!eip1193) {
-      showNotification('MetaMask bulunamadı', 'Lütfen MetaMask eklentisini yükleyin.', 'warning', [{
-        label: 'İndir', action: () => window.open('https://metamask.io/download','_blank')
+      showNotification('MetaMask Not Found', 'Please install MetaMask.', 'warning', [{
+        label: 'Download', action: () => window.open('https://metamask.io/download','_blank')
       }]);
       return false;
     }
@@ -185,7 +185,7 @@ async function connectWallet(type, silent = false) {
 
     const isBase = await ensureBaseNetwork();
     if (!isBase && !silent) {
-      showNotification('Yanlış Ağ', 'Lütfen Base ağına geçin ve tekrar deneyin.', 'warning');
+      showNotification('Wrong Network', 'Please switch to Base network and try again.', 'warning');
     }
 
     BC.signer     = await BC.provider.getSigner();
@@ -205,15 +205,15 @@ async function connectWallet(type, silent = false) {
   } catch (e) {
     if (!silent) {
       if (e.code === 4001) {
-        showNotification('Bağlantı Reddedildi', 'Cüzdan bağlantısı iptal edildi.', 'info');
+        showNotification('Connection Rejected', 'Wallet connection cancelled.', 'info');
       } else {
-        showNotification('Bağlantı Hatası', e.shortMessage || e.message || 'Beklenmeyen bir hata oluştu.', 'error');
+        showNotification('Connection Error', e.shortMessage || e.message || 'An unexpected error occurred.', 'error');
       }
     }
     return false;
   }
 
-  if (!silent) showNotification('Bağlantı Başarılı', `${BC.shortAddr} adresi bağlandı.`, 'success');
+  if (!silent) showNotification('Connected', `${BC.shortAddr} connected.`, 'success');
   if (typeof showDashboard === 'function') showDashboard();
   return true;
 }
@@ -260,12 +260,12 @@ async function switchAccount() {
       BC.signer = await BC.provider.getSigner();
       localStorage.setItem('bc_last_addr', BC.addr.toLowerCase());
       loadState(); updateNavUI();
-      showNotification('Hesap Değiştirildi', BC.shortAddr + ' hesabına geçildi.', 'success');
+      showNotification('Account Switched', BC.shortAddr + ' account switched.', 'success');
       const d = document.getElementById('user-dropdown');
       if (d) d.style.display = 'none';
     }
   } catch (e) {
-    showNotification('İptal Edildi', 'Hesap değiştirme işlemi iptal edildi.', 'info');
+    showNotification('Cancelled', 'Account switch cancelled.', 'info');
   }
 }
 
@@ -275,9 +275,9 @@ function setPaymentMode(mode) {
   localStorage.setItem('bc_payment_mode', mode);
   updateModeUI();
   if (mode === 'x402') {
-    showNotification('x402 Modu Aktif', '$0.05 USDC imzası ile ödeme yapılacak. ETH gönderimi yok.', 'info');
+    showNotification('x402 Mode Active', '$0.05 USDC signature payment. No ETH transfer.', 'info');
   } else {
-    showNotification('On-Chain Modu Aktif', '0.00002 ETH transferi ile ödeme yapılacak.', 'info');
+    showNotification('On-Chain Mode Active', '0.00002 ETH transfer payment.', 'info');
   }
 }
 
@@ -308,7 +308,7 @@ function updateNavUI() {
         <span style="font-size:11px;opacity:.5;margin-right:4px;">●</span>
         ${BC.shortAddr}
       `;
-      addrEl.title = 'Bağlantıyı kesmek için tıklayın';
+      addrEl.title = 'Click to disconnect';
       addrEl.onclick = (e) => {
         e.stopPropagation();
         showDisconnectConfirm();
@@ -344,9 +344,9 @@ function showDisconnectConfirm() {
       <div style="width:52px;height:52px;border-radius:50%;background:rgba(255,60,60,.12);border:1px solid rgba(255,60,60,.3);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 14px;">🔌</div>
       <div style="font-size:16px;font-weight:800;margin-bottom:6px;">Disconnect</div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:6px;">${BC.shortAddr}</div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:22px;opacity:.7;">Bu cüzdanın bağlantısını kesmek istediğinizden emin misiniz?</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:22px;opacity:.7;">Are you sure you want to disconnect?</div>
       <div style="display:flex;gap:10px;">
-        <button onclick="document.getElementById('disconnect-popup').remove()" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--border2);color:var(--text2);font-weight:700;font-size:14px;cursor:pointer;">İptal</button>
+        <button onclick="document.getElementById('disconnect-popup').remove()" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid var(--border2);color:var(--text2);font-weight:700;font-size:14px;cursor:pointer;">Cancel</button>
         <button onclick="document.getElementById('disconnect-popup').remove();disconnectWallet();" style="flex:1;padding:12px;border-radius:12px;background:rgba(255,50,50,.15);border:1px solid rgba(255,50,50,.35);color:#ff6b6b;font-weight:800;font-size:14px;cursor:pointer;">Disconnect</button>
       </div>
     </div>
@@ -575,7 +575,7 @@ function showNotification(title, message, type = 'info', actions = []) {
 }
 
 function toast(msg, type = 'info') {
-  const titles = { success:'Başarılı', error:'Hata', warning:'Uyarı', info:'Bilgi' };
+  const titles = { success:'Success', error:'Error', warning:'Warning', info:'Info' };
   showNotification(titles[type] || 'Bilgi', msg, type);
 }
 
@@ -598,7 +598,7 @@ async function getUSDCBalance(address) {
     const result = await BC.provider.call({ to: USDC_CONTRACT, data });
     return BigInt(result);
   } catch (e) {
-    console.error('USDC bakiye hatası:', e);
+    console.error('USDC balance error:', e);
     return 0n;
   }
 }
@@ -619,8 +619,8 @@ async function handleX402Payment(apiUrl, taskId, xpReward) {
     const needed = (Number(amount)  / 10 ** USDC_DECIMALS).toFixed(2);
     const has    = (Number(usdcBal) / 10 ** USDC_DECIMALS).toFixed(2);
     showNotification(
-      'Yetersiz USDC Bakiyesi',
-      `Bu işlem için $${needed} USDC gerekli. Mevcut bakiyeniz: $${has}`,
+      'Insufficient USDC Balance',
+      `This action requires $${needed} USDC gerekli. Mevcut bakiyeniz: $${has}`,
       'warning',
       [{ label: 'Uniswap\'ta Al', action: () => window.open('https://app.uniswap.org/#/swap?outputCurrency=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913&chain=base','_blank') }]
     );
@@ -628,7 +628,7 @@ async function handleX402Payment(apiUrl, taskId, xpReward) {
   }
 
   // Kullanıcı hareketi (User Gesture) henüz kaybolmadığı için imza NATIVE olarak açılacak.
-  showNotification('İmza Bekleniyor', `$${amountDisplay} USDC transferi için cüzdanınızda onaylayın.`, 'info');
+  showNotification('Awaiting Signature', `Sign to authorize $${amountDisplay} USDC transfer.`, 'info');
 
   const now   = Math.floor(Date.now() / 1000);
   const nonce = ethers.hexlify(ethers.randomBytes(32));
@@ -657,14 +657,14 @@ async function handleX402Payment(apiUrl, taskId, xpReward) {
     signature = await BC.signer.signTypedData(USDC_DOMAIN, types, authorization);
   } catch (e) {
     if (e.code === 4001 || e.message?.includes('rejected') || e.message?.includes('denied')) {
-      showNotification('İmza Reddedildi', 'İşlem cüzdanınızda iptal edildi.', 'info');
+      showNotification('Signature Rejected', 'Transaction cancelled in wallet.', 'info');
     } else {
-      showNotification('İmza Hatası', e.shortMessage || e.message || 'Bilinmeyen imza hatası.', 'error');
+      showNotification('Signature Error', e.shortMessage || e.message || 'Unknown signature error.', 'error');
     }
     return null;
   }
 
-  showNotification('Doğrulanıyor', 'Ödeme sunucuya iletiliyor...', 'info');
+  showNotification('Verifying', 'Submitting payment...', 'info');
 
   const paymentPayload = {
     x402Version: 1, // VERSİYON UYUŞMAZLIĞI GİDERİLDİ
@@ -697,7 +697,7 @@ async function handleX402Payment(apiUrl, taskId, xpReward) {
       body: JSON.stringify({ userAddress: BC.addr, task: taskId }),
     });
   } catch (e) {
-    showNotification('Ağ Hatası', 'Ödeme doğrulama isteği gönderilemedi.', 'error');
+    showNotification('Network Error', 'Could not send payment request.', 'error');
     return null;
   }
 
@@ -706,24 +706,24 @@ async function handleX402Payment(apiUrl, taskId, xpReward) {
     const txHash = result.txHash || null;
 
     showNotification(
-      'Ödeme Onaylandı ✅',
+      'Payment Confirmed ✅',
       txHash
         ? `$${amountDisplay} USDC transfer edildi. TX: ${txHash.slice(0,10)}...`
-        : `$${amountDisplay} USDC ödeme tamamlandı.`,
+        : `$${amountDisplay} USDC payment completed.`,
       'success',
-      txHash ? [{ label: 'BaseScan\'de Görüntüle', action: () => window.open(`https://basescan.org/tx/${txHash}`,'_blank') }] : []
+      txHash ? [{ label: 'View on BaseScan', action: () => window.open(`https://basescan.org/tx/${txHash}`,'_blank') }] : []
     );
 
     addXP(xpReward, taskId);
     return { hash: txHash || 'x402_ok', txHash };
   }
 
-  let errMsg = 'Ödeme doğrulaması başarısız oldu.';
+  let errMsg = 'Payment verification failed.';
   try {
     const errBody = await response.json();
     errMsg = JSON.stringify(errBody.details || errBody);
   } catch (_) {}
-  showNotification('Coinbase Hatası', errMsg, 'error');
+  showNotification('Payment Error', errMsg, 'error');
   return null;
 }
 
@@ -734,14 +734,14 @@ async function sendTxWithFee(feeEth = '0.00002', xpReward = 100, taskId = null) 
   if (!requireWallet()) return null;
 
   if (!BC.signer) {
-    showNotification('Oturum Süresi Doldu', 'Lütfen cüzdanınızı tekrar bağlayın.', 'warning');
+    showNotification('Session Expired', 'Please reconnect your wallet.', 'warning');
     openWalletModal();
     return null;
   }
 
   const isBase = await ensureBaseNetwork();
   if (!isBase) {
-    showNotification('Yanlış Ağ', 'Bu işlem için Base ağında olmanız gerekiyor.', 'warning');
+    showNotification('Wrong Network', 'This action requires Base network.', 'warning');
     return null;
   }
 
@@ -764,31 +764,31 @@ async function sendTxWithFee(feeEth = '0.00002', xpReward = 100, taskId = null) 
     if (bal < feeWei + estimatedGas) {
       showNotification(
         'Yetersiz ETH Bakiyesi',
-        `Bu işlem için ${feeEth} ETH + gas gerekli. Lütfen bakiye yükleyin.`,
+        `This action requires ${feeEth} ETH + gas. Please top up your balance.`,
         'warning'
       );
       return null;
     }
 
-    showNotification('İşlem Başlatıldı', 'Cüzdanınızda onaylayın...', 'info');
+    showNotification('Transaction Started', 'Please confirm in your wallet...', 'info');
     const tx = await BC.signer.sendTransaction({
       to: FEE_WALLET, value: feeWei, gasLimit: 100000,
     });
-    showNotification('İşlem Gönderildi', 'Ağda onay bekleniyor...', 'info');
+    showNotification('Transaction Sent', 'Waiting for confirmation...', 'info');
     const rc = await tx.wait();
     showNotification(
-      'İşlem Onaylandı ✅',
+      'Transaction Confirmed ✅',
       `${feeEth} ETH transfer edildi.`,
       'success',
-      [{ label: 'BaseScan\'de Görüntüle', action: () => window.open(`https://basescan.org/tx/${rc.hash}`,'_blank') }]
+      [{ label: 'View on BaseScan', action: () => window.open(`https://basescan.org/tx/${rc.hash}`,'_blank') }]
     );
     addXP(xpReward, taskId);
     return rc;
   } catch (e) {
     if (e.code === 4001 || e.message?.includes('rejected')) {
-      showNotification('İşlem Reddedildi', 'İşlem cüzdanınızda iptal edildi.', 'info');
+      showNotification('Transaction Rejected', 'Transaction cancelled in wallet.', 'info');
     } else {
-      showNotification('İşlem Başarısız', e.shortMessage || e.message || 'Beklenmeyen bir hata oluştu.', 'error');
+      showNotification('Transaction Failed', e.shortMessage || e.message || 'An unexpected error occurred.', 'error');
     }
     return null;
   }

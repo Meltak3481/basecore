@@ -28,7 +28,7 @@ const CHAR = (() => {
 
   // ── Katman açıklamaları ──
   const LAYER_NAMES = [
-    'Core Hex',      // Lv1 — her zaman açık
+    'Core Hex',      // Lv1 — always visible
     'Inner Glow',    // Lv2
     'Eyes',          // Lv3
     'Hat',           // Lv4
@@ -137,12 +137,12 @@ const CHAR = (() => {
       const wy = cy + R * 0.1;
       svg += `  <!-- Wings -->
   <g filter="url(#cf-glow)" opacity="${level >= 7 ? '0.95' : '0.8'}">
-    <!-- Sol kanat -->
+    <!-- Left wing -->
     <path d="M${cx - R * 0.3},${wy} Q${cx - R * 1.6},${wy - R * 0.8} ${cx - R * 1.9},${wy + R * 0.5} Q${cx - R * 1.2},${wy + R * 0.3} ${cx - R * 0.3},${wy + R * 0.4} Z"
       fill="url(#cg-wing)" stroke="#93c5fd" stroke-width="0.8" stroke-opacity="0.6">
       ${animate ? `<animateTransform attributeName="transform" type="translate" values="0,0;-3,-2;0,0" dur="3s" repeatCount="indefinite"/>` : ''}
     </path>
-    <!-- Sağ kanat -->
+    <!-- Right wing -->
     <path d="M${cx + R * 0.3},${wy} Q${cx + R * 1.6},${wy - R * 0.8} ${cx + R * 1.9},${wy + R * 0.5} Q${cx + R * 1.2},${wy + R * 0.3} ${cx + R * 0.3},${wy + R * 0.4} Z"
       fill="url(#cg-wing)" stroke="#93c5fd" stroke-width="0.8" stroke-opacity="0.6">
       ${animate ? `<animateTransform attributeName="transform" type="translate" values="0,0;3,-2;0,0" dur="3s" repeatCount="indefinite"/>` : ''}
@@ -236,17 +236,17 @@ const CHAR = (() => {
       const ay = cy + R * 0.1;
       svg += `  <!-- Arms -->
   <g stroke="#60a5fa" stroke-width="${R * 0.1}" stroke-linecap="round" fill="none" opacity="0.9">
-    <!-- Sol kol -->
+    <!-- Left arm -->
     <line x1="${cx - R * 0.82}" y1="${ay}" x2="${cx - R * 1.35}" y2="${ay + R * 0.45}">
       ${animate ? `<animateTransform attributeName="transform" type="rotate" values="-8 ${cx - R * 0.82} ${ay};8 ${cx - R * 0.82} ${ay};-8 ${cx - R * 0.82} ${ay}" dur="3s" repeatCount="indefinite"/>` : ''}
     </line>
-    <!-- Sağ kol -->
+    <!-- Right arm -->
     <line x1="${cx + R * 0.82}" y1="${ay}" x2="${cx + R * 1.35}" y2="${ay + R * 0.45}">
       ${animate ? `<animateTransform attributeName="transform" type="rotate" values="8 ${cx + R * 0.82} ${ay};-8 ${cx + R * 0.82} ${ay};8 ${cx + R * 0.82} ${ay}" dur="3s" repeatCount="indefinite"/>` : ''}
     </line>
-    <!-- El topu sol -->
+    <!-- Left hand -->
     <circle cx="${cx - R * 1.38}" cy="${ay + R * 0.48}" r="${R * 0.1}" fill="#60a5fa" stroke="none"/>
-    <!-- El topu sağ -->
+    <!-- Right hand -->
     <circle cx="${cx + R * 1.38}" cy="${ay + R * 0.48}" r="${R * 0.1}" fill="#60a5fa" stroke="none"/>
   </g>\n`;
     }
@@ -272,13 +272,13 @@ const CHAR = (() => {
       const hbr = R * 0.45;
       svg += `  <!-- Hat -->
   <g>
-    <!-- Şapka brim -->
+    <!-- Hat brim -->
     <ellipse cx="${cx}" cy="${hty + R * 0.15}" rx="${hbr}" ry="${R * 0.1}" fill="#1e3a8a" stroke="#3b82f6" stroke-width="1"/>
-    <!-- Şapka gövde -->
+    <!-- Hat body -->
     <rect x="${cx - hbr * 0.65}" y="${hty - R * 0.35}" width="${hbr * 1.3}" height="${R * 0.52}" rx="3" fill="#1e40af" stroke="#3b82f6" stroke-width="0.8"/>
-    <!-- Şapka bandı -->
+    <!-- Hat band -->
     <rect x="${cx - hbr * 0.65}" y="${hty - R * 0.02}" width="${hbr * 1.3}" height="${R * 0.1}" rx="1" fill="#2563eb"/>
-    <!-- Şapka üzerinde mini hex -->
+    <!-- Hat mini hex -->
     <polygon points="${hexPoints(cx, hty - R * 0.18, R * 0.14)}" fill="#60a5fa" stroke="#93c5fd" stroke-width="0.6"/>
   </g>\n`;
     }
@@ -290,17 +290,17 @@ const CHAR = (() => {
       const cty = cy - R * 0.88;
       svg += `  <!-- Crown -->
   <g filter="url(#cf-glow2)">
-    <!-- Taç taban -->
+    <!-- Crown base -->
     <rect x="${cx - R * 0.52}" y="${cty + R * 0.05}" width="${R * 1.04}" height="${R * 0.32}" rx="3"
       fill="url(#cg-crown)" stroke="#fde68a" stroke-width="0.8"/>
-    <!-- Taç dişleri -->
+    <!-- Crown teeth -->
     <polygon points="${cx - R*0.52},${cty + R*0.05} ${cx - R*0.38},${cty - R*0.25} ${cx - R*0.24},${cty + R*0.05}"
       fill="url(#cg-crown)" stroke="#fde68a" stroke-width="0.5"/>
     <polygon points="${cx - R*0.14},${cty + R*0.05} ${cx},${cty - R*0.38} ${cx + R*0.14},${cty + R*0.05}"
       fill="url(#cg-crown)" stroke="#fde68a" stroke-width="0.5"/>
     <polygon points="${cx + R*0.24},${cty + R*0.05} ${cx + R*0.38},${cty - R*0.25} ${cx + R*0.52},${cty + R*0.05}"
       fill="url(#cg-crown)" stroke="#fde68a" stroke-width="0.5"/>
-    <!-- Taç taşları -->
+    <!-- Crown gems -->
     <circle cx="${cx - R*0.31}" cy="${cty + R*0.22}" r="${R*0.07}" fill="#bfdbfe">
       ${animate ? `<animate attributeName="fill" values="#bfdbfe;#ffffff;#bfdbfe" dur="1.5s" repeatCount="indefinite"/>` : ''}
     </circle>
