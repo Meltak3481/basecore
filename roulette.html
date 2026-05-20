@@ -45,7 +45,6 @@ canvas#rb{position:absolute;inset:0;pointer-events:none;}
     <div class="nav-xp" id="nav-xp" style="display:none"><span class="xp-icon">⚡</span><span id="nav-xp-val">0 XP</span></div>
     <div class="nav-user-wrap" id="nav-user-wrap" style="display:none">
       <div class="nav-addr" id="nav-addr" onclick="toggleUserMenu()"></div>
-      <div class="user-dropdown" id="user-dropdown"><button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Disconnect</button></div>
     </div>
     <button class="nav-connect" id="nav-connect-btn" onclick="openWalletModal()">Connect</button>
   </div>
@@ -245,7 +244,10 @@ async function playRoulette() {
   btn.disabled=false;btn.textContent='🎡 Spin · 0.00002 ETH';
 }
 
-function showWin(xp,title,emoji){document.getElementById('win-emoji').textContent=emoji||'🎡';document.getElementById('win-title').textContent=title;document.getElementById('win-xp').textContent='+'+xp.toLocaleString()+' XP';document.getElementById('win-card').className='win-card show';document.getElementById('lose-card').className='lose-card';document.getElementById('win-burst').className='win-burst show';document.getElementById('win-overlay').style.pointerEvents='all';spawnConfetti();SFX.play('win');}
+function showWin(xp,title,emoji){document.getElementById('win-emoji').textContent=emoji||'🎡';document.getElementById('win-title').textContent=title;const _wd=typeof getWinXPDisplay==='function'?getWinXPDisplay(xp):{text:'+'+xp.toLocaleString()+' XP',detail:null};
+  document.getElementById('win-xp').textContent=_wd.text;
+  const _wdet=document.getElementById('win-xp-detail');
+  if(_wdet){_wdet.textContent=_wd.detail||'';_wdet.style.display=_wd.detail?'block':'none';}document.getElementById('win-card').className='win-card show';document.getElementById('lose-card').className='lose-card';document.getElementById('win-burst').className='win-burst show';document.getElementById('win-overlay').style.pointerEvents='all';spawnConfetti();SFX.play('win');}
 function showLose(msg,sub){document.getElementById('lose-title').textContent=msg;document.getElementById('lose-sub').textContent=sub;document.getElementById('lose-card').className='lose-card show';document.getElementById('win-card').className='win-card';document.getElementById('win-burst').className='win-burst';document.getElementById('win-overlay').style.pointerEvents='all';SFX.play('lose');}
 function closeWin(){document.getElementById('win-card').className='win-card hide';document.getElementById('lose-card').className='lose-card hide';setTimeout(()=>{document.getElementById('win-overlay').style.pointerEvents='none';document.getElementById('win-card').className='win-card';document.getElementById('lose-card').className='lose-card';},300);}
 function spawnConfetti(){const cols=['#f5c518','#00e887','#0070f3','#ec4899','#8b5cf6'];for(let i=0;i<50;i++){const el=document.createElement('div');el.className='confetti-piece';el.style.cssText=`left:${Math.random()*100}%;background:${cols[~~(Math.random()*cols.length)]};--dur:${1.5+Math.random()}s;--delay:${Math.random()*.4}s;transform:rotate(${Math.random()*360}deg)`;document.body.appendChild(el);setTimeout(()=>el.remove(),2500);}}

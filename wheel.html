@@ -200,9 +200,6 @@
     <div class="nav-xp" id="nav-xp" style="display:none"><span class="xp-icon">⚡</span><span id="nav-xp-val">0 XP</span></div>
     <div class="nav-user-wrap" id="nav-user-wrap" style="display:none">
       <div class="nav-addr" id="nav-addr" onclick="toggleUserMenu()"></div>
-      <div class="user-dropdown" id="user-dropdown">
-        <button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Disconnect</button>
-      </div>
     </div>
     <button class="nav-connect" id="nav-connect-btn" onclick="openWalletModal()">Connect</button>
   </div>
@@ -630,7 +627,10 @@ async function doSpin() {
    ══════════════════════════════════════════════════ */
 function showWin(seg) {
   document.getElementById('win-emoji').textContent = seg.emoji;
-  document.getElementById('win-xp').textContent    = '+' + fmtXP(seg.xp) + ' XP';
+  const _wd=typeof getWinXPDisplay==='function'?getWinXPDisplay(seg.xp):{text:'+'+fmtXP(seg.xp)+' XP',detail:null};
+  document.getElementById('win-xp').textContent=_wd.text;
+  const _wdet=document.getElementById('win-xp-detail');
+  if(_wdet){_wdet.textContent=_wd.detail||'';_wdet.style.display=_wd.detail?'block':'none';}
   document.getElementById('win-xp').style.color    = seg.hex;
   document.getElementById('win-name').textContent  = seg.name + ' Prize';
   document.getElementById('win-card').className    = 'win-card show';

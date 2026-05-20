@@ -44,6 +44,7 @@
     <span class="win-emoji" id="win-emoji">🎲</span>
     <div class="win-title" id="win-title">CORRECT!</div>
     <div class="win-xp" id="win-xp">+1500 XP</div>
+    <div id="win-xp-detail" style="font-size:13px;color:#fbbf24;font-family:var(--mono);font-weight:700;margin-bottom:4px;display:none;"></div>
     <div class="win-sub" id="win-sub"></div>
     <button class="play-btn" style="background:linear-gradient(135deg,var(--green2),#059669);color:#fff;margin-top:16px;padding:12px" onclick="closeWin()">Awesome! 🔥</button>
   </div>
@@ -61,7 +62,6 @@
     <div class="nav-xp" id="nav-xp" style="display:none"><span class="xp-icon">⚡</span><span id="nav-xp-val">0 XP</span></div>
     <div class="nav-user-wrap" id="nav-user-wrap" style="display:none">
       <div class="nav-addr" id="nav-addr" onclick="toggleUserMenu()"></div>
-      <div class="user-dropdown" id="user-dropdown"><button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Disconnect</button></div>
     </div>
     <button class="nav-connect" id="nav-connect-btn" onclick="openWalletModal()">Connect</button>
   </div>
@@ -301,7 +301,10 @@ async function playDice() {
 function showWin(xp, title, emoji) {
   document.getElementById('win-emoji').textContent = emoji||'🎲';
   document.getElementById('win-title').textContent = title;
-  document.getElementById('win-xp').textContent    = '+'+xp.toLocaleString()+' XP';
+  const _wd=typeof getWinXPDisplay==='function'?getWinXPDisplay(xp):{text:'+'+xp.toLocaleString()+' XP',detail:null};
+  document.getElementById('win-xp').textContent=_wd.text;
+  const _wdet=document.getElementById('win-xp-detail');
+  if(_wdet){_wdet.textContent=_wd.detail||'';_wdet.style.display=_wd.detail?'block':'none';}
   document.getElementById('win-card').className    = 'win-card show';
   document.getElementById('lose-card').className   = 'lose-card';
   document.getElementById('win-burst').className   = 'win-burst show';

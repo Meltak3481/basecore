@@ -361,6 +361,23 @@ const WORKER_URL = (typeof location !== 'undefined' && location.hostname === 'lo
   ? 'http://localhost:8787'
   : 'https://basecore-pay.meltak34.workers.dev';
 
+
+// ── Win overlay multiplier helper ──
+// Oyun sayfaları bunu kullanarak "500 XP × 3 = 2000 XP" gösterir
+function getWinXPDisplay(baseAmt) {
+  const mult = getNFTMult();
+  const final = baseAmt * mult;
+  if (mult > 1) {
+    return {
+      text: '+' + fmtXP(final) + ' XP',
+      detail: fmtXP(baseAmt) + ' × ' + mult + ' = ' + fmtXP(final) + ' XP',
+      final,
+      mult,
+    };
+  }
+  return { text: '+' + fmtXP(final) + ' XP', detail: null, final, mult: 1 };
+}
+
 // ── STATE PERSIST ──
 // KV debounce timer
 let _kvTimer = null;
