@@ -267,7 +267,7 @@ async function playSlots(){
   spinning=true;
 
   const rc=await sendTxWithFee('0.00002',100,'game');
-  if(!rc){btn.disabled=false;btn.textContent='🎰 Spin · 0.00002 ETH';spinning=false;return;}
+  if(!rc){btn.disabled=false;btn.textContent=🎰 Spin  + getPayLabel();spinning=false;return;}
 
   const results=[SYMS[wRand(WEIGHTS)],SYMS[wRand(WEIGHTS)],SYMS[wRand(WEIGHTS)]];
   document.getElementById('slots-msg').textContent='';
@@ -320,7 +320,7 @@ async function playSlots(){
   // Reel'leri resetle
   initReels();
   spinning=false;
-  btn.disabled=false;btn.textContent='🎰 Spin · 0.00002 ETH';
+  btn.disabled=false;btn.textContent=🎰 Spin  + getPayLabel();
   recordGamePlayed();
 }
 
@@ -354,7 +354,20 @@ function spawnConfetti(){const cols=['#f5c518','#00e887','#0070f3','#ec4899','#8
 function shareX(t){window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(t+' ⬡ @BaseCoreFun #Base')}&url=${encodeURIComponent('https://basecore.fun')}`,'_blank');}
 
 function showDashboard(){} // session restore için
+
+// ── Mod değişince buton metnini güncelle ──
+window.addEventListener('payModeChanged', (e) => {
+  updateGameBtn();
+});
+
+function updateGameBtn() {
+  const label = typeof getPayLabel === 'function' ? getPayLabel() : '0.00002 ETH';
+  const btn = document.getElementById('slots-play');
+  if (!btn || btn.disabled) return;
+  btn.textContent = '🎰 Spin · ' + label;
+}
 initNav('gaming');
+  updateGameBtn();
 initReels();
 </script>
 </body>

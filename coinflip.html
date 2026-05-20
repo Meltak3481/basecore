@@ -150,7 +150,7 @@ function cfPick(s) {
   cfSide = s;
   document.getElementById('cf-h').classList.toggle('sel', s === 'heads');
   document.getElementById('cf-t').classList.toggle('sel', s === 'tails');
-  document.getElementById('cf-play').textContent = `🪙 Flip ${s.charAt(0).toUpperCase()+s.slice(1)} · 0.00002 ETH`;
+  document.getElementById('cf-play').textContent = `🪙 Flip ${s.charAt(0).toUpperCase()+s.slice(1)}  · ${typeof getPayLabel==="function"?getPayLabel():"0.00002 ETH"}`;
   SFX.play('click');
 }
 
@@ -162,7 +162,7 @@ async function playCoinflip() {
   document.getElementById('result-badge').textContent = '';
 
   const rc = await sendTxWithFee('0.00002', 150, 'game');
-  if (!rc) { btn.disabled = false; btn.textContent = `🪙 Flip ${cfSide} · 0.00002 ETH`; return; }
+  if (!rc) { btn.disabled = false; btn.textContent = 🪙 Flip ${cfSide} ' + getPayLabel(); return; }
 
   // Sonucu önceden belirle
   const result  = Math.random() < 0.5 ? 'heads' : 'tails';
@@ -198,7 +198,7 @@ async function playCoinflip() {
   document.getElementById('cf-l').textContent = cfL;
   document.getElementById('cf-s').textContent = cfStr;
   btn.disabled  = false;
-  btn.textContent = `🪙 Flip ${cfSide.charAt(0).toUpperCase()+cfSide.slice(1)} · 0.00002 ETH`;
+  btn.textContent = 🪙 Flip ${cfSide.charAt(0).toUpperCase()+cfSide.slice(1)} ' + getPayLabel();
 }
 
 function showWin(xp, title, emoji) {
@@ -248,7 +248,21 @@ function shareX(t) {
 }
 
 function showDashboard(){} // session restore için
+
+// ── Mod değişince buton metnini güncelle ──
+window.addEventListener('payModeChanged', (e) => {
+  updateGameBtn();
+});
+
+function updateGameBtn() {
+  const label = typeof getPayLabel === 'function' ? getPayLabel() : '0.00002 ETH';
+  const btn = document.getElementById('cf-play');
+  if (!btn || btn.disabled) return;
+  const side = typeof cfSide !== 'undefined' ? cfSide : 'heads';
+  btn.textContent = '🪙 Flip ' + side.charAt(0).toUpperCase() + side.slice(1) + ' · ' + label;
+}
 initNav('gaming');
+  updateGameBtn();
 </script>
 </body>
 </html>

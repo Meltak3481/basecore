@@ -244,8 +244,8 @@
 
   <div class="spin-dots" id="spin-dots"></div>
 
-  <button class="spin-btn" id="spin-btn" onclick="doSpin()">
-    <span>✦</span> Pay via x402 &amp; Spin!
+  <button class="spin-btn" id="spin-btn" onclick="doSpin()" data-pay-prefix="✦ Spin · ">
+    ✦ Spin · 0.00002 ETH
   </button>
 
   <div style="height:28px;"></div>
@@ -618,7 +618,7 @@ async function doSpin() {
 
   btn.disabled  = wheelSpins <= 0;
   btn.innerHTML = wheelSpins > 0
-    ? '<span>✦</span> Pay via x402 &amp; Spin!'
+    ? '✦ Spin · ' + (typeof getPayLabel==='function'?getPayLabel():'0.00002 ETH')
     : '🌙 No spins left · Come back tomorrow';
 }
 
@@ -669,7 +669,7 @@ function updateSpinUI() {
     btn.innerHTML = '🌙 No spins left · Come back tomorrow';
   } else if (!isSpinning) {
     btn.disabled  = false;
-    btn.innerHTML = '<span>✦</span> Pay via x402 &amp; Spin!';
+    btn.innerHTML = '✦ Spin · ' + (typeof getPayLabel==='function'?getPayLabel():'0.00002 ETH');
   }
 }
 
