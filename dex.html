@@ -489,18 +489,16 @@ async function getQuote(amountIn, tokenIn, tokenOut) {
 
   if (amtBig === 0n) return null;
 
-  // Try each fee tier, return the best quote
   let bestQuote = null;
   let bestFee   = null;
 
   for (const fee of FEE_TIERS) {
     try {
-      // quoteExactInputSingle(tokenIn, tokenOut, fee, amountIn, sqrtPriceLimitX96)
-      const params = encodeQuoteParams(inAddr, outAddr, fee, amtBig);
-      const raw = await BC.provider.call({
-        to: UNI_QUOTER_V2,
-        data: '0xc6a5026a' + params, // quoteExactInputSingle
-      });
+      // Quoter V2: quoteExactInputSingle((tokenIn,tokenOut,amountIn,fee,sqrtPriceLimitX96))
+      // selector: 0xcdca1753
+      const data = encodeQuoteV2(inAddr, outAddr, amtBig, fee);
+      const raw = await BC.provider.call({ to: UNI_QUOTER_V2, data });
+
       if (raw && raw !== '0x' && raw.length >= 66) {
         const amtOut = BigInt('0x' + raw.slice(2, 66));
         if (amtOut > 0n && (bestQuote === null || amtOut > bestQuote)) {
@@ -509,6 +507,23 @@ async function getQuote(amountIn, tokenIn, tokenOut) {
         }
       }
     } catch(e) {}
+  }
+
+  // Fallback: Quoter V1 style (0xf7729d43) if V2 fails
+  if (!bestQuote) {
+    for (const fee of FEE_TIERS) {
+      try {
+        const data = encodeQuoteV1(inAddr, outAddr, fee, amtBig);
+        const raw = await BC.provider.call({ to: UNI_QUOTER_V2, data });
+        if (raw && raw !== '0x' && raw.length >= 66) {
+          const amtOut = BigInt('0x' + raw.slice(2, 66));
+          if (amtOut > 0n && (bestQuote === null || amtOut > bestQuote)) {
+            bestQuote = amtOut;
+            bestFee   = fee;
+          }
+        }
+      } catch(e) {}
+    }
   }
 
   if (!bestQuote) return null;
@@ -520,15 +535,32 @@ async function getQuote(amountIn, tokenIn, tokenOut) {
   };
 }
 
-function encodeQuoteParams(tokenIn, tokenOut, fee, amountIn) {
-  const pad = (s, n=64) => s.replace('0x','').padStart(n,'0');
-  return (
-    pad(tokenIn)  +
-    pad(tokenOut) +
-    pad(fee.toString(16)) +
-    pad(amountIn.toString(16)) +
-    pad('0') // sqrtPriceLimitX96 = 0
-  );
+function pad64(val) {
+  return BigInt(val).toString(16).padStart(64, '0');
+}
+function padAddr(addr) {
+  return addr.replace('0x','').toLowerCase().padStart(64,'0');
+}
+
+// Quoter V2: quoteExactInputSingle(QuoteExactInputSingleParams)
+// struct: tokenIn, tokenOut, amountIn, fee, sqrtPriceLimitX96
+function encodeQuoteV2(tokenIn, tokenOut, amountIn, fee) {
+  return '0xcdca1753' +
+    padAddr(tokenIn)  +
+    padAddr(tokenOut) +
+    pad64(amountIn)   +
+    pad64(fee)        +
+    pad64(0);         // sqrtPriceLimitX96
+}
+
+// Quoter V1 fallback: quoteExactInputSingle(address,address,uint24,uint256,uint160)
+function encodeQuoteV1(tokenIn, tokenOut, fee, amountIn) {
+  return '0xf7729d43' +
+    padAddr(tokenIn)  +
+    padAddr(tokenOut) +
+    pad64(fee)        +
+    pad64(amountIn)   +
+    pad64(0);         // sqrtPriceLimitX96
 }
 
 // ─────────────────────────────────────────────
@@ -736,17 +768,15 @@ async function executeSwap() {
 // ABI ENCODING HELPERS
 // ─────────────────────────────────────────────
 function encodeExactInputSingle(tokenIn, tokenOut, fee, recipient, deadline, amountIn, amountOutMin) {
-  const pad = (v, n=64) => BigInt(v).toString(16).padStart(n, '0');
-  const padAddr = a => a.replace('0x','').toLowerCase().padStart(64,'0');
   return (
-    padAddr(tokenIn)  +
-    padAddr(tokenOut) +
-    pad(fee)          +
-    padAddr(recipient)+
-    pad(deadline)     +
-    pad(amountIn)     +
-    pad(amountOutMin) +
-    pad(0)            // sqrtPriceLimitX96
+    padAddr(tokenIn)   +
+    padAddr(tokenOut)  +
+    pad64(fee)         +
+    padAddr(recipient) +
+    pad64(deadline)    +
+    pad64(amountIn)    +
+    pad64(amountOutMin)+
+    pad64(0)           // sqrtPriceLimitX96
   );
 }
 
