@@ -493,13 +493,13 @@ function formatBal(raw, decimals, digits = 4) {
 }
 
 // ─────────────────────────────────────────────
-// QUOTE + SWAP via 0x API
+// QUOTE + SWAP via Paraswap API (free, no key)
 // ─────────────────────────────────────────────
-const ZEROX_BASE = 'https://api.0x.org/swap/allowance-holder';
-const ZEROX_SPENDER = '0x0000000000001fF3684f28c67538d4D072C22734';
+const PARASWAP_BASE   = 'https://api.paraswap.io';
+const BASE_CHAIN_ID   = 8453;
 
-function zeroxAddr(token) {
-  return token.isNative ? '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' : token.addr;
+function pAddr(token) {
+  return token.isNative ? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' : token.addr;
 }
 
 async function getQuote(amountIn, tokenIn, tokenOut) {
@@ -507,27 +507,22 @@ async function getQuote(amountIn, tokenIn, tokenOut) {
   if (amtBig === 0n) return null;
 
   try {
-    const params = new URLSearchParams({
-      chainId:     '8453',
-      sellToken:   zeroxAddr(tokenIn),
-      buyToken:    zeroxAddr(tokenOut),
-      sellAmount:  amtBig.toString(),
-      taker:       BC.addr || '0x0000000000000000000000000000000000000001',
-      slippageBps: Math.round(slippage * 100).toString(),
-    });
-    const res = await fetch(`${ZEROX_BASE}/price?${params}`);
+    const url = `${PARASWAP_BASE}/prices?srcToken=${pAddr(tokenIn)}&destToken=${pAddr(tokenOut)}&amount=${amtBig}&srcDecimals=${tokenIn.decimals}&destDecimals=${tokenOut.decimals}&side=SELL&network=${BASE_CHAIN_ID}&excludeDEXS=&includeDEXS=`;
+    const res  = await fetch(url);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    if (!data.buyAmount) throw new Error('no buyAmount');
+    if (!data.priceRoute?.destAmount) throw new Error('no destAmount');
 
+    const outAmt = Number(data.priceRoute.destAmount) / Math.pow(10, tokenOut.decimals);
     return {
-      amountOutFormatted: Number(data.buyAmount) / Math.pow(10, tokenOut.decimals),
-      amountOut: BigInt(data.buyAmount),
+      amountOutFormatted: outAmt,
+      amountOut: BigInt(data.priceRoute.destAmount),
       isEstimate: false,
-      source: data.route?.fills?.[0]?.source || 'DEX',
+      source: data.priceRoute.bestRoute?.[0]?.swaps?.[0]?.swapExchanges?.[0]?.exchange || 'Paraswap',
+      priceRoute: data.priceRoute,
     };
   } catch(e) {
-    console.warn('0x price:', e.message);
+    console.warn('Paraswap price error:', e.message);
     // Offchain fallback
     const inUsd  = getUsdValue(amountIn, tokenIn);
     const outPer = getUsdValue(1, tokenOut);
@@ -537,26 +532,42 @@ async function getQuote(amountIn, tokenIn, tokenOut) {
         amountOut: 0n,
         isEstimate: true,
         source: 'estimate',
+        priceRoute: null,
       };
     }
     return null;
   }
 }
 
-async function getZeroxSwapQuote(amountIn, tokenIn, tokenOut) {
-  const amtBig = BigInt(Math.floor(amountIn * Math.pow(10, tokenIn.decimals)));
-  const params = new URLSearchParams({
-    chainId:     '8453',
-    sellToken:   zeroxAddr(tokenIn),
-    buyToken:    zeroxAddr(tokenOut),
-    sellAmount:  amtBig.toString(),
-    taker:       BC.addr,
-    slippageBps: Math.round((slippage + PLATFORM_FEE_BPS / 100) * 100).toString(),
+async function getParaswapTx(amountIn, tokenIn, tokenOut, priceRoute) {
+  const amtBig  = BigInt(Math.floor(amountIn * Math.pow(10, tokenIn.decimals)));
+  const minAmt  = BigInt(Math.floor(
+    Number(priceRoute.destAmount) * (1 - (slippage + PLATFORM_FEE_BPS / 100) / 100)
+  ));
+
+  const body = {
+    srcToken:    pAddr(tokenIn),
+    destToken:   pAddr(tokenOut),
+    srcAmount:   amtBig.toString(),
+    destAmount:  minAmt.toString(),
+    priceRoute,
+    userAddress: BC.addr,
+    srcDecimals:  tokenIn.decimals,
+    destDecimals: tokenOut.decimals,
+    slippage:     Math.round((slippage + PLATFORM_FEE_BPS / 100) * 100),
+    partnerAddress: PLATFORM_FEE_ADDR,
+    partnerFeeBps:  PLATFORM_FEE_BPS,
+  };
+
+  const res = await fetch(`${PARASWAP_BASE}/transactions/${BASE_CHAIN_ID}?ignoreChecks=true`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(body),
   });
-  const res = await fetch(`${ZEROX_BASE}/quote?${params}`);
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err?.validationErrors?.[0]?.reason || err?.reason || 'Quote failed ' + res.status);
+    throw new Error(err?.error || 'Paraswap tx failed ' + res.status);
   }
   return res.json();
 }
@@ -723,28 +734,26 @@ async function executeSwap() {
     }
 
     toast('⏳ Getting swap route...', 'info');
-    let swapData, swapTo, swapValue;
+    let swapTo, swapData, swapValue;
 
-    if (!lastQuote.isEstimate) {
-      // 0x API'den gerçek calldata al
+    if (!lastQuote.isEstimate && lastQuote.priceRoute) {
       try {
-        const zQuote = await getZeroxSwapQuote(sellAmt, sellToken, buyToken);
-
-        // ERC-20 approval — 0x AllowanceHolder için
-        if (!sellToken.isNative && zQuote.issues?.allowance) {
+        // ERC-20 approval — Paraswap TokenTransferProxy
+        if (!sellToken.isNative) {
+          const paraswapProxy = '0x216B4B4Ba9F3e719726886d34a177484278Bfcae';
           toast('Approving token...', 'info');
-          await ensureApproval(sellToken, amtIn, signer, zQuote.issues.allowance.spender || ZEROX_SPENDER);
+          await ensureApproval(sellToken, amtIn, signer, paraswapProxy);
         }
 
-        swapTo    = zQuote.transaction.to;
-        swapData  = zQuote.transaction.data;
-        swapValue = BigInt(zQuote.transaction.value || '0');
+        const txData = await getParaswapTx(sellAmt, sellToken, buyToken, lastQuote.priceRoute);
+        swapTo    = txData.to;
+        swapData  = txData.data;
+        swapValue = BigInt(txData.value || '0');
       } catch(apiErr) {
-        toast('❌ ' + apiErr.message.slice(0,80), 'error');
+        toast('❌ ' + apiErr.message.slice(0, 80), 'error');
         btn.disabled = false; updateSwapBtn(); return;
       }
     } else {
-      // Estimate modunda swap yapma, kullanıcıyı yönlendir
       toast('Quote unavailable — use Aerodrome or Uniswap directly', 'error');
       btn.disabled = false; updateSwapBtn(); return;
     }
