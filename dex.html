@@ -1,426 +1,702 @@
-/**
- * Cloudflare Worker — BaseCore x402 Payment Gateway + KV State
- * CDP Ed25519 JWT Authentication + İki Aşamalı Verify/Settle Akışı
- *
- * Cloudflare Secrets:
- *   CDP_API_KEY    → CDP Key ID (UUID)
- *   CDP_KEY_SECRET → CDP Ed25519 Private Key (base64, ~88 karakter)
- *   FEE_WALLET     → Ödeme alacak cüzdan adresi (0x...)
- *
- * Cloudflare Bindings:
- *   BASECORE_KV    → KV Namespace (kullanıcı state verisi)
- *
- * Endpoints:
- *   POST /         → x402 ödeme (verify + settle)
- *   GET  /state    → kullanıcı state oku  (?addr=0x...)
- *   POST /state    → kullanıcı state yaz  (body: { address, xp, level, streak, refs, tasks })
- */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="base:app_id" content="69eb54ae345dbf0ebcf5d84c" />
+<title>DEX — BaseCore</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+/* ── DEX HEADER ── */
+.dex-header{background:linear-gradient(135deg,rgba(0,112,243,.1),rgba(0,200,255,.07));border:1px solid rgba(0,112,243,.2);border-radius:18px;padding:18px 20px;margin-bottom:16px;position:relative;overflow:hidden;}
+.dex-header::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--blue2),var(--cyan),transparent);}
+.dh-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.dh-title{font-size:18px;font-weight:900;display:flex;align-items:center;gap:8px;}
+.dh-powered{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);font-family:var(--mono);}
+.dh-stats{display:flex;gap:16px;flex-wrap:wrap;}
+.dhs{font-size:12px;color:var(--text2);}
+.dhs strong{color:var(--text);}
 
-// ── Constants ────────────────────────────────────────────────────────────────
-const CDP_BASE_URL  = 'https://api.cdp.coinbase.com/platform/v2/x402';
-const CDP_VERIFY    = CDP_BASE_URL + '/verify';
-const CDP_SETTLE    = CDP_BASE_URL + '/settle';
-const USDC_BASE     = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-const NETWORK       = 'base';
-const NETWORK_CAIP2 = 'eip155:8453';
-const PRICE_ATOMIC  = '50000'; // 0.05 USDC
-const TIMEOUT_SEC   = 300;
-const KV_PREFIX     = 'user:'; // basexp ile çakışmasın
+/* ── XP BANNER ── */
+.xp-banner{background:linear-gradient(135deg,rgba(245,197,24,.08),rgba(249,115,22,.06));border:1px solid rgba(245,197,24,.18);border-radius:14px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;}
+.xpb-icon{font-size:24px;flex-shrink:0;}
+.xpb-text{flex:1;font-size:13px;color:var(--text2);line-height:1.4;}
+.xpb-text strong{color:var(--yellow);}
 
-const ALLOWED_ORIGINS = [
-  'https://basecore.fun',
-  'http://localhost:5500',
-  'http://localhost:5501',
-  'http://127.0.0.1:5500',
-  'http://127.0.0.1:5501',
-  'http://localhost:3000',
-];
+/* ── QUICK PAIRS ── */
+.quick-tokens{margin-bottom:16px;}
+.qt-title{font-size:12px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+.qt-grid{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
+.qt-grid::-webkit-scrollbar{display:none;}
+.qt-chip{display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:20px;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;font-size:13px;font-weight:600;}
+.qt-chip:hover{border-color:var(--border2);}
+.qt-chip.active{background:rgba(0,112,243,.1);border-color:rgba(0,112,243,.3);color:var(--blue2);}
 
-// ── CORS ─────────────────────────────────────────────────────────────────────
-function getCorsHeaders(requestOrigin) {
-  const origin = ALLOWED_ORIGINS.includes(requestOrigin)
-    ? requestOrigin
-    : ALLOWED_ORIGINS[0];
-  return {
-    'Access-Control-Allow-Origin':   origin,
-    'Access-Control-Allow-Methods':  'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers':  'Content-Type, X-PAYMENT, X-Payment, x-payment, PAYMENT-SIGNATURE, Authorization',
-    'Access-Control-Expose-Headers': 'PAYMENT-REQUIRED, PAYMENT-RESPONSE, X-PAYMENT-RESPONSE',
-    'Vary': 'Origin',
-  };
+/* ── SLIPPAGE ── */
+.settings-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.settings-label{font-size:12px;color:var(--text2);font-family:var(--mono);}
+.slip-btns{display:flex;gap:4px;}
+.slip-btn{padding:5px 10px;border-radius:8px;font-size:11px;font-weight:700;background:var(--card2);border:1px solid var(--border);color:var(--text2);cursor:pointer;font-family:var(--mono);transition:all .15s;}
+.slip-btn.active{background:rgba(0,112,243,.15);border-color:rgba(0,112,243,.4);color:var(--blue2);}
+
+/* ── SWAP BOX ── */
+.swap-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:16px;margin-bottom:12px;position:relative;}
+.swap-box::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,112,243,.3),transparent);border-radius:20px;}
+
+.token-row{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:4px;transition:border-color .2s;}
+.token-row:focus-within{border-color:rgba(0,112,243,.4);}
+.tr-label{font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;justify-content:space-between;}
+.tr-bal{color:var(--text2);cursor:pointer;}
+.tr-bal:hover{color:var(--cyan);}
+.tr-input-row{display:flex;align-items:center;gap:10px;}
+.tr-amount{flex:1;background:transparent;border:none;outline:none;font-size:28px;font-weight:900;color:var(--text);font-family:var(--sans);min-width:0;}
+.tr-amount::placeholder{color:var(--muted);}
+.tr-amount[readonly]{color:var(--text2);}
+.token-btn{display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--border2);border-radius:20px;padding:8px 12px;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;}
+.token-btn:hover{border-color:var(--blue2);}
+.tr-usd{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:6px;}
+.tr-pcts{display:flex;gap:5px;margin-top:8px;}
+.tr-pct{padding:3px 9px;border-radius:6px;font-size:10px;font-weight:700;background:var(--card);border:1px solid var(--border);color:var(--text2);cursor:pointer;transition:all .15s;font-family:var(--mono);}
+.tr-pct:hover{border-color:var(--blue2);color:var(--blue2);}
+
+.flip-wrap{display:flex;justify-content:center;height:24px;align-items:center;position:relative;z-index:2;}
+.flip-btn{width:34px;height:34px;border-radius:10px;background:var(--card2);border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;transition:all .25s;color:var(--text2);}
+.flip-btn:hover{border-color:var(--blue2);color:var(--blue2);transform:rotate(180deg);}
+
+/* ── ROUTE BOX ── */
+.route-box{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:12px;display:none;}
+.route-box.show{display:block;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+.rb-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px;}
+.rb-key{color:var(--text2);}
+.rb-val{font-weight:700;font-family:var(--mono);}
+.rb-divider{height:1px;background:var(--border);margin:4px 0;}
+
+/* ── TX RESULT ── */
+.tx-result-box{background:rgba(0,232,135,.06);border:1px solid rgba(0,232,135,.2);border-radius:12px;padding:14px;margin-top:10px;display:none;}
+.tx-result-box.show{display:block;animation:fadeIn .3s ease;}
+.tx-hash-link{color:var(--cyan);font-family:var(--mono);font-size:12px;word-break:break-all;}
+
+/* ── TOKEN MODAL ── */
+.token-modal{position:fixed;inset:0;z-index:500;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);}
+.token-modal.open{display:flex;}
+.tm-sheet{background:var(--card);border:1px solid var(--border);border-radius:24px 24px 0 0;width:100%;max-width:480px;padding:20px;max-height:70vh;display:flex;flex-direction:column;animation:slideUp .3s cubic-bezier(.4,0,.2,1);}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.tm-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.tm-title{font-size:16px;font-weight:800;}
+.tm-close{width:32px;height:32px;border-radius:10px;background:var(--card2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:var(--muted);}
+.tm-search{width:100%;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;margin-bottom:10px;box-sizing:border-box;}
+.tm-search:focus{border-color:var(--blue2);}
+.tm-list{overflow-y:auto;display:flex;flex-direction:column;gap:3px;}
+.tm-tok{display:flex;align-items:center;gap:12px;padding:11px;border-radius:12px;cursor:pointer;transition:background .15s;}
+.tm-tok:hover{background:var(--card2);}
+.tm-tok-icon{width:36px;height:36px;border-radius:50%;background:var(--card2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.tm-tok-sym{font-size:14px;font-weight:800;}
+.tm-tok-name{font-size:11px;color:var(--text2);margin-top:1px;}
+.tm-tok-bal{font-size:12px;font-weight:700;font-family:var(--mono);color:var(--text2);margin-left:auto;}
+
+/* external links */
+.ext-row{display:flex;gap:8px;margin-top:14px;}
+.ext-btn{flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--card);font-size:11px;font-weight:700;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:5px;color:var(--text2);transition:all .2s;}
+.ext-btn:hover{border-color:var(--border2);color:var(--text);}
+</style>
+</head>
+<body>
+<div class="bg-mesh"></div>
+<div class="bg-grid"></div>
+
+<nav class="navbar">
+  <a href="index.html" class="nav-logo"><div class="nav-logo-icon">⬡</div><div class="nav-logo-text">Base<span>Core</span></div></a>
+  <div class="nav-right">
+    <div class="nav-xp" id="nav-xp" style="display:none"><span class="xp-icon">⚡</span><span id="nav-xp-val">0 XP</span></div>
+    <div class="nav-user-wrap" id="nav-user-wrap" style="display:none">
+      <div class="nav-addr" id="nav-addr" onclick="toggleUserMenu()"></div>
+      <div class="user-dropdown" id="user-dropdown">
+        <button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Disconnect</button>
+      </div>
+    </div>
+    <button class="nav-connect" id="nav-connect-btn" onclick="openWalletModal()">Connect</button>
+  </div>
+</nav>
+
+<nav class="tab-bar">
+  <a href="gm.html"       class="tab-item" data-tab="gm">      <div class="tab-icon-wrap">🌅</div><span class="tab-label">GM/GN</span></a>
+  <a href="dex.html"      class="tab-item" data-tab="dex">     <div class="tab-icon-wrap">🔄</div><span class="tab-label">DEX</span></a>
+  <a href="gaming.html"   class="tab-item" data-tab="gaming">  <div class="tab-icon-wrap">🎮</div><span class="tab-label">Gaming</span></a>
+  <a href="wheel.html"    class="tab-item" data-tab="nft">     <div class="tab-icon-wrap">🎡</div><span class="tab-label">Wheel</span></a>
+  <a href="analysis.html" class="tab-item" data-tab="analysis"><div class="tab-icon-wrap">📊</div><span class="tab-label">Analysis</span></a>
+  <a href="deploy.html"   class="tab-item" data-tab="deploy">  <div class="tab-icon-wrap">🚀</div><span class="tab-label">Deploy</span></a>
+  <a href="social.html"   class="tab-item" data-tab="social">  <div class="tab-icon-wrap">👥</div><span class="tab-label">Social</span></a>
+</nav>
+
+<div class="page-wrap">
+
+  <div class="mode-toggle" style="margin-bottom:16px;">
+    <button id="btn-onchain" class="mode-btn active" onclick="setPaymentMode('onchain')">⛓️ On-Chain</button>
+    <button id="btn-x402" class="mode-btn" onclick="setPaymentMode('x402')">⚡ x402 Mode</button>
+  </div>
+
+  <div class="dex-header">
+    <div class="dh-top">
+      <div class="dh-title">🔄 DEX Swap</div>
+      <div class="dh-powered" id="dh-powered">
+        <span style="font-size:14px">🔵</span> Native · Base
+      </div>
+    </div>
+    <div class="dh-stats">
+      <div class="dhs">Chain: <strong>Base</strong></div>
+      <div class="dhs">Route: <strong id="dh-route">Best Price</strong></div>
+      <div class="dhs">Fee: <strong>0.25%</strong></div>
+    </div>
+  </div>
+
+  <div class="xp-banner">
+    <div class="xpb-icon">⚡</div>
+    <div class="xpb-text">
+      <strong>Swap Rewards:</strong> $0–100 → <strong>500 XP</strong> · $100–500 → <strong>5,000 XP</strong> · $500–1K → <strong>10,000 XP</strong> · $1K–5K → <strong>25,000 XP</strong> · $5K+ → <strong>100,000 XP</strong>
+    </div>
+  </div>
+
+  <div class="quick-tokens">
+    <div class="qt-title">Popular pairs</div>
+    <div class="qt-grid">
+      <div class="qt-chip active" onclick="selectPair('ETH','USDC',this)">Ξ ETH → USDC</div>
+      <div class="qt-chip" onclick="selectPair('USDC','ETH',this)">USDC → ETH</div>
+      <div class="qt-chip" onclick="selectPair('ETH','AERO',this)">ETH → AERO</div>
+      <div class="qt-chip" onclick="selectPair('ETH','CBETH',this)">ETH → cbETH</div>
+      <div class="qt-chip" onclick="selectPair('USDC','USDT',this)">USDC → USDT</div>
+      <div class="qt-chip" onclick="selectPair('ETH','DAI',this)">ETH → DAI</div>
+    </div>
+  </div>
+
+  <div class="settings-row">
+    <span class="settings-label">Slippage</span>
+    <div class="slip-btns">
+      <button class="slip-btn active" onclick="setSlip(0.5,this)">0.5%</button>
+      <button class="slip-btn" onclick="setSlip(1,this)">1%</button>
+      <button class="slip-btn" onclick="setSlip(2,this)">2%</button>
+    </div>
+  </div>
+
+  <div class="swap-box">
+    <div class="token-row">
+      <div class="tr-label">
+        <span>Sell</span>
+        <span class="tr-bal" id="sell-bal" onclick="setMax()">Balance: —</span>
+      </div>
+      <div class="tr-input-row">
+        <input class="tr-amount" id="sell-amt" type="number" placeholder="0" min="0" oninput="onInput()">
+        <div class="token-btn" onclick="openModal('sell')">
+          <span id="sell-icon" style="font-size:16px">Ξ</span>
+          <span id="sell-sym" style="font-size:14px;font-weight:800">ETH</span>
+          <span style="font-size:10px;color:var(--muted)">▾</span>
+        </div>
+      </div>
+      <div class="tr-usd" id="sell-usd">≈ $0.00</div>
+      <div class="tr-pcts">
+        <div class="tr-pct" onclick="setPct(10)">10%</div>
+        <div class="tr-pct" onclick="setPct(25)">25%</div>
+        <div class="tr-pct" onclick="setPct(50)">50%</div>
+        <div class="tr-pct" onclick="setPct(100)">MAX</div>
+      </div>
+    </div>
+
+    <div class="flip-wrap">
+      <div class="flip-btn" onclick="flip()">⇅</div>
+    </div>
+
+    <div class="token-row">
+      <div class="tr-label">
+        <span>Buy</span>
+        <span style="color:var(--text2)" id="buy-bal">Balance: —</span>
+      </div>
+      <div class="tr-input-row">
+        <input class="tr-amount" id="buy-amt" placeholder="0" readonly>
+        <div class="token-btn" onclick="openModal('buy')">
+          <span id="buy-icon" style="font-size:16px">💵</span>
+          <span id="buy-sym" style="font-size:14px;font-weight:800">USDC</span>
+          <span style="font-size:10px;color:var(--muted)">▾</span>
+        </div>
+      </div>
+      <div class="tr-usd" id="buy-usd">≈ $0.00</div>
+    </div>
+  </div>
+
+  <div class="route-box" id="route-box">
+    <div class="rb-row"><span class="rb-key">Rate</span><span class="rb-val" id="rb-rate">—</span></div>
+    <div class="rb-row"><span class="rb-key">Price Impact</span><span class="rb-val" id="rb-impact">—</span></div>
+    <div class="rb-row"><span class="rb-key">Min. Received</span><span class="rb-val" id="rb-min">—</span></div>
+    <div class="rb-divider"></div>
+    <div class="rb-row"><span class="rb-key">Route</span><span class="rb-val" style="color:var(--cyan)" id="rb-route">—</span></div>
+    <div class="rb-row"><span class="rb-key">XP Reward</span><span class="rb-val" style="color:var(--yellow)" id="rb-xp">—</span></div>
+  </div>
+
+  <button class="btn btn-primary" id="swap-btn" onclick="doSwap()" style="font-size:16px;padding:17px">
+    Connect Wallet to Swap
+  </button>
+
+  <div class="tx-result-box" id="tx-box">
+    <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:6px">✅ Swap Confirmed!</div>
+    <div id="tx-hash"></div>
+  </div>
+
+  <div class="ext-row">
+    <a href="https://aerodrome.finance/swap" target="_blank" class="ext-btn">🟠 Aerodrome</a>
+    <a href="https://app.uniswap.org/swap?chain=base" target="_blank" class="ext-btn">🦄 Uniswap</a>
+    <a href="https://baseswap.fi/swap" target="_blank" class="ext-btn">🔵 BaseSwap</a>
+  </div>
+
+</div>
+
+<!-- Token Modal -->
+<div class="token-modal" id="token-modal" onclick="if(event.target===this)closeModal()">
+  <div class="tm-sheet">
+    <div class="tm-head">
+      <div class="tm-title">Select Token</div>
+      <div class="tm-close" onclick="closeModal()">✕</div>
+    </div>
+    <input class="tm-search" id="tm-search" placeholder="Search name or address..." oninput="renderTokens(this.value)">
+    <div class="tm-list" id="tm-list"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<script src="shared.js?v=26"></script>
+<script src="sfx.js"></script>
+<script>
+// ─── TOKENS ───────────────────────────────────────────────
+const TOKENS = {
+  ETH:   { sym:'ETH',   name:'Ethereum',        icon:'Ξ',  addr:'ETH', decimals:18, native:true,  color:'#627eea' },
+  USDC:  { sym:'USDC',  name:'USD Coin',         icon:'💵', addr:'0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', decimals:6  },
+  USDT:  { sym:'USDT',  name:'Tether USD',       icon:'💚', addr:'0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2', decimals:6  },
+  DAI:   { sym:'DAI',   name:'Dai Stablecoin',   icon:'🟡', addr:'0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb', decimals:18 },
+  AERO:  { sym:'AERO',  name:'Aerodrome',        icon:'🟠', addr:'0x940181a94A35A4569E4529A3CDfB74e38FD98631', decimals:18 },
+  CBETH: { sym:'cbETH', name:'Coinbase ETH',     icon:'🔷', addr:'0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22', decimals:18 },
+  WETH:  { sym:'WETH',  name:'Wrapped Ether',    icon:'🌀', addr:'0x4200000000000000000000000000000000000006', decimals:18 },
+};
+
+// ─── CONFIG ───────────────────────────────────────────────
+const PLATFORM_FEE_ADDR = '0x356473fc86c257B05f7CaCF5FB496C4Fd93FbF94';
+const PLATFORM_FEE_BPS  = 25;
+// WORKER_URL shared.js'den geliyor
+
+
+let sellTok  = TOKENS.ETH;
+let buyTok   = TOKENS.USDC;
+let slippage = 0.5;
+let lastQuote = null;
+let qtTimer  = null;
+let ethPrice = 2500;
+
+// ─── INIT ─────────────────────────────────────────────────
+initNav('dex');
+updateUI();
+setTimeout(async () => {
+  await loadEthers();
+  await getEthPrice();
+  if (BC.addr) { updateBtn(); updateBals(); }
+}, 400);
+window.addEventListener('walletConnected', () => { updateBtn(); updateBals(); });
+
+// ─── ETH PRICE ────────────────────────────────────────────
+async function getEthPrice() {
+  try {
+    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+    const d = await r.json();
+    if (d?.ethereum?.usd) ethPrice = d.ethereum.usd;
+  } catch(e) { ethPrice = 2500; }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function jsonRes(status, body, extraHeaders = {}, requestOrigin = '*') {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...getCorsHeaders(requestOrigin), 'Content-Type': 'application/json', ...extraHeaders },
+// ─── BALANCES ─────────────────────────────────────────────
+async function updateBals() {
+  if (!BC.addr) return;
+  try {
+    const sb = await getBal(sellTok);
+    const bb = await getBal(buyTok);
+    document.getElementById('sell-bal').textContent = 'Balance: ' + fmtBal(sb, sellTok.decimals);
+    document.getElementById('buy-bal').textContent  = 'Balance: ' + fmtBal(bb, buyTok.decimals);
+  } catch(e) {}
+}
+
+async function getBal(tok) {
+  if (tok.native) return await BC.provider.getBalance(BC.addr);
+  const d = '0x70a08231' + BC.addr.slice(2).padStart(64,'0');
+  const r = await BC.provider.call({ to: tok.addr, data: d });
+  return BigInt(r);
+}
+
+function fmtBal(raw, dec, dig=4) {
+  const n = Number(raw) / 10**dec;
+  return n < 0.0001 ? '0' : n.toFixed(dig).replace(/\.?0+$/,'');
+}
+
+// ─── USD VALUE ────────────────────────────────────────────
+function usd(amt, tok) {
+  if (!amt) return 0;
+  const s = tok.sym;
+  if (s==='ETH'||s==='WETH') return amt * ethPrice;
+  if (s==='cbETH') return amt * ethPrice * 1.05;
+  if (['USDC','USDT','DAI'].includes(s)) return amt;
+  return 0;
+}
+
+// ─── XP TIERS ─────────────────────────────────────────────
+function calcXP(usdVal) {
+  if (usdVal >= 5000) return 100000;
+  if (usdVal >= 1000) return 25000;
+  if (usdVal >= 500)  return 10000;
+  if (usdVal >= 100)  return 5000;
+  return 500;
+}
+
+// ─── QUOTE via Worker (Paraswap proxy) ───────────────────
+const PARA_ETH = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+function pAddr(tok) { return tok.native ? PARA_ETH : tok.addr; }
+
+async function fetchQuote(amt) {
+  const amtWei = BigInt(Math.floor(amt * 10**sellTok.decimals)).toString();
+  const params = new URLSearchParams({
+    src:    pAddr(sellTok),
+    dst:    pAddr(buyTok),
+    amount: amtWei,
+    srcDec: sellTok.decimals,
+    dstDec: buyTok.decimals,
   });
+  const r = await fetch(`${WORKER_URL}/swap-quote?${params}`);
+  const d = await r.json();
+  if (!r.ok || !d.priceRoute) throw new Error(d.error || d.message || 'Quote failed');
+  return d.priceRoute;
 }
 
-function isValidAddress(addr) {
-  return typeof addr === 'string' && /^0x[0-9a-fA-F]{40}$/.test(addr);
-}
-
-function base64url(buffer) {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-function base64Decode(str) {
-  const binary = atob(str);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
-
-// ── CDP Ed25519 JWT Builder ───────────────────────────────────────────────────
-async function buildCdpJwt(keyName, keySecretB64, httpMethod, requestPath) {
-  const decoded = base64Decode(keySecretB64);
-
-  let seed;
-  if (decoded.length === 64)      seed = decoded.slice(0, 32);
-  else if (decoded.length === 32) seed = decoded;
-  else throw new Error(`Invalid Ed25519 key length: ${decoded.length} bytes`);
-
-  // PKCS8 wrapper for Web Crypto Ed25519
-  const pkcs8Header = new Uint8Array([
-    0x30, 0x2e,
-    0x02, 0x01, 0x00,
-    0x30, 0x05,
-      0x06, 0x03, 0x2b, 0x65, 0x70,
-    0x04, 0x22,
-      0x04, 0x20,
-  ]);
-  const pkcs8Key = new Uint8Array(pkcs8Header.length + seed.length);
-  pkcs8Key.set(pkcs8Header);
-  pkcs8Key.set(seed, pkcs8Header.length);
-
-  const cryptoKey = await crypto.subtle.importKey(
-    'pkcs8',
-    pkcs8Key,
-    { name: 'Ed25519' },
-    false,
-    ['sign']
-  );
-
-  const nonceBytes = new Uint8Array(16);
-  crypto.getRandomValues(nonceBytes);
-  const nonce = Array.from(nonceBytes).map(b => b.toString(16).padStart(2, '0')).join('');
-
-  const now = Math.floor(Date.now() / 1000);
-  const header  = { alg: 'EdDSA', typ: 'JWT', kid: keyName, nonce };
-  const payload = {
-    sub: keyName,
-    iss: 'cdp',
-    aud: ['cdp_service'],
-    nbf: now,
-    exp: now + 120,
-    uri: `${httpMethod} api.cdp.coinbase.com${requestPath}`,
-  };
-
-  const encodedHeader  = base64url(new TextEncoder().encode(JSON.stringify(header)));
-  const encodedPayload = base64url(new TextEncoder().encode(JSON.stringify(payload)));
-  const message        = `${encodedHeader}.${encodedPayload}`;
-
-  const sig = await crypto.subtle.sign({ name: 'Ed25519' }, cryptoKey, new TextEncoder().encode(message));
-  return `${message}.${base64url(sig)}`;
-}
-
-// ── CDP Request ───────────────────────────────────────────────────────────────
-async function cdpRequest(endpoint, body, keyName, keySecretB64) {
-  const path = new URL(endpoint).pathname;
-  const jwt  = await buildCdpJwt(keyName, keySecretB64, 'POST', path);
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwt}` },
-    body: JSON.stringify(body),
-  });
-
-  const data = await response.json().catch(() => ({}));
-  return { status: response.status, ok: response.ok, data };
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// ── GET /state — KV'den kullanıcı state oku ──────────────────────────────────
-// ═══════════════════════════════════════════════════════════════════════════════
-async function handleGetState(request, env, origin) {
-  const addr = new URL(request.url).searchParams.get('addr');
-
-  if (!addr || !isValidAddress(addr)) {
-    return jsonRes(400, { error: 'Invalid or missing address' }, {}, origin);
-  }
-
-  const data = await env.BASECORE_KV.get(KV_PREFIX + addr.toLowerCase());
-
-  if (!data) {
-    // Yeni kullanıcı — varsayılan state
-    return jsonRes(200, { xp: 0, level: 1, streak: 0, refs: 0, tasks: {} }, {}, origin);
-  }
-
-  try {
-    return jsonRes(200, JSON.parse(data), {}, origin);
-  } catch {
-    return jsonRes(200, { xp: 0, level: 1, streak: 0, refs: 0, tasks: {} }, {}, origin);
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// ── POST /state — KV'ye kullanıcı state yaz ─────────────────────────────────
-// ═══════════════════════════════════════════════════════════════════════════════
-async function handlePostState(request, env, origin) {
-  let body;
-  try { body = await request.json(); }
-  catch { return jsonRes(400, { error: 'Invalid JSON body' }, {}, origin); }
-
-  const { address, xp, level, streak, refs, tasks } = body;
-
-  if (!address || !isValidAddress(address)) {
-    return jsonRes(400, { error: 'Invalid or missing address' }, {}, origin);
-  }
-
-  const state = {
-    xp:        typeof xp     === 'number' ? Math.max(0, Math.floor(xp))     : 0,
-    level:     typeof level  === 'number' ? Math.max(1, Math.floor(level))  : 1,
-    streak:    typeof streak === 'number' ? Math.max(0, Math.floor(streak)) : 0,
-    refs:      typeof refs   === 'number' ? Math.max(0, Math.floor(refs))   : 0,
-    tasks:     tasks && typeof tasks === 'object' ? tasks : {},
-    updatedAt: new Date().toISOString(),
-  };
-
-  // 90 gün TTL — inaktif kullanıcılar otomatik silinir
-  await env.BASECORE_KV.put(
-    KV_PREFIX + address.toLowerCase(),
-    JSON.stringify(state),
-    { expirationTtl: 60 * 60 * 24 * 90 }
-  );
-
-  return jsonRes(200, { success: true }, {}, origin);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// ── POST / — x402 Payment (verify + settle) ──────────────────────────────────
-// ═══════════════════════════════════════════════════════════════════════════════
-async function handlePayment(request, env, origin) {
-  const payTo        = env.FEE_WALLET || '0x356473fc86c257B05f7CaCF5FB496C4Fd93FbF94';
-  const cdpKeyName   = env.CDP_API_KEY;
-  const cdpKeySecret = env.CDP_KEY_SECRET || env.CDP_API_SECRET;
-
-  if (!cdpKeyName || !cdpKeySecret) {
-    console.error('CDP credentials missing!');
-    return jsonRes(500, { error: 'Server misconfiguration: CDP credentials missing' }, {}, origin);
-  }
-
-  const paymentRequirements = {
-    scheme:            'exact',
-    network:           NETWORK,
-    maxAmountRequired: PRICE_ATOMIC,
-    resource:          new URL(request.url).pathname,
-    description:       'BaseCore platform access fee',
-    mimeType:          'application/json',
-    payTo,
-    maxTimeoutSeconds: TIMEOUT_SEC,
-    asset:             USDC_BASE,
-    extra: { name: 'USD Coin', version: '2', decimals: 6 },
-  };
-
-  const paymentHeader =
-    request.headers.get('X-PAYMENT')         ||
-    request.headers.get('X-Payment')         ||
-    request.headers.get('x-payment')         ||
-    request.headers.get('PAYMENT-SIGNATURE') || null;
-
-  // Ödeme header yoksa → 402
-  if (!paymentHeader) {
-    const paymentRequiredB64 = btoa(JSON.stringify({ x402Version: 1, accepts: [paymentRequirements] }));
-    return jsonRes(402, {
-      x402Version: 1,
-      accepts: [paymentRequirements],
-      error: 'Payment required',
-    }, { 'PAYMENT-REQUIRED': paymentRequiredB64 }, origin);
-  }
-
-  // Header decode et
-  let paymentPayload;
-  try {
-    paymentPayload = JSON.parse(atob(paymentHeader));
-  } catch (e) {
-    console.error('[DECODE ERROR]', e.message);
-    return jsonRes(400, { error: 'Invalid payment header — Base64 JSON decode failed', details: e.message }, {}, origin);
-  }
-
-  // Network normalize et
-  if (paymentPayload.network === NETWORK_CAIP2) paymentPayload.network = NETWORK;
-
-  const cdpPaymentRequirements = { ...paymentRequirements, network: NETWORK };
-
-  console.log('[x402] Payment payload received:', JSON.stringify(paymentPayload).slice(0, 200));
-
-  // ── ADIM 1: Verify ──
-  let verifyResult;
-  try {
-    verifyResult = await cdpRequest(CDP_VERIFY, {
-      x402Version:         1,
-      paymentPayload,
-      paymentRequirements: cdpPaymentRequirements,
-    }, cdpKeyName, cdpKeySecret);
-    console.log('[CDP VERIFY]', verifyResult.status, JSON.stringify(verifyResult.data));
-  } catch (e) {
-    console.error('[VERIFY ERROR]', e.message);
-    return jsonRes(502, { error: 'CDP verify request failed', details: e.message }, {}, origin);
-  }
-
-  if (!verifyResult.ok || verifyResult.data?.isValid === false) {
-    return jsonRes(402, {
-      error:         'Payment verification failed',
-      invalidReason: verifyResult.data?.invalidReason || null,
-    }, {}, origin);
-  }
-
-  // ── ADIM 2: Settle ──
-  let settleResult;
-  try {
-    settleResult = await cdpRequest(CDP_SETTLE, {
-      x402Version:         1,
-      paymentPayload,
-      paymentRequirements: cdpPaymentRequirements,
-    }, cdpKeyName, cdpKeySecret);
-    console.log('[CDP SETTLE]', settleResult.status, JSON.stringify(settleResult.data));
-  } catch (e) {
-    console.error('[SETTLE ERROR]', e.message);
-    return jsonRes(502, { error: 'CDP settle request failed', details: e.message }, {}, origin);
-  }
-
-  if (!settleResult.ok || settleResult.data?.success === false) {
-    return jsonRes(402, {
-      error:       'Payment settlement failed',
-      errorReason: settleResult.data?.errorReason || null,
-    }, {}, origin);
-  }
-
-  // ── Başarılı ──
-  const txHash =
-    settleResult.data?.transaction        ||
-    settleResult.data?.txHash             ||
-    settleResult.data?.result?.transaction || null;
-
-  const payer =
-    settleResult.data?.payer                           ||
-    paymentPayload?.payload?.authorization?.from       || null;
-
-  const network = settleResult.data?.network || NETWORK;
-
-  const paymentResponse = btoa(JSON.stringify({
-    x402Version: 1, scheme: 'exact', network,
-    success: true, transaction: txHash, payer,
-  }));
-
-  return jsonRes(200, {
-    success:  true,
-    txHash,
-    payer,
-    network,
-    basescan: txHash ? `https://basescan.org/tx/${txHash}` : null,
-  }, {
-    'X-PAYMENT-RESPONSE': paymentResponse,
-    'PAYMENT-RESPONSE':   paymentResponse,
-  }, origin);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// ── GET /swap-quote — Paraswap price proxy (no API key needed) ───────────────
-// ═══════════════════════════════════════════════════════════════════════════════
-async function handleSwapQuote(request, env, origin) {
-  const url    = new URL(request.url);
-  const src    = url.searchParams.get('src');
-  const dst    = url.searchParams.get('dst');
-  const amount = url.searchParams.get('amount');
-  const srcDec = url.searchParams.get('srcDec') || '18';
-  const dstDec = url.searchParams.get('dstDec') || '18';
-
-  if (!src || !dst || !amount) {
-    return jsonRes(400, { error: 'Missing params: src, dst, amount' }, {}, origin);
-  }
-
-  try {
-    const apiUrl = `https://api.paraswap.io/prices?srcToken=${src}&destToken=${dst}&amount=${amount}&srcDecimals=${srcDec}&destDecimals=${dstDec}&side=SELL&network=8453`;
-    const r = await fetch(apiUrl, { headers: { 'Accept': 'application/json' } });
-    const data = await r.json();
-    if (!r.ok) return jsonRes(r.status, data, {}, origin);
-    return jsonRes(200, data, {}, origin);
-  } catch(e) {
-    return jsonRes(502, { error: e.message }, {}, origin);
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// ── POST /swap-tx — Paraswap transaction proxy (no API key needed) ────────────
-// ═══════════════════════════════════════════════════════════════════════════════
-async function handleSwapTx(request, env, origin) {
-  let body;
-  try { body = await request.json(); }
-  catch { return jsonRes(400, { error: 'Invalid JSON body' }, {}, origin); }
-
-  const { priceRoute, userAddress, srcToken, destToken, srcDecimals, destDecimals, slippage } = body;
-
-  if (!priceRoute || !userAddress) {
-    return jsonRes(400, { error: 'Missing priceRoute or userAddress' }, {}, origin);
-  }
-
-  if (!isValidAddress(userAddress)) {
-    return jsonRes(400, { error: 'Invalid userAddress' }, {}, origin);
-  }
-
-  try {
-    const FEE_ADDR = env.FEE_WALLET || '0x356473fc86c257B05f7CaCF5FB496C4Fd93FbF94';
-    const slip = parseFloat(slippage) || 1;
-
-    const txBody = {
-      srcToken,
-      destToken,
-      srcDecimals:  srcDecimals  || 18,
-      destDecimals: destDecimals || 18,
-      srcAmount:    priceRoute.srcAmount,
-      destAmount:   priceRoute.destAmount,
+// ─── SWAP CALLDATA via Worker (Paraswap proxy) ────────────
+async function fetchSwapData(amt, priceRoute) {
+  const slip = slippage + PLATFORM_FEE_BPS / 100;
+  const r = await fetch(`${WORKER_URL}/swap-tx`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
       priceRoute,
-      userAddress,
-      slippage:         Math.round(slip * 100), // basis points
-      partnerAddress:   FEE_ADDR,
-      partnerFeeBps:    25, // 0.25%
-    };
+      userAddress:  BC.addr,
+      srcToken:     pAddr(sellTok),
+      destToken:    pAddr(buyTok),
+      srcDecimals:  sellTok.decimals,
+      destDecimals: buyTok.decimals,
+      slippage:     slip,
+    }),
+  });
+  const d = await r.json();
+  if (!r.ok || !d.to) throw new Error(d.error || d.message || 'Swap tx failed');
+  return d; // { to, data, value, ... }
+}
 
-    const r = await fetch('https://api.paraswap.io/transactions/8453?ignoreChecks=true', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body:    JSON.stringify(txBody),
-    });
-    const data = await r.json();
-    if (!r.ok) return jsonRes(r.status, data, {}, origin);
-    return jsonRes(200, data, {}, origin);
+// ─── INPUT HANDLER ────────────────────────────────────────
+function onInput() {
+  clearTimeout(qtTimer);
+  const v = parseFloat(document.getElementById('sell-amt').value);
+  if (!v || v <= 0) {
+    document.getElementById('buy-amt').value = '';
+    document.getElementById('sell-usd').textContent = '≈ $0.00';
+    document.getElementById('buy-usd').textContent  = '≈ $0.00';
+    document.getElementById('route-box').classList.remove('show');
+    lastQuote = null; updateBtn(); return;
+  }
+  const sellUsdVal = usd(v, sellTok);
+  document.getElementById('sell-usd').textContent = '≈ $' + sellUsdVal.toFixed(2);
+  document.getElementById('buy-amt').value = '...';
+  qtTimer = setTimeout(() => doQuote(v), 600);
+}
+
+async function doQuote(amt) {
+  try {
+    const pr = await fetchQuote(amt);
+    lastQuote = { priceRoute: pr, sellAmt: amt };
+
+    const outAmt = Number(pr.destAmount) / 10**buyTok.decimals;
+    document.getElementById('buy-amt').value = outAmt.toFixed(buyTok.decimals > 6 ? 6 : buyTok.decimals);
+
+    const sellUsdVal = usd(amt, sellTok);
+    const buyUsdVal  = usd(outAmt, buyTok);
+    document.getElementById('sell-usd').textContent = '≈ $' + sellUsdVal.toFixed(2);
+    document.getElementById('buy-usd').textContent  = '≈ $' + buyUsdVal.toFixed(2);
+
+    const rate = outAmt / amt;
+    document.getElementById('rb-rate').textContent = `1 ${sellTok.sym} = ${rate.toFixed(4)} ${buyTok.sym}`;
+
+    const impact = pr.details?.srcUSD && pr.details?.destUSD
+      ? Math.max(0, (1 - parseFloat(pr.details.destUSD) / parseFloat(pr.details.srcUSD)) * 100)
+      : sellUsdVal > 0 ? Math.max(0, (sellUsdVal - buyUsdVal) / sellUsdVal * 100) : 0;
+    const impEl = document.getElementById('rb-impact');
+    impEl.textContent = impact.toFixed(2) + '%';
+    impEl.style.color = impact < 1 ? 'var(--green)' : impact < 3 ? 'var(--yellow)' : 'var(--red)';
+
+    const minOut = outAmt * (1 - slippage/100);
+    document.getElementById('rb-min').textContent = minOut.toFixed(4) + ' ' + buyTok.sym;
+
+    const bestRoute = pr.bestRoute?.[0]?.swaps?.[0]?.swapExchanges?.[0]?.exchange || 'Best Route';
+    document.getElementById('rb-route').textContent = `${sellTok.sym} → ${buyTok.sym} via ${bestRoute}`;
+    document.getElementById('dh-route').textContent = bestRoute;
+    document.getElementById('rb-xp').textContent = '+' + calcXP(sellUsdVal).toLocaleString() + ' XP';
+
+    document.getElementById('route-box').classList.add('show');
+    updateBtn();
   } catch(e) {
-    return jsonRes(502, { error: e.message }, {}, origin);
+    console.warn('Quote error:', e.message);
+    // off-chain fallback
+    const fallback = usd(amt, sellTok) / Math.max(usd(1, buyTok), 0.000001) * 0.997;
+    if (fallback > 0) {
+      document.getElementById('buy-amt').value = fallback.toFixed(4);
+      document.getElementById('rb-route').textContent = `${sellTok.sym} → ${buyTok.sym} (estimated)`;
+      document.getElementById('route-box').classList.add('show');
+    } else {
+      document.getElementById('buy-amt').value = '';
+      document.getElementById('route-box').classList.remove('show');
+    }
+    lastQuote = null;
+    updateBtn();
   }
 }
 
+// ─── SWAP EXECUTION ───────────────────────────────────────
+async function doSwap() {
+  if (!BC.addr) { openWalletModal(); return; }
 
-export default {
-  async fetch(request, env) {
-    const origin   = request.headers.get('Origin') || '';
-    const { pathname } = new URL(request.url);
+  const sellAmt = parseFloat(document.getElementById('sell-amt').value);
+  if (!sellAmt || sellAmt <= 0) { toast('Enter an amount', 'error'); return; }
 
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: getCorsHeaders(origin) });
+  const btn = document.getElementById('swap-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Checking network...';
+
+  // Network check
+  if (BC.chain !== 8453) {
+    try {
+      await window.ethereum.request({ method:'wallet_switchEthereumChain', params:[{chainId:'0x2105'}] });
+      BC.chain = 8453;
+    } catch(e) {
+      if (e.code === 4902) {
+        try {
+          await window.ethereum.request({ method:'wallet_addEthereumChain', params:[{
+            chainId:'0x2105', chainName:'Base',
+            nativeCurrency:{name:'ETH',symbol:'ETH',decimals:18},
+            rpcUrls:['https://mainnet.base.org'],
+            blockExplorerUrls:['https://basescan.org'],
+          }]});
+          BC.chain = 8453;
+        } catch(_) { toast('Switch to Base network in your wallet','error'); btn.disabled=false; updateBtn(); return; }
+      } else {
+        toast('Switch to Base network in your wallet','error'); btn.disabled=false; updateBtn(); return;
+      }
+    }
+  }
+
+  btn.innerHTML = '<span class="spin"></span> Getting route...';
+
+  try {
+    await loadEthers();
+
+    // Signer güvenli al
+    let signer = BC.signer;
+    if (!signer) {
+      const prov = new ethers.BrowserProvider(window.ethereum);
+      signer = await prov.getSigner();
+      BC.signer = signer;
     }
 
-    if (pathname === '/state'       && request.method === 'GET')  return handleGetState(request, env, origin);
-    if (pathname === '/state'       && request.method === 'POST') return handlePostState(request, env, origin);
-    if (pathname === '/swap-quote'  && request.method === 'GET')  return handleSwapQuote(request, env, origin);
-    if (pathname === '/swap-tx'     && request.method === 'GET')  return handleSwapTx(request, env, origin);
-    if (request.method === 'POST')                                return handlePayment(request, env, origin);
+    // ERC-20 approval — Paraswap TokenTransferProxy
+    if (!sellTok.native) {
+      const amtWei = BigInt(Math.floor(sellAmt * 10**sellTok.decimals));
+      const paraProxy = '0x216B4B4Ba9F3e719726886d34a177484278Bfcae';
+      await ensureApproval(sellTok, amtWei, signer, paraProxy);
+    }
 
-    return jsonRes(404, { error: 'Not found' }, {}, origin);
-  },
-};
+    btn.innerHTML = '<span class="spin"></span> Building swap...';
+
+    if (!lastQuote?.priceRoute) {
+      toast('Get a quote first', 'error');
+      btn.disabled = false; updateBtn(); return;
+    }
+
+    const txData = await fetchSwapData(sellAmt, lastQuote.priceRoute);
+
+    btn.innerHTML = '<span class="spin"></span> Confirm in wallet...';
+    const tx = await signer.sendTransaction({
+      to:    txData.to,
+      data:  txData.data,
+      value: BigInt(txData.value || '0'),
+      gasLimit: txData.gas ? BigInt(Math.ceil(Number(txData.gas) * 1.2)) : undefined,
+    });
+
+    toast('⏳ Transaction submitted...', 'info');
+    const rc = await tx.wait();
+
+    // XP
+    const sellUsdVal = usd(sellAmt, sellTok);
+    const xp = calcXP(sellUsdVal);
+    addXP(xp, 'swap_' + sellTok.sym + '_' + buyTok.sym);
+    toast(`✅ Swap confirmed! +${xp.toLocaleString()} XP`, 'success');
+
+    // Tx result
+    const txBox = document.getElementById('tx-box');
+    document.getElementById('tx-hash').innerHTML =
+      `<a class="tx-hash-link" href="https://basescan.org/tx/${rc.hash}" target="_blank">🔗 ${rc.hash.slice(0,22)}...${rc.hash.slice(-6)}</a>
+       <div style="font-size:11px;color:var(--muted);margin-top:4px;font-family:var(--mono)">Block #${rc.blockNumber}</div>`;
+    txBox.classList.add('show');
+
+    // Reset
+    document.getElementById('sell-amt').value = '';
+    document.getElementById('buy-amt').value  = '';
+    document.getElementById('route-box').classList.remove('show');
+    lastQuote = null;
+    await updateBals();
+
+  } catch(e) {
+    console.error('Swap error:', e);
+    const msg = e?.reason || e?.shortMessage || e?.message || 'Swap failed';
+    if (e?.code === 4001 || msg.includes('rejected') || msg.includes('denied')) {
+      toast('Transaction rejected', 'info');
+    } else {
+      toast('❌ ' + msg.slice(0, 90), 'error');
+    }
+  }
+
+  btn.disabled = false;
+  updateBtn();
+}
+
+// ─── APPROVAL ─────────────────────────────────────────────
+async function ensureApproval(tok, amt, signer, spender) {
+  const amtWei = BigInt(Math.floor(amt * 10**tok.decimals));
+  const d = '0xdd62ed3e' + BC.addr.slice(2).padStart(64,'0') + spender.slice(2).padStart(64,'0');
+  const raw = await BC.provider.call({ to: tok.addr, data: d });
+  if (BigInt(raw) >= amtWei) return;
+  toast('Approving token...', 'info');
+  const maxU = 'f'.repeat(64);
+  const appD = '0x095ea7b3' + spender.slice(2).padStart(64,'0') + maxU;
+  const tx = await signer.sendTransaction({ to: tok.addr, data: appD });
+  await tx.wait();
+  toast('✅ Approved!', 'success');
+}
+
+// ─── UI HELPERS ───────────────────────────────────────────
+function updateUI() {
+  document.getElementById('sell-icon').textContent = sellTok.icon;
+  document.getElementById('sell-sym').textContent  = sellTok.sym;
+  document.getElementById('buy-icon').textContent  = buyTok.icon;
+  document.getElementById('buy-sym').textContent   = buyTok.sym;
+  document.getElementById('sell-amt').value = '';
+  document.getElementById('buy-amt').value  = '';
+  document.getElementById('route-box').classList.remove('show');
+  document.getElementById('tx-box').classList.remove('show');
+  lastQuote = null;
+  updateBtn();
+  if (BC.addr) updateBals();
+}
+
+function updateBtn() {
+  const btn = document.getElementById('swap-btn');
+  if (!BC.addr) { btn.textContent = 'Connect Wallet to Swap'; btn.disabled = false; return; }
+  const v = parseFloat(document.getElementById('sell-amt').value);
+  if (!v || v <= 0) { btn.textContent = 'Enter an amount'; btn.disabled = true; return; }
+  if (document.getElementById('buy-amt').value === '...') { btn.textContent = 'Getting quote...'; btn.disabled = true; return; }
+  btn.innerHTML = `🔄 Swap ${sellTok.sym} → ${buyTok.sym}`;
+  btn.disabled = false;
+}
+
+function flip() {
+  [sellTok, buyTok] = [buyTok, sellTok];
+  document.querySelectorAll('.qt-chip').forEach(c => c.classList.remove('active'));
+  updateUI();
+}
+
+function setMax() {
+  const t = document.getElementById('sell-bal').textContent.match(/[\d.]+/);
+  if (!t) return;
+  let v = parseFloat(t[0]);
+  if (sellTok.native) v = Math.max(0, v - 0.002);
+  document.getElementById('sell-amt').value = v > 0 ? v : 0;
+  onInput();
+}
+
+async function setPct(p) {
+  if (!BC.addr) { toast('Connect wallet first','info'); return; }
+  const raw = await getBal(sellTok);
+  let v = Number(raw) / 10**sellTok.decimals;
+  if (sellTok.native) v = Math.max(0, v - 0.002);
+  document.getElementById('sell-amt').value = (v * p / 100).toFixed(6);
+  onInput();
+}
+
+function selectPair(from, to, el) {
+  document.querySelectorAll('.qt-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  sellTok = TOKENS[from] || sellTok;
+  buyTok  = TOKENS[to]   || buyTok;
+  updateUI();
+}
+
+function setSlip(v, btn) {
+  slippage = v;
+  document.querySelectorAll('.slip-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // requote
+  const amt = parseFloat(document.getElementById('sell-amt').value);
+  if (amt > 0) doQuote(amt);
+}
+
+// ─── TOKEN MODAL ──────────────────────────────────────────
+let modalSide = 'sell';
+
+function openModal(side) {
+  modalSide = side;
+  renderTokens('');
+  document.getElementById('tm-search').value = '';
+  document.getElementById('token-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('token-modal').classList.remove('open');
+}
+
+function renderTokens(q) {
+  const other = modalSide === 'sell' ? buyTok : sellTok;
+  const list = Object.values(TOKENS).filter(t =>
+    t.sym !== other.sym &&
+    (!q || t.sym.toLowerCase().includes(q.toLowerCase()) || t.name.toLowerCase().includes(q.toLowerCase()))
+  );
+  document.getElementById('tm-list').innerHTML = list.map(t => `
+    <div class="tm-tok" onclick="pickToken('${t.sym}')">
+      <div class="tm-tok-icon">${t.icon}</div>
+      <div style="flex:1">
+        <div class="tm-tok-sym">${t.sym}</div>
+        <div class="tm-tok-name">${t.name}</div>
+      </div>
+      <div class="tm-tok-bal" id="mb-${t.sym}">—</div>
+    </div>
+  `).join('');
+
+  if (BC.addr) list.forEach(async t => {
+    try {
+      const raw = await getBal(t);
+      const el = document.getElementById('mb-' + t.sym);
+      if (el) el.textContent = fmtBal(raw, t.decimals);
+    } catch(e) {}
+  });
+}
+
+function pickToken(sym) {
+  const tok = TOKENS[sym];
+  if (!tok) return;
+  if (modalSide === 'sell') {
+    sellTok = tok;
+    if (buyTok.sym === sym) buyTok = tok === TOKENS.ETH ? TOKENS.USDC : TOKENS.ETH;
+  } else {
+    buyTok = tok;
+    if (sellTok.sym === sym) sellTok = tok === TOKENS.ETH ? TOKENS.USDC : TOKENS.ETH;
+  }
+  closeModal();
+  document.querySelectorAll('.qt-chip').forEach(c => c.classList.remove('active'));
+  updateUI();
+}
+</script>
+</body>
+</html>
