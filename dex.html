@@ -278,9 +278,7 @@ const TOKENS = {
 // ─── CONFIG ───────────────────────────────────────────────
 const PLATFORM_FEE_ADDR = '0x356473fc86c257B05f7CaCF5FB496C4Fd93FbF94';
 const PLATFORM_FEE_BPS  = 25;
-const WORKER_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-  ? 'http://localhost:8787'
-  : 'https://basecore-pay.meltak34.workers.dev';
+// WORKER_URL shared.js'den geliyor
 
 
 let sellTok  = TOKENS.ETH;
