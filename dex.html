@@ -278,7 +278,14 @@ const INCH_API = 'https://api.1inch.dev/swap/v6.0/8453';
 // 1inch free tier — Swap API v6, Base chainId 8453
 // Rate limit: 1 req/sec, key gerekmez public endpoint'te
 
-// ─── STATE ────────────────────────────────────────────────
+// ─── CONFIG ───────────────────────────────────────────────
+const PLATFORM_FEE_ADDR = '0x356473fc86c257B05f7CaCF5FB496C4Fd93FbF94';
+const PLATFORM_FEE_BPS  = 25;
+const WORKER_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:8787'
+  : 'https://basecore-pay.meltak34.workers.dev';
+
+
 let sellTok  = TOKENS.ETH;
 let buyTok   = TOKENS.USDC;
 let slippage = 0.5;
@@ -347,44 +354,29 @@ function calcXP(usdVal) {
   return 500;
 }
 
-// ─── QUOTE via 1inch API ──────────────────────────────────
+// ─── QUOTE via Worker (1inch proxy) ──────────────────────
 async function fetchQuote(amt) {
-  const src = sellTok.native ? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' : sellTok.addr;
-  const dst = buyTok.native  ? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' : buyTok.addr;
+  const src    = sellTok.native ? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' : sellTok.addr;
+  const dst    = buyTok.native  ? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' : buyTok.addr;
   const amtWei = BigInt(Math.floor(amt * 10**sellTok.decimals)).toString();
 
-  const url = `${INCH_API}/quote?src=${src}&dst=${dst}&amount=${amtWei}&includeTokensInfo=false&includeProtocols=true&includeGas=false`;
-
-  const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
-  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const r = await fetch(`${WORKER_URL}/swap-quote?src=${src}&dst=${dst}&amount=${amtWei}`);
   const d = await r.json();
-  if (d.error) throw new Error(d.description || d.error);
+  if (!r.ok || d.error) throw new Error(d.description || d.error || 'Quote failed');
   return d;
 }
 
-// ─── SWAP CALLDATA via 1inch API ─────────────────────────
+// ─── SWAP CALLDATA via Worker (1inch proxy) ───────────────
 async function fetchSwapData(amt) {
-  const src = sellTok.native ? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' : sellTok.addr;
-  const dst = buyTok.native  ? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' : buyTok.addr;
+  const src    = sellTok.native ? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' : sellTok.addr;
+  const dst    = buyTok.native  ? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' : buyTok.addr;
   const amtWei = BigInt(Math.floor(amt * 10**sellTok.decimals)).toString();
   const slip   = (slippage + PLATFORM_FEE_BPS/100).toFixed(2);
-  const feeRecipient = PLATFORM_FEE_ADDR;
-  const feePct = (PLATFORM_FEE_BPS / 100).toFixed(2);
 
-  const params = new URLSearchParams({
-    src, dst,
-    amount:      amtWei,
-    from:        BC.addr,
-    slippage:    slip,
-    referrer:    feeRecipient,
-    fee:         feePct,
-    disableEstimate: 'false',
-  });
-
-  const url = `${INCH_API}/swap?${params}`;
-  const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  const params = new URLSearchParams({ src, dst, amount: amtWei, from: BC.addr, slippage: slip });
+  const r = await fetch(`${WORKER_URL}/swap-tx?${params}`);
   const d = await r.json();
-  if (d.error || !d.tx) throw new Error(d.description || d.error || 'Swap data failed');
+  if (!r.ok || d.error || !d.tx) throw new Error(d.description || d.error || 'Swap failed');
   return d;
 }
 
