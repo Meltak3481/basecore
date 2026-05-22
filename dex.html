@@ -427,24 +427,38 @@ window.addEventListener('walletConnected', async () => {
 });
 
 // ─────────────────────────────────────────────
-// ETH PRICE (Chainlink on Base)
+// ETH PRICE (CoinGecko fallback + Chainlink)
 // ─────────────────────────────────────────────
 async function fetchEthPrice() {
+  // Önce CoinGecko'dan dene (daha güvenilir parse)
+  try {
+    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+    const data = await res.json();
+    if (data?.ethereum?.usd) {
+      ethPrice = data.ethereum.usd;
+      return;
+    }
+  } catch(e) {}
+
+  // Fallback: Chainlink ETH/USD on Base
   try {
     await loadEthers();
-    // Chainlink ETH/USD on Base
     const feed = '0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70';
-    const raw = await BC.provider.call({
-      to: feed,
-      data: '0xfeaf968c', // latestRoundData
-    });
-    if (raw && raw.length >= 130) {
-      const answer = BigInt('0x' + raw.slice(34, 66));
-      ethPrice = Number(answer) / 1e8;
+    const raw = await BC.provider.call({ to: feed, data: '0xfeaf968c' });
+    // latestRoundData returns: roundId(32), answer(32), startedAt(32), updatedAt(32), answeredInRound(32)
+    // answer is at bytes 32-64 (index 2, after roundId)
+    if (raw && raw.length >= 194) { // 0x + 5*64 chars
+      const answerHex = raw.slice(66, 130); // skip 0x + roundId(64 chars)
+      const answer = BigInt('0x' + answerHex);
+      const price = Number(answer) / 1e8;
+      if (price > 100 && price < 100000) { // sanity check
+        ethPrice = price;
+        return;
+      }
     }
-  } catch(e) {
-    ethPrice = 2500; // fallback
-  }
+  } catch(e) {}
+
+  ethPrice = 2500; // son çare fallback
 }
 
 // ─────────────────────────────────────────────
@@ -486,81 +500,76 @@ async function getQuote(amountIn, tokenIn, tokenOut) {
   const inAddr  = tokenIn.isNative  ? WETH_ADDR : tokenIn.addr;
   const outAddr = tokenOut.isNative ? WETH_ADDR : tokenOut.addr;
   const amtBig  = BigInt(Math.floor(amountIn * Math.pow(10, tokenIn.decimals)));
-
   if (amtBig === 0n) return null;
 
   let bestQuote = null;
   let bestFee   = null;
 
-  for (const fee of FEE_TIERS) {
-    try {
-      // Quoter V2: quoteExactInputSingle((tokenIn,tokenOut,amountIn,fee,sqrtPriceLimitX96))
-      // selector: 0xcdca1753
-      const data = encodeQuoteV2(inAddr, outAddr, amtBig, fee);
-      const raw = await BC.provider.call({ to: UNI_QUOTER_V2, data });
+  const QUOTERS = [
+    '0x3d4e44Eb1374240CE5F1B136041F7F10EFC9EB89', // QuoterV2
+    '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6', // QuoterV1
+  ];
 
-      if (raw && raw !== '0x' && raw.length >= 66) {
-        const amtOut = BigInt('0x' + raw.slice(2, 66));
-        if (amtOut > 0n && (bestQuote === null || amtOut > bestQuote)) {
-          bestQuote = amtOut;
-          bestFee   = fee;
-        }
-      }
-    } catch(e) {}
-  }
-
-  // Fallback: Quoter V1 style (0xf7729d43) if V2 fails
-  if (!bestQuote) {
+  for (const qAddr of QUOTERS) {
     for (const fee of FEE_TIERS) {
+      // V2 selector: cdca1753 — struct(tokenIn,tokenOut,amountIn,fee,sqrtLimit)
       try {
-        const data = encodeQuoteV1(inAddr, outAddr, fee, amtBig);
-        const raw = await BC.provider.call({ to: UNI_QUOTER_V2, data });
+        const d = '0xcdca1753' + padAddr(inAddr) + padAddr(outAddr) + pad64(amtBig) + pad64(fee) + pad64(0);
+        const raw = await BC.provider.call({ to: qAddr, data: d });
         if (raw && raw !== '0x' && raw.length >= 66) {
-          const amtOut = BigInt('0x' + raw.slice(2, 66));
-          if (amtOut > 0n && (bestQuote === null || amtOut > bestQuote)) {
-            bestQuote = amtOut;
-            bestFee   = fee;
-          }
+          const out = BigInt('0x' + raw.slice(2,66));
+          if (out > 0n && (!bestQuote || out > bestQuote)) { bestQuote = out; bestFee = fee; }
+        }
+      } catch(e) {}
+      // V1 selector: f7729d43 — (tokenIn,tokenOut,fee,amountIn,sqrtLimit)
+      try {
+        const d = '0xf7729d43' + padAddr(inAddr) + padAddr(outAddr) + pad64(fee) + pad64(amtBig) + pad64(0);
+        const raw = await BC.provider.call({ to: qAddr, data: d });
+        if (raw && raw !== '0x' && raw.length >= 66) {
+          const out = BigInt('0x' + raw.slice(2,66));
+          if (out > 0n && (!bestQuote || out > bestQuote)) { bestQuote = out; bestFee = fee; }
         }
       } catch(e) {}
     }
+    if (bestQuote) break;
   }
 
-  if (!bestQuote) return null;
+  // Off-chain fallback — Quoter çalışmazsa fiyat tahmini
+  if (!bestQuote) {
+    const inUsd  = getUsdValue(amountIn, tokenIn);
+    const outPer = getUsdValue(1, tokenOut);
+    if (inUsd > 0 && outPer > 0) {
+      const estimated = (inUsd / outPer) * 0.997;
+      return {
+        amountOut: BigInt(Math.floor(estimated * Math.pow(10, tokenOut.decimals))),
+        fee: 3000,
+        amountOutFormatted: estimated,
+        isEstimate: true,
+      };
+    }
+    return null;
+  }
 
   return {
     amountOut: bestQuote,
     fee: bestFee,
     amountOutFormatted: Number(bestQuote) / Math.pow(10, tokenOut.decimals),
+    isEstimate: false,
   };
 }
 
-function pad64(val) {
-  return BigInt(val).toString(16).padStart(64, '0');
-}
-function padAddr(addr) {
-  return addr.replace('0x','').toLowerCase().padStart(64,'0');
-}
+function pad64(val) { return BigInt(val).toString(16).padStart(64,'0'); }
+function padAddr(addr) { return addr.replace('0x','').toLowerCase().padStart(64,'0'); }
 
 // Quoter V2: quoteExactInputSingle(QuoteExactInputSingleParams)
 // struct: tokenIn, tokenOut, amountIn, fee, sqrtPriceLimitX96
 function encodeQuoteV2(tokenIn, tokenOut, amountIn, fee) {
-  return '0xcdca1753' +
-    padAddr(tokenIn)  +
-    padAddr(tokenOut) +
-    pad64(amountIn)   +
-    pad64(fee)        +
-    pad64(0);         // sqrtPriceLimitX96
+  return '0xcdca1753' + padAddr(tokenIn) + padAddr(tokenOut) + pad64(amountIn) + pad64(fee) + pad64(0);
 }
 
 // Quoter V1 fallback: quoteExactInputSingle(address,address,uint24,uint256,uint160)
 function encodeQuoteV1(tokenIn, tokenOut, fee, amountIn) {
-  return '0xf7729d43' +
-    padAddr(tokenIn)  +
-    padAddr(tokenOut) +
-    pad64(fee)        +
-    pad64(amountIn)   +
-    pad64(0);         // sqrtPriceLimitX96
+  return '0xf7729d43' + padAddr(tokenIn) + padAddr(tokenOut) + pad64(fee) + pad64(amountIn) + pad64(0);
 }
 
 // ─────────────────────────────────────────────
@@ -626,8 +635,9 @@ async function fetchQuote(amountIn) {
       minOut.toFixed(buyToken.decimals > 6 ? 6 : 4) + ' ' + buyToken.sym;
 
     // Route
-    document.getElementById('rb-route').textContent =
-      `${sellToken.sym} → ${buyToken.sym} (${quote.fee / 10000}% pool)`;
+    document.getElementById('rb-route').textContent = quote.isEstimate
+      ? `${sellToken.sym} → ${buyToken.sym} (estimated)`
+      : `${sellToken.sym} → ${buyToken.sym} (${quote.fee / 10000}% pool)`;
 
     // XP preview — yeni tablo
     const xpPreview = calcSwapXP(sellUsd);
