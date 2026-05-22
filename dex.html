@@ -118,14 +118,14 @@
     <div class="dh-top">
       <div class="dh-title">🔄 DEX Swap</div>
       <div class="dh-powered">
-        <div class="dh-logo">U</div>
-        Powered by Uniswap v3
+        <div class="dh-logo" style="background:linear-gradient(135deg,#6B3FA0,#9B6FD0)">J</div>
+        Powered by Jumper Exchange
       </div>
     </div>
     <div class="dh-stats">
       <div class="dhs">Chain: <strong>Base</strong></div>
-      <div class="dhs">Fee: <strong>0.05%–0.3%</strong></div>
-      <div class="dhs">Liquidity: <strong>Deep</strong></div>
+      <div class="dhs">Sources: <strong>Aerodrome + 30+</strong></div>
+      <div class="dhs">Best Price: <strong>Auto</strong></div>
     </div>
   </div>
 
@@ -152,16 +152,16 @@
     <div class="tr-tab" id="tab-send" onclick="switchDexTab('send')">Send</div>
   </div>
 
-  <div class="swap-wrapper" id="swap-wrapper" style="height:420px">
+  <div class="swap-wrapper" id="swap-wrapper" style="height:480px">
     <div class="swap-loading" id="swap-loading">
       <div class="sl-spin"></div>
       <div class="sl-text">Loading swap interface…</div>
     </div>
     <iframe
       id="uniswap-iframe"
-      src="https://app.uniswap.org/#/swap?chain=base&inputCurrency=ETH&outputCurrency=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
-      style="width:100%;height:420px;opacity:0;border-radius:20px"
-      allow="clipboard-write"
+      src="https://jumper.exchange/?fromChain=8453&toChain=8453&fromToken=0x0000000000000000000000000000000000000000&toToken=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+      style="width:100%;height:480px;opacity:0;border-radius:20px"
+      allow="clipboard-write; clipboard-read"
       onload="iframeLoaded()"
       onerror="showFallback()">
     </iframe>
@@ -222,16 +222,16 @@
     <a href="https://aerodrome.finance/swap?from=eth&to=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913&chain=8453" target="_blank" class="ext-btn aero">
       🟠 Aerodrome
     </a>
-    <a href="https://app.uniswap.org/#/swap?chain=base" target="_blank" class="ext-btn uni">
-      🦄 Uniswap
-    </a>
-    <a href="https://jumper.exchange/?fromChain=8453&toChain=8453" target="_blank" class="ext-btn" style="border-color:rgba(139,92,246,.25);color:var(--purple)">
+    <a href="https://jumper.exchange/?fromChain=8453&toChain=8453" target="_blank" class="ext-btn" style="border-color:rgba(107,63,160,.25);color:#9B6FD0">
       🔀 Jumper
+    </a>
+    <a href="https://app.uniswap.org/swap?chain=base" target="_blank" class="ext-btn uni">
+      🦄 Uniswap
     </a>
   </div>
 
   <div style="text-align:center;font-size:11px;color:var(--muted);padding:8px 0 4px;font-family:var(--mono)">
-    Swaps routed through Uniswap V3 on Base · Best rates on-chain
+    Best price aggregated from Aerodrome, Uniswap V3, BaseSwap & 30+ sources on Base
   </div>
 
 </div>
@@ -273,8 +273,12 @@ function setSwapPair(from, to) {
   const fromAddr = TOKEN_ADDRS[from] || from;
   const toAddr   = TOKEN_ADDRS[to] || to;
 
+  // Jumper: 0x000...000 = native ETH
+  const jumperFrom = fromAddr === 'ETH' ? '0x0000000000000000000000000000000000000000' : fromAddr;
+  const jumperTo   = toAddr   === 'ETH' ? '0x0000000000000000000000000000000000000000' : toAddr;
+
   const iframe = document.getElementById('uniswap-iframe');
-  const newSrc = `https://app.uniswap.org/#/swap?chain=base&inputCurrency=${fromAddr}&outputCurrency=${toAddr}`;
+  const newSrc = `https://jumper.exchange/?fromChain=8453&toChain=8453&fromToken=${jumperFrom}&toToken=${jumperTo}`;
   iframeOk = false;
   iframe.style.opacity = '0';
   document.getElementById('swap-loading').style.display = 'flex';
@@ -292,12 +296,16 @@ function switchDexTab(tab) {
     document.getElementById('tab-'+t).classList.toggle('active', t===tab);
   });
   const iframe = document.getElementById('uniswap-iframe');
+  // Jumper tüm modları tek URL'de destekliyor
+  const base = 'https://jumper.exchange/?fromChain=8453&toChain=8453';
   if (tab === 'limit') {
-    iframe.src = 'https://app.uniswap.org/#/limit?chain=base';
+    // Jumper'da limit yok, best dex'e yönlendir
+    iframe.src = base + '&fromToken=0x0000000000000000000000000000000000000000&toToken=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+    toast('Limit orders → use Aerodrome directly', 'info');
   } else if (tab === 'send') {
-    iframe.src = 'https://app.uniswap.org/#/send?chain=base';
+    iframe.src = 'https://jumper.exchange/send/?fromChain=8453';
   } else {
-    iframe.src = 'https://app.uniswap.org/#/swap?chain=base&inputCurrency=ETH&outputCurrency=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+    iframe.src = base + '&fromToken=0x0000000000000000000000000000000000000000&toToken=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
   }
   iframeOk = false;
   iframe.style.opacity = '0';
