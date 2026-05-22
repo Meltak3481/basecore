@@ -349,30 +349,44 @@ function calcXP(usdVal) {
   return 500;
 }
 
-// ─── QUOTE via Worker (1inch proxy) ──────────────────────
-async function fetchQuote(amt) {
-  const src    = sellTok.native ? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' : sellTok.addr;
-  const dst    = buyTok.native  ? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' : buyTok.addr;
-  const amtWei = BigInt(Math.floor(amt * 10**sellTok.decimals)).toString();
+// ─── QUOTE via Worker (Paraswap proxy) ───────────────────
+const PARA_ETH = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+function pAddr(tok) { return tok.native ? PARA_ETH : tok.addr; }
 
-  const r = await fetch(`${WORKER_URL}/swap-quote?src=${src}&dst=${dst}&amount=${amtWei}`);
+async function fetchQuote(amt) {
+  const amtWei = BigInt(Math.floor(amt * 10**sellTok.decimals)).toString();
+  const params = new URLSearchParams({
+    src:    pAddr(sellTok),
+    dst:    pAddr(buyTok),
+    amount: amtWei,
+    srcDec: sellTok.decimals,
+    dstDec: buyTok.decimals,
+  });
+  const r = await fetch(`${WORKER_URL}/swap-quote?${params}`);
   const d = await r.json();
-  if (!r.ok || d.error) throw new Error(d.description || d.error || 'Quote failed');
-  return d;
+  if (!r.ok || !d.priceRoute) throw new Error(d.error || d.message || 'Quote failed');
+  return d.priceRoute;
 }
 
-// ─── SWAP CALLDATA via Worker (1inch proxy) ───────────────
-async function fetchSwapData(amt) {
-  const src    = sellTok.native ? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' : sellTok.addr;
-  const dst    = buyTok.native  ? '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE' : buyTok.addr;
-  const amtWei = BigInt(Math.floor(amt * 10**sellTok.decimals)).toString();
-  const slip   = (slippage + PLATFORM_FEE_BPS/100).toFixed(2);
-
-  const params = new URLSearchParams({ src, dst, amount: amtWei, from: BC.addr, slippage: slip });
-  const r = await fetch(`${WORKER_URL}/swap-tx?${params}`);
+// ─── SWAP CALLDATA via Worker (Paraswap proxy) ────────────
+async function fetchSwapData(amt, priceRoute) {
+  const slip = slippage + PLATFORM_FEE_BPS / 100;
+  const r = await fetch(`${WORKER_URL}/swap-tx`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      priceRoute,
+      userAddress:  BC.addr,
+      srcToken:     pAddr(sellTok),
+      destToken:    pAddr(buyTok),
+      srcDecimals:  sellTok.decimals,
+      destDecimals: buyTok.decimals,
+      slippage:     slip,
+    }),
+  });
   const d = await r.json();
-  if (!r.ok || d.error || !d.tx) throw new Error(d.description || d.error || 'Swap failed');
-  return d;
+  if (!r.ok || !d.to) throw new Error(d.error || d.message || 'Swap tx failed');
+  return d; // { to, data, value, ... }
 }
 
 // ─── INPUT HANDLER ────────────────────────────────────────
@@ -394,10 +408,10 @@ function onInput() {
 
 async function doQuote(amt) {
   try {
-    const q = await fetchQuote(amt);
-    lastQuote = { ...q, sellAmt: amt };
+    const pr = await fetchQuote(amt);
+    lastQuote = { priceRoute: pr, sellAmt: amt };
 
-    const outAmt = Number(q.dstAmount) / 10**buyTok.decimals;
+    const outAmt = Number(pr.destAmount) / 10**buyTok.decimals;
     document.getElementById('buy-amt').value = outAmt.toFixed(buyTok.decimals > 6 ? 6 : buyTok.decimals);
 
     const sellUsdVal = usd(amt, sellTok);
@@ -405,11 +419,12 @@ async function doQuote(amt) {
     document.getElementById('sell-usd').textContent = '≈ $' + sellUsdVal.toFixed(2);
     document.getElementById('buy-usd').textContent  = '≈ $' + buyUsdVal.toFixed(2);
 
-    // Route info
     const rate = outAmt / amt;
     document.getElementById('rb-rate').textContent = `1 ${sellTok.sym} = ${rate.toFixed(4)} ${buyTok.sym}`;
 
-    const impact = sellUsdVal > 0 ? Math.max(0, (sellUsdVal - buyUsdVal) / sellUsdVal * 100) : 0;
+    const impact = pr.details?.srcUSD && pr.details?.destUSD
+      ? Math.max(0, (1 - parseFloat(pr.details.destUSD) / parseFloat(pr.details.srcUSD)) * 100)
+      : sellUsdVal > 0 ? Math.max(0, (sellUsdVal - buyUsdVal) / sellUsdVal * 100) : 0;
     const impEl = document.getElementById('rb-impact');
     impEl.textContent = impact.toFixed(2) + '%';
     impEl.style.color = impact < 1 ? 'var(--green)' : impact < 3 ? 'var(--yellow)' : 'var(--red)';
@@ -417,17 +432,16 @@ async function doQuote(amt) {
     const minOut = outAmt * (1 - slippage/100);
     document.getElementById('rb-min').textContent = minOut.toFixed(4) + ' ' + buyTok.sym;
 
-    // Protocol
-    const proto = q.protocols?.[0]?.[0]?.[0]?.name || 'Best Route';
-    document.getElementById('rb-route').textContent = `${sellTok.sym} → ${buyTok.sym} via ${proto}`;
-    document.getElementById('dh-route').textContent = proto;
-
+    const bestRoute = pr.bestRoute?.[0]?.swaps?.[0]?.swapExchanges?.[0]?.exchange || 'Best Route';
+    document.getElementById('rb-route').textContent = `${sellTok.sym} → ${buyTok.sym} via ${bestRoute}`;
+    document.getElementById('dh-route').textContent = bestRoute;
     document.getElementById('rb-xp').textContent = '+' + calcXP(sellUsdVal).toLocaleString() + ' XP';
+
     document.getElementById('route-box').classList.add('show');
     updateBtn();
   } catch(e) {
     console.warn('Quote error:', e.message);
-    // off-chain fallback göster
+    // off-chain fallback
     const fallback = usd(amt, sellTok) / Math.max(usd(1, buyTok), 0.000001) * 0.997;
     if (fallback > 0) {
       document.getElementById('buy-amt').value = fallback.toFixed(4);
@@ -488,21 +502,28 @@ async function doSwap() {
       BC.signer = signer;
     }
 
-    // ERC-20 approval — 1inch router için
+    // ERC-20 approval — Paraswap TokenTransferProxy
     if (!sellTok.native) {
-      const INCH_ROUTER = '0x111111125421cA6dc452d289314280a0f8842A65';
-      await ensureApproval(sellTok, amt, signer, INCH_ROUTER);
+      const amtWei = BigInt(Math.floor(sellAmt * 10**sellTok.decimals));
+      const paraProxy = '0x216B4B4Ba9F3e719726886d34a177484278Bfcae';
+      await ensureApproval(sellTok, amtWei, signer, paraProxy);
     }
 
     btn.innerHTML = '<span class="spin"></span> Building swap...';
-    const swapData = await fetchSwapData(amt);
+
+    if (!lastQuote?.priceRoute) {
+      toast('Get a quote first', 'error');
+      btn.disabled = false; updateBtn(); return;
+    }
+
+    const txData = await fetchSwapData(sellAmt, lastQuote.priceRoute);
 
     btn.innerHTML = '<span class="spin"></span> Confirm in wallet...';
     const tx = await signer.sendTransaction({
-      to:    swapData.tx.to,
-      data:  swapData.tx.data,
-      value: BigInt(swapData.tx.value || '0'),
-      gasLimit: swapData.tx.gas ? BigInt(Math.ceil(swapData.tx.gas * 1.2)) : undefined,
+      to:    txData.to,
+      data:  txData.data,
+      value: BigInt(txData.value || '0'),
+      gasLimit: txData.gas ? BigInt(Math.ceil(Number(txData.gas) * 1.2)) : undefined,
     });
 
     toast('⏳ Transaction submitted...', 'info');
