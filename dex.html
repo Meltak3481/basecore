@@ -493,84 +493,76 @@ function formatBal(raw, decimals, digits = 4) {
 }
 
 // ─────────────────────────────────────────────
-// QUOTE via Uniswap V3 Quoter
+// QUOTE + SWAP via 0x API
 // ─────────────────────────────────────────────
+const ZEROX_BASE = 'https://api.0x.org/swap/allowance-holder';
+const ZEROX_SPENDER = '0x0000000000001fF3684f28c67538d4D072C22734';
+
+function zeroxAddr(token) {
+  return token.isNative ? '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee' : token.addr;
+}
+
 async function getQuote(amountIn, tokenIn, tokenOut) {
-  await loadEthers();
-  const inAddr  = tokenIn.isNative  ? WETH_ADDR : tokenIn.addr;
-  const outAddr = tokenOut.isNative ? WETH_ADDR : tokenOut.addr;
-  const amtBig  = BigInt(Math.floor(amountIn * Math.pow(10, tokenIn.decimals)));
+  const amtBig = BigInt(Math.floor(amountIn * Math.pow(10, tokenIn.decimals)));
   if (amtBig === 0n) return null;
 
-  let bestQuote = null;
-  let bestFee   = null;
+  try {
+    const params = new URLSearchParams({
+      chainId:     '8453',
+      sellToken:   zeroxAddr(tokenIn),
+      buyToken:    zeroxAddr(tokenOut),
+      sellAmount:  amtBig.toString(),
+      taker:       BC.addr || '0x0000000000000000000000000000000000000001',
+      slippageBps: Math.round(slippage * 100).toString(),
+    });
+    const res = await fetch(`${ZEROX_BASE}/price?${params}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (!data.buyAmount) throw new Error('no buyAmount');
 
-  const QUOTERS = [
-    '0x3d4e44Eb1374240CE5F1B136041F7F10EFC9EB89', // QuoterV2
-    '0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6', // QuoterV1
-  ];
-
-  for (const qAddr of QUOTERS) {
-    for (const fee of FEE_TIERS) {
-      // V2 selector: cdca1753 — struct(tokenIn,tokenOut,amountIn,fee,sqrtLimit)
-      try {
-        const d = '0xcdca1753' + padAddr(inAddr) + padAddr(outAddr) + pad64(amtBig) + pad64(fee) + pad64(0);
-        const raw = await BC.provider.call({ to: qAddr, data: d });
-        if (raw && raw !== '0x' && raw.length >= 66) {
-          const out = BigInt('0x' + raw.slice(2,66));
-          if (out > 0n && (!bestQuote || out > bestQuote)) { bestQuote = out; bestFee = fee; }
-        }
-      } catch(e) {}
-      // V1 selector: f7729d43 — (tokenIn,tokenOut,fee,amountIn,sqrtLimit)
-      try {
-        const d = '0xf7729d43' + padAddr(inAddr) + padAddr(outAddr) + pad64(fee) + pad64(amtBig) + pad64(0);
-        const raw = await BC.provider.call({ to: qAddr, data: d });
-        if (raw && raw !== '0x' && raw.length >= 66) {
-          const out = BigInt('0x' + raw.slice(2,66));
-          if (out > 0n && (!bestQuote || out > bestQuote)) { bestQuote = out; bestFee = fee; }
-        }
-      } catch(e) {}
-    }
-    if (bestQuote) break;
-  }
-
-  // Off-chain fallback — Quoter çalışmazsa fiyat tahmini
-  if (!bestQuote) {
+    return {
+      amountOutFormatted: Number(data.buyAmount) / Math.pow(10, tokenOut.decimals),
+      amountOut: BigInt(data.buyAmount),
+      isEstimate: false,
+      source: data.route?.fills?.[0]?.source || 'DEX',
+    };
+  } catch(e) {
+    console.warn('0x price:', e.message);
+    // Offchain fallback
     const inUsd  = getUsdValue(amountIn, tokenIn);
     const outPer = getUsdValue(1, tokenOut);
     if (inUsd > 0 && outPer > 0) {
-      const estimated = (inUsd / outPer) * 0.997;
       return {
-        amountOut: BigInt(Math.floor(estimated * Math.pow(10, tokenOut.decimals))),
-        fee: 3000,
-        amountOutFormatted: estimated,
+        amountOutFormatted: (inUsd / outPer) * 0.997,
+        amountOut: 0n,
         isEstimate: true,
+        source: 'estimate',
       };
     }
     return null;
   }
+}
 
-  return {
-    amountOut: bestQuote,
-    fee: bestFee,
-    amountOutFormatted: Number(bestQuote) / Math.pow(10, tokenOut.decimals),
-    isEstimate: false,
-  };
+async function getZeroxSwapQuote(amountIn, tokenIn, tokenOut) {
+  const amtBig = BigInt(Math.floor(amountIn * Math.pow(10, tokenIn.decimals)));
+  const params = new URLSearchParams({
+    chainId:     '8453',
+    sellToken:   zeroxAddr(tokenIn),
+    buyToken:    zeroxAddr(tokenOut),
+    sellAmount:  amtBig.toString(),
+    taker:       BC.addr,
+    slippageBps: Math.round((slippage + PLATFORM_FEE_BPS / 100) * 100).toString(),
+  });
+  const res = await fetch(`${ZEROX_BASE}/quote?${params}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.validationErrors?.[0]?.reason || err?.reason || 'Quote failed ' + res.status);
+  }
+  return res.json();
 }
 
 function pad64(val) { return BigInt(val).toString(16).padStart(64,'0'); }
 function padAddr(addr) { return addr.replace('0x','').toLowerCase().padStart(64,'0'); }
-
-// Quoter V2: quoteExactInputSingle(QuoteExactInputSingleParams)
-// struct: tokenIn, tokenOut, amountIn, fee, sqrtPriceLimitX96
-function encodeQuoteV2(tokenIn, tokenOut, amountIn, fee) {
-  return '0xcdca1753' + padAddr(tokenIn) + padAddr(tokenOut) + pad64(amountIn) + pad64(fee) + pad64(0);
-}
-
-// Quoter V1 fallback: quoteExactInputSingle(address,address,uint24,uint256,uint160)
-function encodeQuoteV1(tokenIn, tokenOut, fee, amountIn) {
-  return '0xf7729d43' + padAddr(tokenIn) + padAddr(tokenOut) + pad64(fee) + pad64(amountIn) + pad64(0);
-}
 
 // ─────────────────────────────────────────────
 // INPUT HANDLER
@@ -637,7 +629,7 @@ async function fetchQuote(amountIn) {
     // Route
     document.getElementById('rb-route').textContent = quote.isEstimate
       ? `${sellToken.sym} → ${buyToken.sym} (estimated)`
-      : `${sellToken.sym} → ${buyToken.sym} (${quote.fee / 10000}% pool)`;
+      : `${sellToken.sym} → ${buyToken.sym} via ${quote.source || '0x'}`;
 
     // XP preview — yeni tablo
     const xpPreview = calcSwapXP(sellUsd);
@@ -730,13 +722,35 @@ async function executeSwap() {
       await ensureApproval(sellToken, amtIn, signer);
     }
 
-    // Swap tx
-    const params   = encodeExactInputSingle(inAddr, outAddr, lastQuote.fee, BC.addr, deadline, amtIn, amtOutMin);
-    const txValue  = sellToken.isNative ? amtIn : 0n;
-    const calldata = '0x414bf389' + params;
+    toast('⏳ Getting swap route...', 'info');
+    let swapData, swapTo, swapValue;
+
+    if (!lastQuote.isEstimate) {
+      // 0x API'den gerçek calldata al
+      try {
+        const zQuote = await getZeroxSwapQuote(sellAmt, sellToken, buyToken);
+
+        // ERC-20 approval — 0x AllowanceHolder için
+        if (!sellToken.isNative && zQuote.issues?.allowance) {
+          toast('Approving token...', 'info');
+          await ensureApproval(sellToken, amtIn, signer, zQuote.issues.allowance.spender || ZEROX_SPENDER);
+        }
+
+        swapTo    = zQuote.transaction.to;
+        swapData  = zQuote.transaction.data;
+        swapValue = BigInt(zQuote.transaction.value || '0');
+      } catch(apiErr) {
+        toast('❌ ' + apiErr.message.slice(0,80), 'error');
+        btn.disabled = false; updateSwapBtn(); return;
+      }
+    } else {
+      // Estimate modunda swap yapma, kullanıcıyı yönlendir
+      toast('Quote unavailable — use Aerodrome or Uniswap directly', 'error');
+      btn.disabled = false; updateSwapBtn(); return;
+    }
 
     toast('⏳ Confirm in wallet...', 'info');
-    const tx = await signer.sendTransaction({ to: UNI_ROUTER_V2, data: calldata, value: txValue });
+    const tx = await signer.sendTransaction({ to: swapTo, data: swapData, value: swapValue });
     toast('⏳ Transaction submitted...', 'info');
     const rc = await tx.wait();
 
@@ -798,17 +812,17 @@ function encodeExactInputSingle(tokenIn, tokenOut, fee, recipient, deadline, amo
   );
 }
 
-async function ensureApproval(token, amountIn, signer) {
+async function ensureApproval(token, amountIn, signer, spender) {
+  const sp = spender || ZEROX_SPENDER;
   const allowanceData = '0xdd62ed3e' +
     BC.addr.replace('0x','').padStart(64,'0') +
-    UNI_ROUTER_V2.replace('0x','').padStart(64,'0');
+    sp.replace('0x','').padStart(64,'0');
   const raw = await BC.provider.call({ to: token.addr, data: allowanceData });
   const allowance = BigInt(raw);
   if (allowance >= amountIn) return;
 
   const maxUint = 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
-  const approveData = '0x095ea7b3' +
-    UNI_ROUTER_V2.replace('0x','').padStart(64,'0') + maxUint;
+  const approveData = '0x095ea7b3' + sp.replace('0x','').padStart(64,'0') + maxUint;
   const approveTx = await signer.sendTransaction({ to: token.addr, data: approveData });
   await approveTx.wait();
   toast('✅ Token approved!', 'success');
