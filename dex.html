@@ -668,11 +668,38 @@ async function executeSwap() {
   const sellAmt = parseFloat(document.getElementById('sell-amt').value);
   if (!sellAmt || sellAmt <= 0) { toast('Enter amount', 'error'); return; }
 
-  // Network check
+  // Network check — önce switch dene
   if (BC.chain !== 8453) {
-    toast('Switch to Base network', 'error');
-    await ensureBaseNetwork();
-    return;
+    btn.innerHTML = '<span class="spin"></span> Switching to Base...';
+    try {
+      await BC.provider.send('wallet_switchEthereumChain', [{ chainId: '0x2105' }]);
+      // Switch başarılı, devam et
+      BC.chain = 8453;
+    } catch(switchErr) {
+      // Chain eklenmemişse ekle
+      if (switchErr.code === 4902 || switchErr.message?.includes('Unrecognized')) {
+        try {
+          await BC.provider.send('wallet_addEthereumChain', [{
+            chainId: '0x2105',
+            chainName: 'Base',
+            nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+            rpcUrls: ['https://mainnet.base.org'],
+            blockExplorerUrls: ['https://basescan.org'],
+          }]);
+          BC.chain = 8453;
+        } catch(addErr) {
+          btn.disabled = false;
+          updateSwapBtn();
+          toast('Please switch to Base network in your wallet app', 'error');
+          return;
+        }
+      } else {
+        btn.disabled = false;
+        updateSwapBtn();
+        toast('Please switch to Base network in your wallet', 'error');
+        return;
+      }
+    }
   }
 
   const btn = document.getElementById('swap-btn');
