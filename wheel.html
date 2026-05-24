@@ -244,8 +244,8 @@
 
   <div class="spin-dots" id="spin-dots"></div>
 
-  <button class="spin-btn" id="spin-btn" onclick="doSpin()">
-    <span>✦</span> Pay via x402 &amp; Spin!
+  <button class="spin-btn" id="spin-btn" onclick="doSpin()" data-pay-prefix="✦ Spin · ">
+    ✦ Spin · 0.00002 ETH
   </button>
 
   <div style="height:28px;"></div>
@@ -259,7 +259,7 @@
         <div class="mystery-badge">🔒 COMING SOON</div>
       </div>
     </div>
-    <div class="mystery-row" style="display:none"><span class="mr-label">Drop chance</span><span class="mr-val">2% per spin</span></div>
+    <div class="mystery-row"><span class="mr-label">Drop chance</span><span class="mr-val">2% per spin</span></div>
     <div class="mystery-row"><span class="mr-label">Your boxes</span><span class="mr-val" id="mystery-count-inline">0 boxes</span></div>
   </div>
 
@@ -618,7 +618,7 @@ async function doSpin() {
 
   btn.disabled  = wheelSpins <= 0;
   btn.innerHTML = wheelSpins > 0
-    ? '<span>✦</span> Pay via x402 &amp; Spin!'
+    ? '✦ Spin · ' + (typeof getPayLabel==='function'?getPayLabel():'0.00002 ETH')
     : '🌙 No spins left · Come back tomorrow';
 }
 
@@ -669,7 +669,7 @@ function updateSpinUI() {
     btn.innerHTML = '🌙 No spins left · Come back tomorrow';
   } else if (!isSpinning) {
     btn.disabled  = false;
-    btn.innerHTML = '<span>✦</span> Pay via x402 &amp; Spin!';
+    btn.innerHTML = '✦ Spin · ' + (typeof getPayLabel==='function'?getPayLabel():'0.00002 ETH');
   }
 }
 
@@ -679,7 +679,7 @@ function renderLegend() {
       <div class="sl-dot" style="background:${s.hex};box-shadow:0 0 8px ${s.hex}99"></div>
       <div>
         <div class="sl-label">${s.emoji} ${s.label}</div>
-        <div class="sl-prob" style="display:none">${s.name} · ${Math.round(s.prob * 100)}%</div>
+        <div class="sl-prob">${s.name} · ${Math.round(s.prob * 100)}%</div>
       </div>
     </div>`).join('');
 }

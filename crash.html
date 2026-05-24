@@ -251,7 +251,7 @@ async function playCrash() {
   btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
 
   const rc = await sendTxWithFee('0.00002', 200, 'game');
-  if (!rc) { btn.disabled = false; btn.textContent = '🚀 Start · 0.00002 ETH'; return; }
+  if (!rc) { btn.disabled = false; btn.textContent = ''; btn.disabled=false; updateGameBtn(); return; }
 
   crashTarget    = genCrashTarget();
   crashRunning   = true;
@@ -295,7 +295,7 @@ async function playCrash() {
       co.disabled        = true;
       btn.style.display  = 'flex';
       btn.disabled       = false;
-      btn.textContent    = '🚀 Start · 0.00002 ETH';
+      btn.textContent    = 🚀 Start  + getPayLabel();
       drawCrashGraph(true);
       updateRocket(1, true);
       SFX.play('crashBoom');
@@ -315,7 +315,7 @@ function crashCashout() {
   co.disabled       = true;
   btn.style.display = 'flex';
   btn.disabled      = false;
-  btn.textContent   = '🚀 Start · 0.00002 ETH';
+  btn.textContent   = 🚀 Start  + getPayLabel();
 
   const xp = Math.min(2000, Math.round(200 * crashMult));
   addXP(xp, null);
@@ -361,7 +361,20 @@ window.addEventListener('resize', () => {
 });
 
 function showDashboard(){} // session restore için
+
+// ── Mod değişince buton metnini güncelle ──
+window.addEventListener('payModeChanged', (e) => {
+  updateGameBtn();
+});
+
+function updateGameBtn() {
+  const label = typeof getPayLabel === 'function' ? getPayLabel() : '0.00002 ETH';
+  const btn = document.getElementById('crash-play');
+  if (!btn || btn.disabled) return;
+  btn.textContent = '🚀 Start · ' + label;
+}
 initNav('gaming');
+  updateGameBtn();
 </script>
 </body>
 </html>

@@ -214,7 +214,7 @@ async function playHilo() {
   btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
 
   const rc = await sendTxWithFee('0.00002', 125, 'game');
-  if (!rc) { btn.disabled = false; btn.textContent = '🃏 Guess · 0.00002 ETH'; return; }
+  if (!rc) { btn.disabled = false; btn.textContent = ''; btn.disabled=false; updateGameBtn(); return; }
 
   const nextCard = randCard();
   const nextVal  = CV[nextCard.val];
@@ -266,7 +266,7 @@ async function playHilo() {
   if (nextInner) nextInner.classList.remove('flip');
 
   btn.disabled  = false;
-  btn.textContent = '🃏 Guess · 0.00002 ETH';
+  btn.textContent = 🃏 Guess  + getPayLabel();
 }
 
 function showWin(xp,title,emoji){document.getElementById('win-emoji').textContent=emoji||'🃏';document.getElementById('win-title').textContent=title;const _wd=typeof getWinXPDisplay==='function'?getWinXPDisplay(xp):{text:'+'+xp.toLocaleString()+' XP',detail:null};
@@ -279,7 +279,20 @@ function spawnConfetti(){const cols=['#f5c518','#00e887','#0070f3','#ec4899','#8
 function shareX(t){window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(t+' ⬡ @BaseCoreFun #Base')}&url=${encodeURIComponent('https://basecore.fun')}`,'_blank');}
 
 function showDashboard(){} // session restore için
+
+// ── Mod değişince buton metnini güncelle ──
+window.addEventListener('payModeChanged', (e) => {
+  updateGameBtn();
+});
+
+function updateGameBtn() {
+  const label = typeof getPayLabel === 'function' ? getPayLabel() : '0.00002 ETH';
+  const btn = document.getElementById('hilo-play');
+  if (!btn || btn.disabled) return;
+  btn.textContent = '🃏 Guess · ' + label;
+}
 initNav('gaming');
+  updateGameBtn();
 initHilo();
 </script>
 </body>

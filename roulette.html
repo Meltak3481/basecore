@@ -191,7 +191,7 @@ async function playRoulette() {
   document.getElementById('roulette-result').textContent='—';
 
   const rc=await sendTxWithFee('0.00002',125,'game');
-  if(!rc){btn.disabled=false;btn.textContent='🎡 Spin · 0.00002 ETH';return;}
+  if(!rc){btn.disabled=false;btn.textContent=🎡 Spin  + getPayLabel();return;}
 
   const resultIdx=Math.floor(Math.random()*NUMS.length);
   const num=NUMS[resultIdx];
@@ -241,7 +241,7 @@ async function playRoulette() {
   }
 
   recordGamePlayed();
-  btn.disabled=false;btn.textContent='🎡 Spin · 0.00002 ETH';
+  btn.disabled=false;btn.textContent=🎡 Spin  + getPayLabel();
 }
 
 function showWin(xp,title,emoji){document.getElementById('win-emoji').textContent=emoji||'🎡';document.getElementById('win-title').textContent=title;const _wd=typeof getWinXPDisplay==='function'?getWinXPDisplay(xp):{text:'+'+xp.toLocaleString()+' XP',detail:null};
@@ -254,7 +254,20 @@ function spawnConfetti(){const cols=['#f5c518','#00e887','#0070f3','#ec4899','#8
 function shareX(t){window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(t+' ⬡ @BaseCoreFun #Base')}&url=${encodeURIComponent('https://basecore.fun')}`,'_blank');}
 
 function showDashboard(){} // session restore için
+
+// ── Mod değişince buton metnini güncelle ──
+window.addEventListener('payModeChanged', (e) => {
+  updateGameBtn();
+});
+
+function updateGameBtn() {
+  const label = typeof getPayLabel === 'function' ? getPayLabel() : '0.00002 ETH';
+  const btn = document.getElementById('roulette-play');
+  if (!btn || btn.disabled) return;
+  btn.textContent = '🎡 Spin · ' + label;
+}
 initNav('gaming');
+  updateGameBtn();
 initRoulette();
 </script>
 </body>

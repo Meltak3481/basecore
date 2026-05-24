@@ -199,7 +199,7 @@ async function playPlinko() {
   btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
 
   const rc = await sendTxWithFee('0.00002', 100, 'game');
-  if (!rc) { btn.disabled = false; btn.textContent = '🔵 Drop Ball · 0.00002 ETH'; return; }
+  if (!rc) { btn.disabled = false; btn.textContent = ''; btn.disabled=false; updateGameBtn(); return; }
 
   dropping = true;
 
@@ -285,7 +285,7 @@ async function playPlinko() {
 
   dropping = false;
   btn.disabled = false;
-  btn.textContent = '🔵 Drop Ball · 0.00002 ETH';
+  btn.textContent = 🔵 Drop Ball  + getPayLabel();
 }
 
 function showWin(xp,title,emoji){
@@ -310,7 +310,20 @@ function spawnConfetti(){const cols=['#f5c518','#00e887','#0070f3','#ec4899','#8
 function shareX(t){window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(t+' ⬡ @BaseCoreFun #Base')}&url=${encodeURIComponent('https://basecore.fun')}`,'_blank');}
 
 function showDashboard(){} // session restore için
+
+// ── Mod değişince buton metnini güncelle ──
+window.addEventListener('payModeChanged', (e) => {
+  updateGameBtn();
+});
+
+function updateGameBtn() {
+  const label = typeof getPayLabel === 'function' ? getPayLabel() : '0.00002 ETH';
+  const btn = document.getElementById('plinko-play');
+  if (!btn || btn.disabled) return;
+  btn.textContent = '🔵 Drop Ball · ' + label;
+}
 initNav('gaming');
+  updateGameBtn();
 initPlinko();
 </script>
 </body>
