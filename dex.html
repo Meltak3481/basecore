@@ -276,7 +276,7 @@ const TOKENS = {
 };
 
 // ─── CONFIG ───────────────────────────────────────────────
-const PLATFORM_FEE_ADDR = '0x356473fc86c257B05f7CaCF5FB496C4Fd93FbF94';
+const PLATFORM_FEE_ADDR = '0xB1ff2998EFaCb228AE6aa45AC634B2e02991A585';
 const PLATFORM_FEE_BPS  = 25;
 // WORKER_URL shared.js'den geliyor
 
@@ -502,11 +502,23 @@ async function doSwap() {
       BC.signer = signer;
     }
 
-    // ERC-20 approval — Paraswap TokenTransferProxy
+    // ERC-20 approval — Paraswap'ın gerçek spender adresini worker'dan al
     if (!sellTok.native) {
       const amtWei = BigInt(Math.floor(sellAmt * 10**sellTok.decimals));
+      // Paraswap Base TokenTransferProxy — resmi adres
       const paraProxy = '0x216B4B4Ba9F3e719726886d34a177484278Bfcae';
-      await ensureApproval(sellTok, amtWei, signer, paraProxy);
+      // Allowance kontrolü — zaten yeterliyse approval popup çıkmaz
+      const allowD = '0xdd62ed3e' + BC.addr.slice(2).padStart(64,'0') + paraProxy.slice(2).padStart(64,'0');
+      const rawAllow = await BC.provider.call({ to: sellTok.addr, data: allowD });
+      const allowance = BigInt(rawAllow || '0x0');
+      if (allowance < amtWei) {
+        toast('Approving USDC for swap...', 'info');
+        const maxU = 'f'.repeat(64);
+        const appD = '0x095ea7b3' + paraProxy.slice(2).padStart(64,'0') + maxU;
+        const appTx = await signer.sendTransaction({ to: sellTok.addr, data: appD });
+        await appTx.wait();
+        toast('✅ Approved!', 'success');
+      }
     }
 
     btn.innerHTML = '<span class="spin"></span> Building swap...';
