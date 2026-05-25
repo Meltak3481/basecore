@@ -270,31 +270,10 @@ async function switchAccount() {
 }
 
 // ── PAYMENT MODE ──
-
-// ── PAYMENT LABEL HELPER ──
-// Mod değişince buton metinlerini günceller
-function getPayLabel() {
-  return BC.paymentMode === 'x402' ? '0.05 USDC · x402' : '0.00002 ETH';
-}
-
-// Sayfadaki tüm play butonlarını güncelle
-function updatePlayButtons() {
-  // data-pay-label attribute'lu tüm butonları bul ve güncelle
-  document.querySelectorAll('[data-pay-label]').forEach(btn => {
-    const label = btn.getAttribute('data-pay-label');
-    btn.textContent = label.replace('{PAY}', getPayLabel());
-  });
-  // Dinamik butonlar için custom event
-  window.dispatchEvent(new CustomEvent('payModeChanged', {
-    detail: { mode: BC.paymentMode, label: getPayLabel() }
-  }));
-}
-
 function setPaymentMode(mode) {
   BC.paymentMode = mode;
   localStorage.setItem('bc_payment_mode', mode);
   updateModeUI();
-  updatePlayButtons();
   if (mode === 'x402') {
     showNotification('x402 Mode Active', '$0.05 USDC signature payment. No ETH transfer.', 'info');
   } else {
