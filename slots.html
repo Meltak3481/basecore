@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="base:app_id" content="69eb54ae345dbf0ebcf5d84c" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Slots — BaseCore</title>
 <link rel="stylesheet" href="shared.css">
@@ -188,7 +187,7 @@
   <button class="share-x-btn" onclick="shareX('Playing slots on-chain at BaseCore! 🎰 Chasing the 💎 jackpot!')">𝕏 Share on X</button>
 </div>
 
-<script src="shared.js?v=26"></script>
+<script src="shared.js?v=3"></script>
 <script src="sfx.js"></script>
 <script>
 const SYMS    = ['🍒','🍋','🍊','🍇','⭐','7️⃣','💎','🍀'];
@@ -357,7 +356,9 @@ function shareX(t){window.open(`https://twitter.com/intent/tweet?text=${encodeUR
 function showDashboard(){} // session restore için
 
 // ── Mod değişince buton metnini güncelle ──
-
+window.addEventListener('payModeChanged', (e) => {
+  updateGameBtn();
+});
 
 function updateGameBtn() {
   const label = typeof getPayLabel === 'function' ? getPayLabel() : '0.00002 ETH';
@@ -365,17 +366,6 @@ function updateGameBtn() {
   if (!btn || btn.disabled) return;
   btn.textContent = '🎰 Spin · ' + label;
 }
-
-function updateSlotsBtn() {
-  const btn = document.getElementById('slots-play');
-  if (!btn || btn.disabled) return;
-  btn.textContent = '🎰 Spin · ' + (typeof getPayLabel==='function'?getPayLabel():'0.00002 ETH');
-}
-window.addEventListener('payModeChanged', updateSlotsBtn);
-window.addEventListener('walletConnected', updateSlotsBtn);
-
-// init buton durumu
-setTimeout(function(){typeof updateSlotsBtn==='function'&&updateSlotsBtn();},400);
 initNav('gaming');
   updateGameBtn();
 initReels();
