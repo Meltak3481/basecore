@@ -5,7 +5,7 @@ const CHAINS = {
 };
 
 const TARGET_CHAIN = CHAINS.mainnet;
-let FEE_WALLET = '0x2D06F1440Cb64e44ae1115351013886d1c5A26fe';
+let FEE_WALLET = '0x356473fc86c257B05f7CaCF5FB496C4Fd93FbF94';
 
 // ── USDC / x402 SABİTLERİ ──
 const USDC_CONTRACT     = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
@@ -270,31 +270,10 @@ async function switchAccount() {
 }
 
 // ── PAYMENT MODE ──
-
-// ── PAYMENT LABEL HELPER ──
-// Mod değişince buton metinlerini günceller
-function getPayLabel() {
-  return BC.paymentMode === 'x402' ? '0.05 USDC · x402' : '0.00002 ETH';
-}
-
-// Sayfadaki tüm play butonlarını güncelle
-function updatePlayButtons() {
-  // data-pay-label attribute'lu tüm butonları bul ve güncelle
-  document.querySelectorAll('[data-pay-label]').forEach(btn => {
-    const label = btn.getAttribute('data-pay-label');
-    btn.textContent = label.replace('{PAY}', getPayLabel());
-  });
-  // Dinamik butonlar için custom event
-  window.dispatchEvent(new CustomEvent('payModeChanged', {
-    detail: { mode: BC.paymentMode, label: getPayLabel() }
-  }));
-}
-
 function setPaymentMode(mode) {
   BC.paymentMode = mode;
   localStorage.setItem('bc_payment_mode', mode);
   updateModeUI();
-  updatePlayButtons();
   if (mode === 'x402') {
     showNotification('x402 Mode Active', '$0.05 USDC signature payment. No ETH transfer.', 'info');
   } else {
@@ -676,23 +655,50 @@ async function handleX402Payment(apiUrl, taskId, xpReward) {
     to:          payTo,
     value:       amount,
     validAfter:  BigInt(now - 60),
-    validBefore: BigInt(now + 300),
+    validBefore: BigInt(now + 1200), // 20 dakika — Basehub ile aynı
     nonce,
   };
 
   let signature;
   try {
-    const types = {
-      TransferWithAuthorization: [
-        { name: 'from',        type: 'address' },
-        { name: 'to',          type: 'address' },
-        { name: 'value',       type: 'uint256' },
-        { name: 'validAfter',  type: 'uint256' },
-        { name: 'validBefore', type: 'uint256' },
-        { name: 'nonce',       type: 'bytes32' },
-      ]
+    // eth_signTypedData_v4 kullan — chainId integer olarak gider, Basehub ile aynı format
+    const typedData = {
+      domain: {
+        name: 'USD Coin',
+        version: '2',
+        chainId: 8453,
+        verifyingContract: USDC_CONTRACT,
+      },
+      types: {
+        EIP712Domain: [
+          { name: 'name',              type: 'string'  },
+          { name: 'version',           type: 'string'  },
+          { name: 'chainId',           type: 'uint256' },
+          { name: 'verifyingContract', type: 'address' },
+        ],
+        TransferWithAuthorization: [
+          { name: 'from',        type: 'address' },
+          { name: 'to',          type: 'address' },
+          { name: 'value',       type: 'uint256' },
+          { name: 'validAfter',  type: 'uint256' },
+          { name: 'validBefore', type: 'uint256' },
+          { name: 'nonce',       type: 'bytes32' },
+        ],
+      },
+      primaryType: 'TransferWithAuthorization',
+      message: {
+        from:        authorization.from,
+        to:          authorization.to,
+        value:       authorization.value.toString(),
+        validAfter:  authorization.validAfter.toString(),
+        validBefore: authorization.validBefore.toString(),
+        nonce:       authorization.nonce,
+      },
     };
-    signature = await BC.signer.signTypedData(USDC_DOMAIN, types, authorization);
+    signature = await window.ethereum.request({
+      method: 'eth_signTypedData_v4',
+      params: [BC.addr, JSON.stringify(typedData)],
+    });
   } catch (e) {
     if (e.code === 4001 || e.message?.includes('rejected') || e.message?.includes('denied')) {
       showNotification('Signature Rejected', 'Transaction cancelled in wallet.', 'info');
