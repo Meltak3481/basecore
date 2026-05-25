@@ -695,10 +695,7 @@ async function handleX402Payment(apiUrl, taskId, xpReward) {
         nonce:       authorization.nonce,
       },
     };
-    signature = await window.ethereum.request({
-      method: 'eth_signTypedData_v4',
-      params: [BC.addr, JSON.stringify(typedData)],
-    });
+    signature = await BC.provider.send('eth_signTypedData_v4', [BC.addr, JSON.stringify(typedData)]);
   } catch (e) {
     if (e.code === 4001 || e.message?.includes('rejected') || e.message?.includes('denied')) {
       showNotification('Signature Rejected', 'Transaction cancelled in wallet.', 'info');
@@ -852,25 +849,37 @@ function initNav(activePage) {
   updateModeUI();
 
   if (lastAddr && window.ethereum) {
-    setTimeout(() => {
-      let provider = window.ethereum;
-      if (lastType === 'coinbase')      provider = getCoinbaseProvider()  || provider;
-      else if (lastType === 'metamask') provider = getMetaMaskProvider() || provider;
+    setTimeout(async () => {
+      try {
+        let provider = window.ethereum;
+        if (lastType === 'coinbase')      provider = getCoinbaseProvider()  || provider;
+        else if (lastType === 'metamask') provider = getMetaMaskProvider() || provider;
 
-      if (provider) {
-        provider.request({ method: 'eth_accounts' }).then(accs => {
-          if (accs[0]) {
-            loadEthers().then(() => {
-              BC.provider = new ethers.BrowserProvider(provider);
-              BC.provider.getSigner().then(s => {
-                BC.signer = s;
-                BC.addr   = accs[0].toLowerCase();
-                loadState();
-                updateNavUI();
-              });
-            });
-          }
-        }).catch(() => {});
+        if (!provider) { updateNavUI(); return; }
+
+        const accs = await provider.request({ method: 'eth_accounts' });
+        if (!accs || !accs[0]) { updateNavUI(); return; }
+
+        await loadEthers();
+        BC.provider = new ethers.BrowserProvider(provider);
+        BC.addr     = accs[0].toLowerCase();
+
+        try {
+          BC.signer = await BC.provider.getSigner();
+        } catch(e) {
+          // getSigner başarısız olsa bile addr set edildi, UI güncelle
+        }
+
+        // Chain ID al
+        try {
+          const chainHex = await provider.request({ method: 'eth_chainId' });
+          BC.chain = parseInt(chainHex, 16);
+        } catch(e) {}
+
+        loadState();
+        updateNavUI();
+      } catch(e) {
+        updateNavUI();
       }
     }, 200);
   } else {
