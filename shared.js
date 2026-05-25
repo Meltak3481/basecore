@@ -771,10 +771,16 @@ async function handleX402Payment(apiUrl, taskId, xpReward) {
 async function sendTxWithFee(feeEth = '0.00002', xpReward = 100, taskId = null) {
   if (!requireWallet()) return null;
 
+  // Signer yoksa tekrar almayı dene
   if (!BC.signer) {
-    showNotification('Session Expired', 'Please reconnect your wallet.', 'warning');
-    openWalletModal();
-    return null;
+    try {
+      await loadEthers();
+      BC.signer = await BC.provider.getSigner();
+    } catch(e) {
+      showNotification('Session Expired', 'Please reconnect your wallet.', 'warning');
+      openWalletModal();
+      return null;
+    }
   }
 
   const isBase = await ensureBaseNetwork();

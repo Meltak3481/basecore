@@ -357,9 +357,7 @@ function shareX(t){window.open(`https://twitter.com/intent/tweet?text=${encodeUR
 function showDashboard(){} // session restore için
 
 // ── Mod değişince buton metnini güncelle ──
-window.addEventListener('payModeChanged', (e) => {
-  updateGameBtn();
-});
+
 
 function updateGameBtn() {
   const label = typeof getPayLabel === 'function' ? getPayLabel() : '0.00002 ETH';
@@ -367,6 +365,17 @@ function updateGameBtn() {
   if (!btn || btn.disabled) return;
   btn.textContent = '🎰 Spin · ' + label;
 }
+
+function updateSlotsBtn() {
+  const btn = document.getElementById('slots-play');
+  if (!btn || btn.disabled) return;
+  btn.textContent = '🎰 Spin · ' + (typeof getPayLabel==='function'?getPayLabel():'0.00002 ETH');
+}
+window.addEventListener('payModeChanged', updateSlotsBtn);
+window.addEventListener('walletConnected', updateSlotsBtn);
+
+// init buton durumu
+setTimeout(function(){typeof updateSlotsBtn==='function'&&updateSlotsBtn();},400);
 initNav('gaming');
   updateGameBtn();
 initReels();

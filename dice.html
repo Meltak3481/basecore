@@ -339,9 +339,7 @@ function shareX(t){window.open(`https://twitter.com/intent/tweet?text=${encodeUR
 function showDashboard(){} // session restore için
 
 // ── Mod değişince buton metnini güncelle ──
-window.addEventListener('payModeChanged', (e) => {
-  updateGameBtn();
-});
+
 
 function updateGameBtn() {
   const label = typeof getPayLabel === 'function' ? getPayLabel() : '0.00002 ETH';
@@ -350,6 +348,17 @@ function updateGameBtn() {
   const pick = typeof dicePick !== 'undefined' ? dicePick : 1;
   btn.textContent = '🎲 Roll for ' + pick + ' · ' + label;
 }
+
+function updateDiceBtn() {
+  const btn = document.getElementById('dice-play');
+  if (!btn || btn.disabled) return;
+  btn.textContent = '🎲 Roll · ' + (typeof getPayLabel==='function'?getPayLabel():'0.00002 ETH');
+}
+window.addEventListener('payModeChanged', updateDiceBtn);
+window.addEventListener('walletConnected', updateDiceBtn);
+
+// init buton durumu
+setTimeout(function(){typeof updateDiceBtn==='function'&&updateDiceBtn();},400);
 initNav('gaming');
   updateGameBtn();
 initDice();

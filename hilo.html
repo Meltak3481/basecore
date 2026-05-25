@@ -282,9 +282,7 @@ function shareX(t){window.open(`https://twitter.com/intent/tweet?text=${encodeUR
 function showDashboard(){} // session restore için
 
 // ── Mod değişince buton metnini güncelle ──
-window.addEventListener('payModeChanged', (e) => {
-  updateGameBtn();
-});
+
 
 function updateGameBtn() {
   const label = typeof getPayLabel === 'function' ? getPayLabel() : '0.00002 ETH';
@@ -292,6 +290,17 @@ function updateGameBtn() {
   if (!btn || btn.disabled) return;
   btn.textContent = '🃏 Guess · ' + label;
 }
+
+function updateHiloBtn() {
+  const btn = document.getElementById('hilo-play');
+  if (!btn || btn.disabled) return;
+  btn.textContent = '🃏 Guess · ' + (typeof getPayLabel==='function'?getPayLabel():'0.00002 ETH');
+}
+window.addEventListener('payModeChanged', updateHiloBtn);
+window.addEventListener('walletConnected', updateHiloBtn);
+
+// init buton durumu
+setTimeout(function(){typeof updateHiloBtn==='function'&&updateHiloBtn();},400);
 initNav('gaming');
   updateGameBtn();
 initHilo();
