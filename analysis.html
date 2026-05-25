@@ -69,6 +69,55 @@
 .stat-row:last-child{border-bottom:none;}
 .sk{color:var(--text2);}
 .sv{font-weight:700;}
+
+/* ── WALLET SCORE CARD ── */
+.ws-card{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:14px;display:none;}
+.ws-card.visible{display:block;animation:fadeIn .4s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+.ws-score-wrap{display:flex;align-items:center;gap:16px;margin-bottom:16px;}
+.ws-dial{position:relative;width:80px;height:80px;flex-shrink:0;}
+.ws-dial svg{width:80px;height:80px;transform:rotate(-90deg);}
+.ws-dial-bg{fill:none;stroke:rgba(255,255,255,.06);stroke-width:7;}
+.ws-dial-fill{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1),stroke .4s;}
+.ws-dial-num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.ws-dial-val{font-size:20px;font-weight:900;font-family:var(--mono);line-height:1;}
+.ws-dial-lbl{font-size:9px;color:var(--text2);font-family:var(--mono);margin-top:2px;text-transform:uppercase;}
+
+.ws-grade-wrap{flex:1;}
+.ws-grade{font-size:32px;font-weight:900;line-height:1;}
+.ws-grade-label{font-size:12px;font-weight:700;margin-top:2px;}
+.ws-grade-sub{font-size:11px;color:var(--text2);margin-top:4px;line-height:1.4;}
+
+.ws-factors{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.ws-factor{display:flex;align-items:center;gap:10px;}
+.ws-factor-icon{font-size:14px;width:20px;text-align:center;flex-shrink:0;}
+.ws-factor-info{flex:1;}
+.ws-factor-name{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px;}
+.ws-factor-bar{height:5px;background:rgba(255,255,255,.06);border-radius:10px;overflow:hidden;}
+.ws-factor-fill{height:100%;border-radius:10px;transition:width 1.2s cubic-bezier(.4,0,.2,1);}
+.ws-factor-val{font-size:11px;font-weight:700;font-family:var(--mono);width:36px;text-align:right;flex-shrink:0;}
+
+.ws-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.ws-stat{background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:10px;padding:10px 12px;}
+.ws-stat-val{font-size:16px;font-weight:900;font-family:var(--mono);}
+.ws-stat-lbl{font-size:10px;color:var(--muted);margin-top:2px;font-family:var(--mono);}
+
+.ws-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+.ws-tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid;}
+
+.ws-airdrop-section{background:rgba(0,232,135,.04);border:1px solid rgba(0,232,135,.15);border-radius:12px;padding:14px;}
+.ws-airdrop-title{font-size:12px;font-weight:800;color:var(--green);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.ws-airdrop-item{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.ws-airdrop-item:last-child{border-bottom:none;}
+.ws-airdrop-name{font-size:11px;font-weight:700;}
+.ws-airdrop-status{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;}
+.ws-airdrop-status.eligible{background:rgba(0,232,135,.15);color:var(--green);border:1px solid rgba(0,232,135,.25);}
+.ws-airdrop-status.maybe{background:rgba(245,197,24,.12);color:var(--yellow);border:1px solid rgba(245,197,24,.25);}
+.ws-airdrop-status.low{background:rgba(255,60,60,.1);color:var(--red);border:1px solid rgba(255,60,60,.2);}
+
+.ws-basescan-link{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:10px;background:rgba(0,112,243,.08);border:1px solid rgba(0,112,243,.2);color:var(--blue3);font-size:12px;font-weight:700;text-decoration:none;transition:all .2s;margin-top:10px;}
+.ws-basescan-link:hover{background:rgba(0,112,243,.15);}
 </style>
 </head>
 <body>
@@ -146,13 +195,57 @@
 
   <div class="tool-card">
     <div class="tc-head">
-      <div class="tc-icon" style="background:rgba(0,112,243,.12);color:var(--blue2)">👛</div>
-      <div><div class="tc-name">Wallet Analysis</div><div class="tc-desc">Analyze any Base wallet</div></div>
-      <span class="xp-badge" style="margin-left:auto">+75 XP</span>
+      <div class="tc-icon" style="background:rgba(0,112,243,.12);color:var(--blue2)">🏆</div>
+      <div><div class="tc-name">Wallet Score</div><div class="tc-desc">On-chain activity score & airdrop eligibility</div></div>
+      <span class="xp-badge" style="margin-left:auto">+150 XP</span>
     </div>
     <div class="field"><label>Wallet Address</label><input id="wa-addr" placeholder="0x... or leave blank for yours"/></div>
-    <button class="btn btn-primary" onclick="analyzeWallet()">🔍 Analyze</button>
-    <div class="result-box" id="wa-result"></div>
+    <button class="btn btn-primary" id="wa-btn" onclick="analyzeWallet()">🔍 Analyze Wallet</button>
+
+    <!-- SCORE CARD -->
+    <div class="ws-card" id="ws-card">
+
+      <!-- Dial + Grade -->
+      <div class="ws-score-wrap">
+        <div class="ws-dial">
+          <svg viewBox="0 0 80 80">
+            <circle class="ws-dial-bg" cx="40" cy="40" r="33"/>
+            <circle class="ws-dial-fill" id="ws-dial-fill" cx="40" cy="40" r="33"
+              stroke-dasharray="207.3"
+              stroke-dashoffset="207.3"/>
+          </svg>
+          <div class="ws-dial-num">
+            <span class="ws-dial-val" id="ws-score-num">0</span>
+            <span class="ws-dial-lbl">Score</span>
+          </div>
+        </div>
+        <div class="ws-grade-wrap">
+          <div class="ws-grade" id="ws-grade">—</div>
+          <div class="ws-grade-label" id="ws-grade-label">—</div>
+          <div class="ws-grade-sub" id="ws-grade-sub"></div>
+        </div>
+      </div>
+
+      <!-- Factor Bars -->
+      <div class="ws-factors" id="ws-factors"></div>
+
+      <!-- Stats Grid -->
+      <div class="ws-stats-grid" id="ws-stats-grid"></div>
+
+      <!-- Tags -->
+      <div class="ws-tags" id="ws-tags"></div>
+
+      <!-- Airdrop Eligibility -->
+      <div class="ws-airdrop-section" id="ws-airdrop-section">
+        <div class="ws-airdrop-title">🪂 Airdrop Eligibility</div>
+        <div id="ws-airdrop-list"></div>
+      </div>
+
+      <!-- BaseScan Link -->
+      <a id="ws-basescan-link" href="#" target="_blank" class="ws-basescan-link">
+        🔗 View on BaseScan
+      </a>
+    </div>
   </div>
 
   <div class="tool-card">
@@ -306,26 +399,350 @@ function renderMyRank() {
   }
 }
 
-// ── ANALYSIS TOOLS ──
+// ── WALLET SCORE ENGINE ──
 async function analyzeWallet() {
   if (!requireWallet()) return;
-  const addr = document.getElementById('wa-addr').value.trim() || BC.addr;
-  const btn = event.target; btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+  const inputAddr = document.getElementById('wa-addr').value.trim();
+  const addr = inputAddr || BC.addr;
+
+  // Adres format kontrolü
+  let checksumAddr;
+  try { checksumAddr = ethers.getAddress(addr); }
+  catch(e) { toast('Invalid address format','error'); return; }
+
+  const btn = document.getElementById('wa-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Scanning on-chain...';
+
   await loadEthers();
+
   try {
-    const bal = await BC.provider.getBalance(addr);
-    const balEth = parseFloat(ethers.formatEther(bal)).toFixed(6);
-    const txCount = await BC.provider.getTransactionCount(addr);
-    const res = document.getElementById('wa-result');
-    res.innerHTML = `<div class="stat-row"><span class="sk">Address</span><span class="sv">${addr.slice(0,10)}...${addr.slice(-6)}</span></div>
-<div class="stat-row"><span class="sk">ETH Balance</span><span class="sv" style="color:var(--cyan)">${balEth} ETH</span></div>
-<div class="stat-row"><span class="sk">Transactions</span><span class="sv" style="color:var(--green)">${txCount.toLocaleString()}</span></div>
-<div class="stat-row"><span class="sk">Network</span><span class="sv">Base</span></div>
-<div class="stat-row"><span class="sk">Status</span><span class="sv" style="color:var(--green)">✅ Active</span></div>`;
-    res.classList.add('visible');
-    addXP(75, null); toast('✅ Wallet analyzed! +75 XP','success');
-  } catch(e) { toast('Analysis failed','error'); }
-  btn.disabled=false; btn.textContent='🔍 Analyze';
+    // ── Parallel on-chain sorguları ──
+    const [balWei, txCount, codeHex] = await Promise.all([
+      BC.provider.getBalance(checksumAddr),
+      BC.provider.getTransactionCount(checksumAddr),
+      BC.provider.getCode(checksumAddr),
+    ]);
+
+    const balEth  = parseFloat(ethers.formatEther(balWei));
+    const isEOA   = codeHex === '0x';
+
+    // USDC bakiyesi (Base mainnet)
+    let usdcBal = 0;
+    try {
+      const raw = await BC.provider.call({
+        to: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+        data: '0x70a08231' + checksumAddr.slice(2).padStart(64,'0'),
+      });
+      usdcBal = Number(BigInt(raw)) / 1e6;
+    } catch(_) {}
+
+    // Basescan TX geçmişi (public API, key gerekmez limit ~5 req)
+    let txHistory = [];
+    let uniqueDays = 0;
+    let uniqueContracts = new Set();
+    let firstTxDate = null;
+    let lastTxDate  = null;
+    let totalVolEth = 0;
+
+    try {
+      const bsUrl = `https://api.basescan.org/api?module=account&action=txlist&address=${checksumAddr}&startblock=0&endblock=99999999&page=1&offset=50&sort=asc`;
+      const bsRes  = await fetch(bsUrl);
+      const bsData = await bsRes.json();
+      if (bsData.status === '1' && Array.isArray(bsData.result)) {
+        txHistory = bsData.result;
+        const days = new Set();
+        txHistory.forEach(tx => {
+          const d = new Date(parseInt(tx.timeStamp) * 1000);
+          days.add(d.toDateString());
+          if (tx.to && tx.to !== checksumAddr.toLowerCase()) uniqueContracts.add(tx.to);
+          totalVolEth += parseFloat(ethers.formatEther(tx.value || '0'));
+        });
+        uniqueDays = days.size;
+        if (txHistory.length > 0) {
+          firstTxDate = new Date(parseInt(txHistory[0].timeStamp) * 1000);
+          lastTxDate  = new Date(parseInt(txHistory[txHistory.length - 1].timeStamp) * 1000);
+        }
+      }
+    } catch(_) {}
+
+    // ── SCORE HESAPLAMA ──
+    // Her faktör 0-100 arası puanlanır, ağırlıklı toplam
+    const factors = computeScore({
+      txCount, balEth, usdcBal,
+      uniqueDays, uniqueContracts: uniqueContracts.size,
+      totalVolEth, firstTxDate, isEOA,
+    });
+
+    renderWalletScore(checksumAddr, factors, {
+      txCount, balEth, usdcBal,
+      uniqueDays, uniqueContracts: uniqueContracts.size,
+      totalVolEth, firstTxDate, lastTxDate, isEOA,
+    });
+
+    addXP(150, 'wallet_score');
+    toast('🏆 Wallet analyzed! +150 XP', 'success');
+
+  } catch(e) {
+    console.error(e);
+    toast('Analysis failed: ' + (e.shortMessage || e.message), 'error');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '🔍 Analyze Wallet';
+}
+
+function computeScore({ txCount, balEth, usdcBal, uniqueDays, uniqueContracts, totalVolEth, firstTxDate, isEOA }) {
+  // 1. Activity (tx sayısı) — 30 puan
+  let activity = 0;
+  if (txCount >= 500)      activity = 100;
+  else if (txCount >= 200) activity = 80;
+  else if (txCount >= 100) activity = 65;
+  else if (txCount >= 50)  activity = 50;
+  else if (txCount >= 20)  activity = 35;
+  else if (txCount >= 5)   activity = 20;
+  else if (txCount >= 1)   activity = 10;
+
+  // 2. Consistency (farklı gün sayısı) — 25 puan
+  let consistency = 0;
+  if (uniqueDays >= 90)      consistency = 100;
+  else if (uniqueDays >= 60) consistency = 85;
+  else if (uniqueDays >= 30) consistency = 70;
+  else if (uniqueDays >= 14) consistency = 55;
+  else if (uniqueDays >= 7)  consistency = 40;
+  else if (uniqueDays >= 3)  consistency = 25;
+  else if (uniqueDays >= 1)  consistency = 12;
+
+  // 3. Diversity (farklı contract) — 20 puan
+  let diversity = 0;
+  if (uniqueContracts >= 50)      diversity = 100;
+  else if (uniqueContracts >= 25) diversity = 80;
+  else if (uniqueContracts >= 15) diversity = 65;
+  else if (uniqueContracts >= 8)  diversity = 50;
+  else if (uniqueContracts >= 4)  diversity = 35;
+  else if (uniqueContracts >= 1)  diversity = 20;
+
+  // 4. Balance (ETH + USDC) — 15 puan
+  const totalUsd = balEth * 3000 + usdcBal;
+  let balance = 0;
+  if (totalUsd >= 5000)      balance = 100;
+  else if (totalUsd >= 1000) balance = 80;
+  else if (totalUsd >= 500)  balance = 65;
+  else if (totalUsd >= 100)  balance = 50;
+  else if (totalUsd >= 10)   balance = 30;
+  else if (totalUsd > 0)     balance = 15;
+
+  // 5. Longevity (cüzdan yaşı) — 10 puan
+  let longevity = 0;
+  if (firstTxDate) {
+    const ageDays = (Date.now() - firstTxDate.getTime()) / 86400000;
+    if (ageDays >= 730)      longevity = 100;
+    else if (ageDays >= 365) longevity = 80;
+    else if (ageDays >= 180) longevity = 65;
+    else if (ageDays >= 90)  longevity = 50;
+    else if (ageDays >= 30)  longevity = 30;
+    else                     longevity = 10;
+  }
+
+  const totalScore = Math.round(
+    activity    * 0.30 +
+    consistency * 0.25 +
+    diversity   * 0.20 +
+    balance     * 0.15 +
+    longevity   * 0.10
+  );
+
+  return { totalScore, activity, consistency, diversity, balance, longevity };
+}
+
+function renderWalletScore(addr, factors, data) {
+  const card = document.getElementById('ws-card');
+  card.classList.add('visible');
+
+  const s = factors.totalScore;
+
+  // Dial animasyonu
+  const circumference = 207.3;
+  const offset = circumference - (s / 100) * circumference;
+  const dialFill = document.getElementById('ws-dial-fill');
+  let dialColor;
+  if (s >= 80)      dialColor = '#00e887';
+  else if (s >= 60) dialColor = '#3b8ef8';
+  else if (s >= 40) dialColor = '#f5c518';
+  else if (s >= 20) dialColor = '#f97316';
+  else              dialColor = '#ef4444';
+
+  dialFill.style.stroke = dialColor;
+  setTimeout(() => {
+    dialFill.style.strokeDashoffset = offset;
+    // Sayı animasyonu
+    let cur = 0;
+    const step = () => {
+      cur = Math.min(cur + 2, s);
+      document.getElementById('ws-score-num').textContent = cur;
+      if (cur < s) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, 100);
+
+  // Grade
+  let grade, gradeLabel, gradeSub, gradeColor;
+  if (s >= 85) {
+    grade = 'S'; gradeLabel = 'Legendary Wallet'; gradeColor = '#f5c518';
+    gradeSub = 'Top-tier on-chain activity. High airdrop eligibility.';
+  } else if (s >= 70) {
+    grade = 'A'; gradeLabel = 'Power User'; gradeColor = '#00e887';
+    gradeSub = 'Strong activity and consistency. Excellent profile.';
+  } else if (s >= 55) {
+    grade = 'B'; gradeLabel = 'Active User'; gradeColor = '#3b8ef8';
+    gradeSub = 'Good engagement. Room to grow diversity.';
+  } else if (s >= 40) {
+    grade = 'C'; gradeLabel = 'Casual User'; gradeColor = '#f5c518';
+    gradeSub = 'Moderate activity. Increase consistency for better score.';
+  } else if (s >= 20) {
+    grade = 'D'; gradeLabel = 'Beginner'; gradeColor = '#f97316';
+    gradeSub = 'Early stage wallet. Keep transacting to build score.';
+  } else {
+    grade = 'F'; gradeLabel = 'Inactive'; gradeColor = '#ef4444';
+    gradeSub = 'Very low activity detected on Base.';
+  }
+
+  document.getElementById('ws-grade').innerHTML = `<span style="color:${gradeColor}">${grade}</span>`;
+  document.getElementById('ws-grade-label').innerHTML = `<span style="color:${gradeColor}">${gradeLabel}</span>`;
+  document.getElementById('ws-grade-sub').textContent = gradeSub;
+
+  // Factor bars
+  const factorDefs = [
+    { key:'activity',    icon:'⚡', name:'Activity',    val:factors.activity,    color:'#3b8ef8' },
+    { key:'consistency', icon:'📅', name:'Consistency', val:factors.consistency, color:'#00e887' },
+    { key:'diversity',   icon:'🔀', name:'Diversity',   val:factors.diversity,   color:'#a78bfa' },
+    { key:'balance',     icon:'💰', name:'Balance',     val:factors.balance,     color:'#f5c518' },
+    { key:'longevity',   icon:'🕰️', name:'Longevity',   val:factors.longevity,   color:'#f97316' },
+  ];
+  document.getElementById('ws-factors').innerHTML = factorDefs.map(f => `
+    <div class="ws-factor">
+      <div class="ws-factor-icon">${f.icon}</div>
+      <div class="ws-factor-info">
+        <div class="ws-factor-name">${f.name}</div>
+        <div class="ws-factor-bar">
+          <div class="ws-factor-fill" style="width:0%;background:${f.color}" data-w="${f.val}"></div>
+        </div>
+      </div>
+      <div class="ws-factor-val" style="color:${f.color}">${f.val}</div>
+    </div>
+  `).join('');
+
+  // Bar animasyonu
+  setTimeout(() => {
+    document.querySelectorAll('.ws-factor-fill').forEach(el => {
+      el.style.width = el.dataset.w + '%';
+    });
+  }, 150);
+
+  // Stats grid
+  const ageDays = data.firstTxDate
+    ? Math.floor((Date.now() - data.firstTxDate.getTime()) / 86400000)
+    : 0;
+  const firstTxStr = data.firstTxDate
+    ? data.firstTxDate.toLocaleDateString('en-US', { month:'short', year:'numeric' })
+    : 'N/A';
+
+  document.getElementById('ws-stats-grid').innerHTML = `
+    <div class="ws-stat">
+      <div class="ws-stat-val" style="color:var(--cyan)">${data.txCount.toLocaleString()}</div>
+      <div class="ws-stat-lbl">Total TXs</div>
+    </div>
+    <div class="ws-stat">
+      <div class="ws-stat-val" style="color:var(--green)">${data.uniqueDays}</div>
+      <div class="ws-stat-lbl">Active Days</div>
+    </div>
+    <div class="ws-stat">
+      <div class="ws-stat-val" style="color:var(--purple)">${data.uniqueContracts}</div>
+      <div class="ws-stat-lbl">Protocols Used</div>
+    </div>
+    <div class="ws-stat">
+      <div class="ws-stat-val" style="color:var(--yellow)">${ageDays > 0 ? ageDays + 'd' : '—'}</div>
+      <div class="ws-stat-lbl">Wallet Age</div>
+    </div>
+    <div class="ws-stat">
+      <div class="ws-stat-val" style="color:var(--blue3)">${data.balEth.toFixed(4)}</div>
+      <div class="ws-stat-lbl">ETH Balance</div>
+    </div>
+    <div class="ws-stat">
+      <div class="ws-stat-val" style="color:var(--green2)">$${data.usdcBal.toFixed(2)}</div>
+      <div class="ws-stat-lbl">USDC Balance</div>
+    </div>
+  `;
+
+  // Tags
+  const tags = [];
+  if (!data.isEOA)                   tags.push({ icon:'📜', label:'Contract',    color:'rgba(139,92,246,.2)',  border:'rgba(139,92,246,.4)',  text:'#a78bfa' });
+  if (data.txCount >= 100)           tags.push({ icon:'🔥', label:'Power User',  color:'rgba(249,115,22,.12)', border:'rgba(249,115,22,.3)',  text:'#f97316' });
+  if (data.uniqueDays >= 30)         tags.push({ icon:'📅', label:'Consistent',  color:'rgba(0,232,135,.1)',   border:'rgba(0,232,135,.25)',  text:'var(--green)' });
+  if (data.uniqueContracts >= 10)    tags.push({ icon:'🔀', label:'DeFi Active', color:'rgba(59,142,248,.1)',  border:'rgba(59,142,248,.3)',  text:'var(--blue2)' });
+  if (data.balEth > 0.01)            tags.push({ icon:'💎', label:'ETH Holder',  color:'rgba(0,200,255,.1)',   border:'rgba(0,200,255,.25)',  text:'var(--cyan)' });
+  if (ageDays >= 365)                tags.push({ icon:'🕰️', label:'OG Wallet',   color:'rgba(245,197,24,.1)',  border:'rgba(245,197,24,.25)', text:'var(--yellow)' });
+  if (data.txCount === 0)            tags.push({ icon:'😴', label:'Dormant',     color:'rgba(255,255,255,.05)',border:'var(--border)',        text:'var(--muted)' });
+
+  document.getElementById('ws-tags').innerHTML = tags.map(t => `
+    <span class="ws-tag" style="background:${t.color};border-color:${t.border};color:${t.text}">
+      ${t.icon} ${t.label}
+    </span>
+  `).join('');
+
+  // Airdrop eligibility (kural tabanlı, score + aktivite)
+  const airdrops = [
+    {
+      name: 'Base Ecosystem Drop',
+      icon: '🔵',
+      check: () => {
+        if (s >= 60 && data.txCount >= 20) return 'eligible';
+        if (s >= 35 && data.txCount >= 5)  return 'maybe';
+        return 'low';
+      },
+    },
+    {
+      name: 'DeFi Protocol Rewards',
+      icon: '🔀',
+      check: () => {
+        if (data.uniqueContracts >= 15 && data.uniqueDays >= 14) return 'eligible';
+        if (data.uniqueContracts >= 5)  return 'maybe';
+        return 'low';
+      },
+    },
+    {
+      name: 'On-Chain OG Badge',
+      icon: '🏅',
+      check: () => {
+        if (ageDays >= 365 && data.txCount >= 50) return 'eligible';
+        if (ageDays >= 180) return 'maybe';
+        return 'low';
+      },
+    },
+    {
+      name: 'Volume Trader Drop',
+      icon: '📊',
+      check: () => {
+        if (data.totalVolEth >= 0.5 && data.txCount >= 30) return 'eligible';
+        if (data.totalVolEth >= 0.05) return 'maybe';
+        return 'low';
+      },
+    },
+  ];
+
+  const statusLabel = { eligible: '✅ Eligible', maybe: '⏳ Maybe', low: '❌ Low Chance' };
+  document.getElementById('ws-airdrop-list').innerHTML = airdrops.map(a => {
+    const status = a.check();
+    return `
+      <div class="ws-airdrop-item">
+        <div class="ws-airdrop-name">${a.icon} ${a.name}</div>
+        <span class="ws-airdrop-status ${status}">${statusLabel[status]}</span>
+      </div>
+    `;
+  }).join('');
+
+  // BaseScan link
+  document.getElementById('ws-basescan-link').href = `https://basescan.org/address/${addr}`;
 }
 
 async function checkContract() {
