@@ -270,10 +270,31 @@ async function switchAccount() {
 }
 
 // ── PAYMENT MODE ──
+
+// ── PAYMENT LABEL HELPER ──
+// Mod değişince buton metinlerini günceller
+function getPayLabel() {
+  return BC.paymentMode === 'x402' ? '0.05 USDC · x402' : '0.00002 ETH';
+}
+
+// Sayfadaki tüm play butonlarını güncelle
+function updatePlayButtons() {
+  // data-pay-label attribute'lu tüm butonları bul ve güncelle
+  document.querySelectorAll('[data-pay-label]').forEach(btn => {
+    const label = btn.getAttribute('data-pay-label');
+    btn.textContent = label.replace('{PAY}', getPayLabel());
+  });
+  // Dinamik butonlar için custom event
+  window.dispatchEvent(new CustomEvent('payModeChanged', {
+    detail: { mode: BC.paymentMode, label: getPayLabel() }
+  }));
+}
+
 function setPaymentMode(mode) {
   BC.paymentMode = mode;
   localStorage.setItem('bc_payment_mode', mode);
   updateModeUI();
+  updatePlayButtons();
   if (mode === 'x402') {
     showNotification('x402 Mode Active', '$0.05 USDC signature payment. No ETH transfer.', 'info');
   } else {
@@ -655,47 +676,23 @@ async function handleX402Payment(apiUrl, taskId, xpReward) {
     to:          payTo,
     value:       amount,
     validAfter:  BigInt(now - 60),
-    validBefore: BigInt(now + 1200), // 20 dakika — Basehub ile aynı
+    validBefore: BigInt(now + 300),
     nonce,
   };
 
   let signature;
   try {
-    // eth_signTypedData_v4 kullan — chainId integer olarak gider, Basehub ile aynı format
-    const typedData = {
-      domain: {
-        name: 'USD Coin',
-        version: '2',
-        chainId: 8453,
-        verifyingContract: USDC_CONTRACT,
-      },
-      types: {
-        EIP712Domain: [
-          { name: 'name',              type: 'string'  },
-          { name: 'version',           type: 'string'  },
-          { name: 'chainId',           type: 'uint256' },
-          { name: 'verifyingContract', type: 'address' },
-        ],
-        TransferWithAuthorization: [
-          { name: 'from',        type: 'address' },
-          { name: 'to',          type: 'address' },
-          { name: 'value',       type: 'uint256' },
-          { name: 'validAfter',  type: 'uint256' },
-          { name: 'validBefore', type: 'uint256' },
-          { name: 'nonce',       type: 'bytes32' },
-        ],
-      },
-      primaryType: 'TransferWithAuthorization',
-      message: {
-        from:        authorization.from,
-        to:          authorization.to,
-        value:       authorization.value.toString(),
-        validAfter:  authorization.validAfter.toString(),
-        validBefore: authorization.validBefore.toString(),
-        nonce:       authorization.nonce,
-      },
+    const types = {
+      TransferWithAuthorization: [
+        { name: 'from',        type: 'address' },
+        { name: 'to',          type: 'address' },
+        { name: 'value',       type: 'uint256' },
+        { name: 'validAfter',  type: 'uint256' },
+        { name: 'validBefore', type: 'uint256' },
+        { name: 'nonce',       type: 'bytes32' },
+      ]
     };
-    signature = await BC.provider.send('eth_signTypedData_v4', [BC.addr, JSON.stringify(typedData)]);
+    signature = await BC.signer.signTypedData(USDC_DOMAIN, types, authorization);
   } catch (e) {
     if (e.code === 4001 || e.message?.includes('rejected') || e.message?.includes('denied')) {
       showNotification('Signature Rejected', 'Transaction cancelled in wallet.', 'info');
@@ -849,37 +846,25 @@ function initNav(activePage) {
   updateModeUI();
 
   if (lastAddr && window.ethereum) {
-    setTimeout(async () => {
-      try {
-        let provider = window.ethereum;
-        if (lastType === 'coinbase')      provider = getCoinbaseProvider()  || provider;
-        else if (lastType === 'metamask') provider = getMetaMaskProvider() || provider;
+    setTimeout(() => {
+      let provider = window.ethereum;
+      if (lastType === 'coinbase')      provider = getCoinbaseProvider()  || provider;
+      else if (lastType === 'metamask') provider = getMetaMaskProvider() || provider;
 
-        if (!provider) { updateNavUI(); return; }
-
-        const accs = await provider.request({ method: 'eth_accounts' });
-        if (!accs || !accs[0]) { updateNavUI(); return; }
-
-        await loadEthers();
-        BC.provider = new ethers.BrowserProvider(provider);
-        BC.addr     = accs[0].toLowerCase();
-
-        try {
-          BC.signer = await BC.provider.getSigner();
-        } catch(e) {
-          // getSigner başarısız olsa bile addr set edildi, UI güncelle
-        }
-
-        // Chain ID al
-        try {
-          const chainHex = await provider.request({ method: 'eth_chainId' });
-          BC.chain = parseInt(chainHex, 16);
-        } catch(e) {}
-
-        loadState();
-        updateNavUI();
-      } catch(e) {
-        updateNavUI();
+      if (provider) {
+        provider.request({ method: 'eth_accounts' }).then(accs => {
+          if (accs[0]) {
+            loadEthers().then(() => {
+              BC.provider = new ethers.BrowserProvider(provider);
+              BC.provider.getSigner().then(s => {
+                BC.signer = s;
+                BC.addr   = accs[0].toLowerCase();
+                loadState();
+                updateNavUI();
+              });
+            });
+          }
+        }).catch(() => {});
       }
     }, 200);
   } else {
