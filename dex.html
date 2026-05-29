@@ -24,52 +24,71 @@
 .xpb-text{flex:1;font-size:13px;color:var(--text2);line-height:1.4;}
 .xpb-text strong{color:var(--yellow);}
 
-/* ── TOKEN TABS ── */
-.tab-row{display:flex;gap:6px;margin-bottom:14px;}
-.tr-tab{padding:8px 16px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;border:1px solid var(--border);color:var(--muted);}
-.tr-tab.active{background:rgba(0,112,243,.15);border-color:rgba(0,112,243,.4);color:var(--blue2);}
-.tr-tab:hover{border-color:var(--border2);}
-
-/* ── UNISWAP IFRAME WRAPPER ── */
-.swap-wrapper{border-radius:20px;overflow:hidden;position:relative;background:var(--card);border:1px solid var(--border);margin-bottom:16px;}
-.swap-wrapper iframe{display:block;width:100%;border:none;transition:opacity .3s;}
-.swap-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:var(--card);border-radius:20px;}
-.swap-loading .sl-spin{width:32px;height:32px;border:3px solid rgba(0,112,243,.2);border-top-color:var(--blue2);border-radius:50%;animation:rot .8s linear infinite;}
-.swap-loading .sl-text{font-size:13px;color:var(--muted);}
-
-/* ── SWAP DIRECT (when iframe blocked) ── */
-.swap-direct{display:none;}
-.sd-token-row{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:8px;}
-.sd-label{font-size:11px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
-.sd-input-row{display:flex;align-items:center;gap:10px;}
-.sd-amount{flex:1;background:transparent;border:none;outline:none;font-size:28px;font-weight:900;color:var(--text);font-family:var(--sans);}
-.sd-amount::placeholder{color:var(--muted);}
-.sd-token-sel{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--border2);border-radius:20px;padding:8px 12px;cursor:pointer;transition:all .2s;white-space:nowrap;}
-.sd-token-sel:hover{border-color:var(--blue2);}
-.sd-token-icon{font-size:18px;}
-.sd-token-name{font-size:14px;font-weight:700;}
-.sd-usd{font-size:12px;color:var(--muted);font-family:var(--mono);margin-top:6px;}
-.sd-pcts{display:flex;gap:6px;margin-top:8px;}
-.sd-pct{padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;background:var(--card);border:1px solid var(--border);color:var(--text2);cursor:pointer;transition:all .2s;font-family:var(--mono);}
-.sd-pct:hover{border-color:var(--blue2);color:var(--blue2);}
-.swap-arrow-row{display:flex;justify-content:center;margin:4px 0;}
-.swap-arrow-btn{width:38px;height:38px;border-radius:12px;background:var(--card2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;transition:all .25s;}
-.swap-arrow-btn:hover{border-color:var(--blue2);transform:rotate(180deg);}
-.route-info{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px;}
-.ri-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;}
-.ri-key{color:var(--text2);}
-.ri-val{font-weight:700;}
-
 /* ── QUICK TOKENS ── */
 .quick-tokens{margin-bottom:16px;}
 .qt-title{font-size:12px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
 .qt-grid{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;}
 .qt-grid::-webkit-scrollbar{display:none;}
 .qt-chip{display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:20px;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;font-size:13px;font-weight:600;}
-.qt-chip:hover{border-color:var(--border2);}
-.qt-chip.active{background:rgba(0,112,243,.1);border-color:rgba(0,112,243,.3);}
+.qt-chip:hover{border-color:var(--border2);transform:translateY(-1px);}
+.qt-chip.active{background:rgba(0,112,243,.12);border-color:rgba(0,112,243,.4);color:var(--blue2);}
 
-/* ── OPEN IN AERODROME ── */
+/* ── SWAP CARD ── */
+.swap-card{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:8px;margin-bottom:16px;box-shadow:0 18px 50px rgba(0,0,0,.45);position:relative;}
+.swap-card::before{content:'';position:absolute;inset:0;border-radius:22px;padding:1px;background:linear-gradient(140deg,rgba(0,112,243,.35),transparent 40%,transparent 60%,rgba(0,200,255,.25));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;}
+.sd-token-row{background:var(--card2);border:1px solid var(--border);border-radius:16px;padding:16px;transition:border-color .2s;}
+.sd-token-row:focus-within{border-color:var(--border2);}
+.sd-row-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.sd-label{font-size:11px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;}
+.sd-bal{font-size:11px;color:var(--text2);font-family:var(--mono);cursor:pointer;}
+.sd-bal:hover{color:var(--blue2);}
+.sd-input-row{display:flex;align-items:center;gap:10px;}
+.sd-amount{flex:1;min-width:0;background:transparent;border:none;outline:none;font-size:30px;font-weight:800;color:var(--text);font-family:var(--sans);}
+.sd-amount::placeholder{color:var(--muted);}
+.sd-amount:disabled{color:var(--text2);}
+.sd-token-sel{display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--border2);border-radius:22px;padding:8px 12px;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;}
+.sd-token-sel:hover{border-color:var(--blue2);transform:scale(1.03);}
+.sd-token-icon{font-size:18px;}
+.sd-token-name{font-size:15px;font-weight:800;}
+.sd-token-sel .caret{color:var(--muted);font-size:11px;}
+.sd-usd{font-size:12px;color:var(--muted);font-family:var(--mono);margin-top:8px;min-height:15px;}
+
+.swap-arrow-row{display:flex;justify-content:center;height:0;position:relative;z-index:3;}
+.swap-arrow-btn{position:relative;top:-13px;width:40px;height:40px;border-radius:13px;background:var(--card2);border:4px solid var(--card);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;transition:transform .35s cubic-bezier(.34,1.56,.64,1),border-color .2s;color:var(--blue2);}
+.swap-arrow-btn:hover{transform:rotate(180deg) scale(1.08);border-color:var(--card);}
+
+.route-info{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin:8px 6px 0;}
+.ri-row{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;}
+.ri-key{color:var(--text2);}
+.ri-val{font-weight:700;font-family:var(--mono);font-size:12px;}
+.ri-val.accent{color:var(--cyan);}
+
+.swap-action{margin:14px 6px 6px;}
+.swap-btn{width:100%;padding:17px;border-radius:15px;border:none;cursor:pointer;font-family:var(--sans);font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .25s;background:linear-gradient(135deg,var(--blue),var(--cyan),var(--blue));background-size:200% auto;color:#fff;box-shadow:0 6px 24px rgba(0,112,243,.35);animation:gradientShift 4s ease infinite;}
+.swap-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,112,243,.55);}
+.swap-btn:disabled{opacity:.5;cursor:not-allowed;animation:none;background:var(--card2);box-shadow:none;color:var(--text2);}
+.swap-result{margin-top:10px;}
+.tx-result{background:rgba(0,232,135,.08);border:1px solid rgba(0,232,135,.25);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--green);line-height:1.6;word-break:break-all;}
+.tx-result a{color:var(--cyan);text-decoration:none;}
+
+/* ── SLIPPAGE ── */
+.slip-row{display:flex;align-items:center;gap:8px;margin:10px 6px 0;font-size:12px;color:var(--text2);}
+.slip-opts{display:flex;gap:6px;margin-left:auto;}
+.slip-opt{padding:4px 10px;border-radius:8px;background:var(--card2);border:1px solid var(--border);font-size:11px;font-weight:700;font-family:var(--mono);cursor:pointer;color:var(--text2);transition:all .2s;}
+.slip-opt.active{border-color:var(--blue2);color:var(--blue2);background:rgba(0,112,243,.1);}
+
+/* ── TOKEN MODAL ── */
+.tk-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(14px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
+.tk-overlay.open{display:flex;}
+.tk-modal{background:var(--card);border:1px solid var(--border2);border-radius:20px;padding:20px;width:100%;max-width:360px;box-shadow:0 24px 60px rgba(0,0,0,.8);}
+.tk-modal h3{font-size:16px;font-weight:800;margin-bottom:14px;}
+.tk-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;cursor:pointer;transition:background .15s;}
+.tk-item:hover{background:var(--card2);}
+.tk-item .ti-icon{width:36px;height:36px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:18px;}
+.tk-item .ti-sym{font-size:15px;font-weight:800;}
+.tk-item .ti-name{font-size:12px;color:var(--text2);}
+
+/* ── OPEN IN ── */
 .open-external{display:flex;gap:10px;margin-bottom:16px;}
 .ext-btn{flex:1;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--card);font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;color:var(--text);}
 .ext-btn:hover{border-color:var(--border2);transform:translateY(-1px);}
@@ -85,23 +104,21 @@
   <a href="index.html" class="nav-logo"><div class="nav-logo-icon">⬡</div><div class="nav-logo-text">Base<span>Core</span></div></a>
   <div class="nav-right">
     <div class="nav-xp" id="nav-xp" style="display:none"><span class="xp-icon">⚡</span><span id="nav-xp-val">0 XP</span></div>
-    
     <div class="nav-user-wrap" id="nav-user-wrap" style="display:none">
       <div class="nav-addr" id="nav-addr" onclick="toggleUserMenu()"></div>
       <div class="user-dropdown" id="user-dropdown">
-        <button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Çıkış Yap</button>
+        <button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Disconnect</button>
       </div>
     </div>
-
     <button class="nav-connect" id="nav-connect-btn" onclick="openWalletModal()">Connect</button>
   </div>
 </nav>
 
 <nav class="tab-bar">
   <a href="gm.html" class="tab-item" data-tab="gm"><div class="tab-icon-wrap">🌅</div><span class="tab-label">GM/GN</span></a>
-  <a href="dex.html" class="tab-item" data-tab="dex"><div class="tab-icon-wrap">🔄</div><span class="tab-label">DEX</span></a>
+  <a href="dex.html" class="tab-item active" data-tab="dex"><div class="tab-icon-wrap">🔄</div><span class="tab-label">DEX</span></a>
   <a href="gaming.html" class="tab-item" data-tab="gaming"><div class="tab-icon-wrap">🎮</div><span class="tab-label">Gaming</span></a>
-  <a href="wheel.html" class="tab-item" data-tab="nft"><div class="tab-icon-wrap">🎡</div><span class="tab-label">Wheel</span></a>
+  <a href="nft.html" class="tab-item" data-tab="nft"><div class="tab-icon-wrap">🖼️</div><span class="tab-label">NFT</span></a>
   <a href="analysis.html" class="tab-item" data-tab="analysis"><div class="tab-icon-wrap">📊</div><span class="tab-label">Analysis</span></a>
   <a href="deploy.html" class="tab-item" data-tab="deploy"><div class="tab-icon-wrap">🚀</div><span class="tab-label">Deploy</span></a>
   <a href="social.html" class="tab-item" data-tab="social"><div class="tab-icon-wrap">👥</div><span class="tab-label">Social</span></a>
@@ -109,272 +126,438 @@
 
 <div class="page-wrap">
 
-  <div class="mode-toggle" style="margin-bottom: 20px;">
-    <button id="btn-onchain" class="mode-btn active" onclick="setPaymentMode('onchain')">⛓️ On-Chain</button>
-    <button id="btn-x402" class="mode-btn" onclick="setPaymentMode('x402')">⚡ x402 Modu</button>
-  </div>
-
   <div class="dex-header">
     <div class="dh-top">
       <div class="dh-title">🔄 DEX Swap</div>
-      <div class="dh-powered">
-        <div class="dh-logo">U</div>
-        Powered by Uniswap v3
-      </div>
+      <div class="dh-powered"><div class="dh-logo">U</div> Uniswap V3 · Base</div>
     </div>
     <div class="dh-stats">
       <div class="dhs">Chain: <strong>Base</strong></div>
-      <div class="dhs">Fee: <strong>0.05%–0.3%</strong></div>
-      <div class="dhs">Liquidity: <strong>Deep</strong></div>
+      <div class="dhs">Router: <strong>SwapRouter02</strong></div>
+      <div class="dhs">Liquidity: <strong>On-chain</strong></div>
     </div>
   </div>
 
   <div class="xp-banner">
     <div class="xpb-icon">⭐</div>
-    <div class="xpb-text"><strong>+500 XP</strong> per swap on Base · NFT Pass holders earn <strong>2x XP</strong> · Volume bonuses at $100, $1K, $10K</div>
+    <div class="xpb-text"><strong>+500 XP</strong> per swap · Live on-chain quotes via Uniswap V3 Quoter · Real settlement on Base</div>
   </div>
 
   <div class="quick-tokens">
     <div class="qt-title">Popular pairs</div>
-    <div class="qt-grid">
-      <div class="qt-chip active" onclick="setSwapPair('ETH','USDC')">Ξ ETH → USDC</div>
-      <div class="qt-chip" onclick="setSwapPair('USDC','ETH')">USDC → ETH</div>
-      <div class="qt-chip" onclick="setSwapPair('ETH','AERO')">ETH → AERO</div>
-      <div class="qt-chip" onclick="setSwapPair('ETH','CBETH')">ETH → cbETH</div>
-      <div class="qt-chip" onclick="setSwapPair('USDC','USDT')">USDC → USDT</div>
-      <div class="qt-chip" onclick="setSwapPair('ETH','DAI')">ETH → DAI</div>
+    <div class="qt-grid" id="qt-grid">
+      <div class="qt-chip active" data-from="ETH" data-to="USDC">Ξ ETH → USDC</div>
+      <div class="qt-chip" data-from="USDC" data-to="ETH">USDC → ETH</div>
+      <div class="qt-chip" data-from="ETH" data-to="AERO">ETH → AERO</div>
+      <div class="qt-chip" data-from="ETH" data-to="CBETH">ETH → cbETH</div>
+      <div class="qt-chip" data-from="USDC" data-to="USDT">USDC → USDT</div>
+      <div class="qt-chip" data-from="ETH" data-to="DAI">ETH → DAI</div>
     </div>
   </div>
 
-  <div class="tab-row">
-    <div class="tr-tab active" id="tab-swap" onclick="switchDexTab('swap')">Swap</div>
-    <div class="tr-tab" id="tab-limit" onclick="switchDexTab('limit')">Limit Order</div>
-    <div class="tr-tab" id="tab-send" onclick="switchDexTab('send')">Send</div>
-  </div>
-
-  <div class="swap-wrapper" id="swap-wrapper" style="height:420px">
-    <div class="swap-loading" id="swap-loading">
-      <div class="sl-spin"></div>
-      <div class="sl-text">Loading swap interface…</div>
-    </div>
-    <iframe
-      id="uniswap-iframe"
-      src="https://app.uniswap.org/#/swap?chain=base&inputCurrency=ETH&outputCurrency=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
-      style="width:100%;height:420px;opacity:0;border-radius:20px"
-      allow="clipboard-write"
-      onload="iframeLoaded()"
-      onerror="showFallback()">
-    </iframe>
-  </div>
-
-  <div class="swap-direct" id="swap-direct">
+  <div class="swap-card">
     <div class="sd-token-row">
-      <div class="sd-label">Sell</div>
+      <div class="sd-row-head">
+        <div class="sd-label">You pay</div>
+        <div class="sd-bal" id="sell-bal" onclick="useMax()"></div>
+      </div>
       <div class="sd-input-row">
-        <input class="sd-amount" id="sell-amt" type="number" placeholder="0" oninput="updateQuote()"/>
-        <div class="sd-token-sel" onclick="openTokenModal('sell')">
+        <input class="sd-amount" id="sell-amt" type="text" inputmode="decimal" placeholder="0" autocomplete="off"/>
+        <div class="sd-token-sel" onclick="openTokenModal('from')">
           <span class="sd-token-icon" id="sell-icon">Ξ</span>
           <span class="sd-token-name" id="sell-name">ETH</span>
-          <span style="color:var(--muted);font-size:12px">▾</span>
+          <span class="caret">▾</span>
         </div>
       </div>
-      <div class="sd-usd" id="sell-usd">$0.00</div>
-      <div class="sd-pcts">
-        <div class="sd-pct" onclick="setPct(25)">25%</div>
-        <div class="sd-pct" onclick="setPct(50)">50%</div>
-        <div class="sd-pct" onclick="setPct(75)">75%</div>
-        <div class="sd-pct" onclick="setPct(100)">MAX</div>
-      </div>
+      <div class="sd-usd" id="sell-usd"></div>
     </div>
 
     <div class="swap-arrow-row">
-      <div class="swap-arrow-btn" onclick="flipTokens()">⇅</div>
+      <div class="swap-arrow-btn" onclick="flipTokens()">↓</div>
     </div>
 
     <div class="sd-token-row">
-      <div class="sd-label">Buy</div>
+      <div class="sd-row-head">
+        <div class="sd-label">You receive</div>
+        <div class="sd-bal" id="buy-bal"></div>
+      </div>
       <div class="sd-input-row">
-        <input class="sd-amount" id="buy-amt" placeholder="0" readonly style="color:var(--text2)"/>
-        <div class="sd-token-sel" onclick="openTokenModal('buy')">
+        <input class="sd-amount" id="buy-amt" placeholder="0" disabled/>
+        <div class="sd-token-sel" onclick="openTokenModal('to')">
           <span class="sd-token-icon" id="buy-icon">💵</span>
           <span class="sd-token-name" id="buy-name">USDC</span>
-          <span style="color:var(--muted);font-size:12px">▾</span>
+          <span class="caret">▾</span>
         </div>
       </div>
-      <div class="sd-usd" id="buy-usd">$0.00</div>
+      <div class="sd-usd" id="buy-usd"></div>
     </div>
 
     <div class="route-info" id="route-info" style="display:none">
       <div class="ri-row"><span class="ri-key">Rate</span><span class="ri-val" id="ri-rate">—</span></div>
-      <div class="ri-row"><span class="ri-key">Fee (0.3%)</span><span class="ri-val" id="ri-fee">—</span></div>
-      <div class="ri-row"><span class="ri-key">Slippage</span><span class="ri-val">0.5%</span></div>
-      <div class="ri-row"><span class="ri-key">XP Reward</span><span class="ri-val" style="color:var(--yellow)" id="ri-xp">+500 XP</span></div>
-      <div class="ri-row"><span class="ri-key">Route</span><span class="ri-val" style="color:var(--cyan)">Uniswap V3 on Base</span></div>
+      <div class="ri-row"><span class="ri-key">Pool fee tier</span><span class="ri-val" id="ri-fee">—</span></div>
+      <div class="ri-row"><span class="ri-key">Min. received</span><span class="ri-val" id="ri-min">—</span></div>
+      <div class="ri-row"><span class="ri-key">XP reward</span><span class="ri-val accent" id="ri-xp">+500 XP</span></div>
+      <div class="ri-row"><span class="ri-key">Route</span><span class="ri-val accent">Uniswap V3 · Base</span></div>
     </div>
 
-    <button class="btn btn-primary" id="swap-btn" onclick="executeSwap()" style="font-size:16px;padding:16px">
-      🔄 Swap on Base
-    </button>
-    <div id="swap-result"></div>
+    <div class="slip-row">
+      Slippage
+      <div class="slip-opts" id="slip-opts">
+        <div class="slip-opt" data-slip="0.1">0.1%</div>
+        <div class="slip-opt active" data-slip="0.5">0.5%</div>
+        <div class="slip-opt" data-slip="1">1%</div>
+      </div>
+    </div>
+
+    <div class="swap-action">
+      <button class="swap-btn" id="swap-btn" onclick="executeSwap()">🔄 Enter an amount</button>
+      <div class="swap-result" id="swap-result"></div>
+    </div>
   </div>
 
   <div class="open-external">
-    <a href="https://aerodrome.finance/swap?from=eth&to=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913&chain=8453" target="_blank" class="ext-btn aero">
-      🟠 Aerodrome
-    </a>
-    <a href="https://app.uniswap.org/#/swap?chain=base" target="_blank" class="ext-btn uni">
-      🦄 Uniswap
-    </a>
-    <a href="https://jumper.exchange/?fromChain=8453&toChain=8453" target="_blank" class="ext-btn" style="border-color:rgba(139,92,246,.25);color:var(--purple)">
-      🔀 Jumper
-    </a>
+    <a href="https://aerodrome.finance/swap?from=eth&to=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913&chain=8453" target="_blank" class="ext-btn aero">🟠 Aerodrome</a>
+    <a href="https://app.uniswap.org/#/swap?chain=base" target="_blank" class="ext-btn uni">🦄 Uniswap</a>
+    <a href="https://jumper.exchange/?fromChain=8453&toChain=8453" target="_blank" class="ext-btn" style="border-color:rgba(139,92,246,.25);color:var(--purple)">🔀 Jumper</a>
   </div>
 
-  <div style="text-align:center;font-size:11px;color:var(--muted);padding:8px 0 4px;font-family:var(--mono)">
-    Swaps routed through Uniswap V3 on Base · Best rates on-chain
+  <div style="text-align:center;font-size:11px;color:var(--muted);padding:4px 0 8px;font-family:var(--mono)">
+    Quotes & settlement routed directly through Uniswap V3 contracts on Base
   </div>
+</div>
 
+<!-- TOKEN PICKER -->
+<div class="tk-overlay" id="tk-overlay" onclick="if(event.target===this)closeTokenModal()">
+  <div class="tk-modal">
+    <h3>Select a token</h3>
+    <div id="tk-list"></div>
+  </div>
 </div>
 
 <div id="toasts"></div>
-<script src="shared.js?v=26"></script>
-<script src="sfx.js"></script>
+<script src="shared.js?v=31"></script>
 <script>
-// ── IFRAME LOAD HANDLER ──
-let iframeOk = false;
-function iframeLoaded() {
-  iframeOk = true;
-  document.getElementById('swap-loading').style.display = 'none';
-  document.getElementById('uniswap-iframe').style.opacity = '1';
-}
-setTimeout(() => {
-  if (!iframeOk) showFallback();
-}, 5000);
+// ═══════════════════════════════════════════════════════════════════
+//  GERÇEK BASE SWAP — Uniswap V3 (QuoterV2 fiyat + SwapRouter02 takas)
+//  Yönler: ETH→token, token→token, token→ETH (unwrap), ETH↔WETH (wrap)
+// ═══════════════════════════════════════════════════════════════════
+const ROUTER = '0x2626664c2603336E57B271c5C0b26F421741e481'; // SwapRouter02 (Base)
+const QUOTER = '0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a'; // QuoterV2 (Base)
+const WETH   = '0x4200000000000000000000000000000000000006'; // WETH9 (Base)
 
-function showFallback() {
-  document.getElementById('swap-wrapper').style.display = 'none';
-  document.getElementById('swap-direct').style.display = 'block';
-}
-
-// ── PAIR SWITCHING ──
-const TOKEN_ADDRS = {
-  ETH:   'ETH',
-  USDC:  '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-  AERO:  '0x940181a94A35A4569E4529A3CDfB74e38FD98631',
-  CBETH: '0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22',
-  USDT:  '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2',
-  DAI:   '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb',
+const TOKENS = {
+  ETH:  { sym:'ETH',   name:'Ethereum',     addr:'ETH', dec:18, icon:'Ξ' },
+  WETH: { sym:'WETH',  name:'Wrapped Ether',addr:WETH,  dec:18, icon:'🟦' },
+  USDC: { sym:'USDC',  name:'USD Coin',     addr:'0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', dec:6,  icon:'💵' },
+  USDT: { sym:'USDT',  name:'Tether USD',   addr:'0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2', dec:6,  icon:'💚' },
+  DAI:  { sym:'DAI',   name:'Dai',          addr:'0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb', dec:18, icon:'🟡' },
+  AERO: { sym:'AERO',  name:'Aerodrome',    addr:'0x940181a94A35A4569E4529A3CDfB74e38FD98631', dec:18, icon:'🟠' },
+  CBETH:{ sym:'cbETH', name:'Coinbase ETH', addr:'0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22', dec:18, icon:'🔷' },
 };
+const FEE_TIERS = [100, 500, 3000, 10000];
 
-function setSwapPair(from, to) {
-  document.querySelectorAll('.qt-chip').forEach(c => c.classList.remove('active'));
-  event.target.classList.add('active');
+const QUOTER_ABI = [
+  'function quoteExactInputSingle((address tokenIn,address tokenOut,uint256 amountIn,uint24 fee,uint160 sqrtPriceLimitX96)) returns (uint256 amountOut,uint160 sqrtPriceX96After,uint32 initializedTicksCrossed,uint256 gasEstimate)'
+];
+const ROUTER_ABI = [
+  'function exactInputSingle((address tokenIn,address tokenOut,uint24 fee,address recipient,uint256 amountIn,uint256 amountOutMinimum,uint160 sqrtPriceLimitX96)) payable returns (uint256 amountOut)',
+  'function unwrapWETH9(uint256 amountMinimum,address recipient) payable',
+  'function multicall(bytes[] data) payable returns (bytes[] results)'
+];
+const ERC20_ABI = [
+  'function allowance(address owner,address spender) view returns (uint256)',
+  'function approve(address spender,uint256 amount) returns (bool)',
+  'function balanceOf(address owner) view returns (uint256)'
+];
+const WETH_ABI = [
+  'function deposit() payable',
+  'function withdraw(uint256 wad)'
+];
 
-  const fromAddr = TOKEN_ADDRS[from] || from;
-  const toAddr   = TOKEN_ADDRS[to] || to;
+let fromKey = 'ETH', toKey = 'USDC';
+let slippage = 0.5;
+let lastQuote = null;       // { amountOut:bigint, fee:number }
+let quoteSeq = 0;
+let readProvider = null;
+let pickSide = 'from';
 
-  const iframe = document.getElementById('uniswap-iframe');
-  const newSrc = `https://app.uniswap.org/#/swap?chain=base&inputCurrency=${fromAddr}&outputCurrency=${toAddr}`;
-  iframeOk = false;
-  iframe.style.opacity = '0';
-  document.getElementById('swap-loading').style.display = 'flex';
-  iframe.src = newSrc;
+const $ = id => document.getElementById(id);
 
-  document.getElementById('sell-name').textContent = from;
-  document.getElementById('buy-name').textContent = to;
-  const icons = {ETH:'Ξ',USDC:'💵',AERO:'🟠',CBETH:'🔷',USDT:'💚',DAI:'🟡'};
-  document.getElementById('sell-icon').textContent = icons[from]||'🪙';
-  document.getElementById('buy-icon').textContent  = icons[to]||'🪙';
+async function getReadProvider() {
+  await loadEthers();
+  if (BC.provider) return BC.provider;
+  if (!readProvider) readProvider = new ethers.JsonRpcProvider(TARGET_CHAIN.rpc);
+  return readProvider;
 }
 
-function switchDexTab(tab) {
-  ['swap','limit','send'].forEach(t => {
-    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+function tokenAddrFor(key){ return key === 'ETH' ? WETH : TOKENS[key].addr; }
+function isWrapPair(){ return (fromKey==='ETH'&&toKey==='WETH')||(fromKey==='WETH'&&toKey==='ETH'); }
+
+// ── UI: token seçimini yansıt ──
+function renderTokens(){
+  const f = TOKENS[fromKey], t = TOKENS[toKey];
+  $('sell-icon').textContent = f.icon; $('sell-name').textContent = f.sym;
+  $('buy-icon').textContent  = t.icon; $('buy-name').textContent  = t.sym;
+  document.querySelectorAll('.qt-chip').forEach(c =>
+    c.classList.toggle('active', c.dataset.from===fromKey && c.dataset.to===toKey));
+  refreshBalances();
+  onAmountChange();
+}
+
+function setPair(from, to){ fromKey = from; toKey = to; $('sell-amt').value=''; renderTokens(); }
+
+function flipTokens(){
+  const a = fromKey; fromKey = toKey; toKey = a;
+  $('sell-amt').value = '';
+  renderTokens();
+}
+
+// ── TOKEN PICKER ──
+function openTokenModal(side){
+  pickSide = side;
+  const list = $('tk-list'); list.innerHTML='';
+  Object.keys(TOKENS).forEach(k=>{
+    const tk = TOKENS[k];
+    const row = document.createElement('div');
+    row.className='tk-item';
+    row.innerHTML = `<div class="ti-icon">${tk.icon}</div><div><div class="ti-sym">${tk.sym}</div><div class="ti-name">${tk.name}</div></div>`;
+    row.onclick = ()=>{ pickToken(k); };
+    list.appendChild(row);
   });
-  const iframe = document.getElementById('uniswap-iframe');
-  if (tab === 'limit') {
-    iframe.src = 'https://app.uniswap.org/#/limit?chain=base';
-  } else if (tab === 'send') {
-    iframe.src = 'https://app.uniswap.org/#/send?chain=base';
-  } else {
-    iframe.src = 'https://app.uniswap.org/#/swap?chain=base&inputCurrency=ETH&outputCurrency=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+  $('tk-overlay').classList.add('open');
+}
+function closeTokenModal(){ $('tk-overlay').classList.remove('open'); }
+function pickToken(k){
+  if (pickSide==='from'){ if(k===toKey) toKey=fromKey; fromKey=k; }
+  else { if(k===fromKey) fromKey=toKey; toKey=k; }
+  closeTokenModal(); $('sell-amt').value=''; renderTokens();
+}
+
+// ── BAKİYE ──
+async function refreshBalances(){
+  $('sell-bal').textContent=''; $('buy-bal').textContent='';
+  if (!BC.addr) return;
+  try {
+    const p = await getReadProvider();
+    const balFrom = await readBalance(p, fromKey, BC.addr);
+    const balTo   = await readBalance(p, toKey,   BC.addr);
+    $('sell-bal').textContent = 'Balance: ' + fmtAmt(balFrom, TOKENS[fromKey].dec);
+    $('buy-bal').textContent  = 'Balance: ' + fmtAmt(balTo,   TOKENS[toKey].dec);
+  } catch(e){ /* sessiz */ }
+}
+async function readBalance(provider, key, owner){
+  if (key==='ETH') return await provider.getBalance(owner);
+  const c = new ethers.Contract(TOKENS[key].addr, ERC20_ABI, provider);
+  return await c.balanceOf(owner);
+}
+function fmtAmt(raw, dec){
+  const n = Number(ethers.formatUnits(raw, dec));
+  if (n===0) return '0';
+  if (n<0.0001) return '<0.0001';
+  return n.toLocaleString(undefined,{maximumFractionDigits: dec>=18?5:2});
+}
+
+async function useMax(){
+  if (!BC.addr) { openWalletModal(); return; }
+  try{
+    const p = await getReadProvider();
+    let bal = await readBalance(p, fromKey, BC.addr);
+    if (fromKey==='ETH'){ // gas için küçük tampon bırak
+      const buf = ethers.parseEther('0.0003');
+      bal = bal > buf ? bal - buf : 0n;
+    }
+    $('sell-amt').value = ethers.formatUnits(bal, TOKENS[fromKey].dec);
+    onAmountChange();
+  }catch(e){}
+}
+
+// ── FİYAT (Quoter) ──
+let quoteTimer=null;
+function onAmountChange(){
+  clearTimeout(quoteTimer);
+  const v = $('sell-amt').value.trim();
+  setSwapBtn();
+  if (!v || isNaN(parseFloat(v)) || parseFloat(v)<=0){
+    $('buy-amt').value=''; $('sell-usd').textContent=''; $('buy-usd').textContent='';
+    $('route-info').style.display='none'; lastQuote=null; setSwapBtn(); return;
   }
-  iframeOk = false;
-  iframe.style.opacity = '0';
-  document.getElementById('swap-loading').style.display = 'flex';
-}
-
-// ── FALLBACK SWAP ──
-const ETH_PRICE = 3240;
-
-function updateQuote() {
-  const amt = parseFloat(document.getElementById('sell-amt').value) || 0;
-  const fromName = document.getElementById('sell-name').textContent;
-  const toName   = document.getElementById('buy-name').textContent;
-
-  if (!amt) {
-    document.getElementById('buy-amt').value = '';
-    document.getElementById('route-info').style.display = 'none';
-    return;
+  if (isWrapPair()){ // 1:1 wrap/unwrap
+    $('buy-amt').value = v;
+    lastQuote = { amountOut: ethers.parseUnits(v, 18), fee: 0 };
+    $('route-info').style.display='none'; setSwapBtn(); return;
   }
-
-  let rate, buyAmt;
-  if (fromName === 'ETH' && toName === 'USDC') { rate = ETH_PRICE; buyAmt = (amt * rate * 0.997).toFixed(2); }
-  else if (fromName === 'USDC' && toName === 'ETH') { rate = 1/ETH_PRICE; buyAmt = (amt * rate * 0.997).toFixed(6); }
-  else { rate = 1; buyAmt = (amt * 0.997).toFixed(4); }
-
-  document.getElementById('buy-amt').value = buyAmt;
-  document.getElementById('sell-usd').textContent = fromName==='ETH' ? '$'+(amt*ETH_PRICE).toFixed(2) : '$'+amt.toFixed(2);
-  document.getElementById('buy-usd').textContent = fromName==='ETH' ? '$'+(parseFloat(buyAmt)).toFixed(2) : '$'+(parseFloat(buyAmt)*ETH_PRICE).toFixed(2);
-  document.getElementById('ri-rate').textContent = `1 ${fromName} = ${rate.toFixed(fromName==='USDC'?6:2)} ${toName}`;
-  document.getElementById('ri-fee').textContent = `${(amt*0.003).toFixed(4)} ${fromName}`;
-  document.getElementById('route-info').style.display = '';
-
-  const xpBase = Math.min(5000, Math.round((fromName==='ETH'?amt*ETH_PRICE:amt) / 100 * 500));
-  document.getElementById('ri-xp').textContent = '+' + Math.max(500, xpBase).toLocaleString() + ' XP';
+  $('buy-amt').value='…';
+  quoteTimer = setTimeout(fetchAndShowQuote, 350);
 }
 
-function flipTokens() {
-  const si = document.getElementById('sell-icon').textContent;
-  const sn = document.getElementById('sell-name').textContent;
-  const bi = document.getElementById('buy-icon').textContent;
-  const bn = document.getElementById('buy-name').textContent;
-  document.getElementById('sell-icon').textContent = bi;
-  document.getElementById('sell-name').textContent = bn;
-  document.getElementById('buy-icon').textContent  = si;
-  document.getElementById('buy-name').textContent  = sn;
-  document.getElementById('sell-amt').value = '';
-  document.getElementById('buy-amt').value  = '';
-  document.getElementById('route-info').style.display = 'none';
+async function fetchAndShowQuote(){
+  const seq = ++quoteSeq;
+  const v = $('sell-amt').value.trim();
+  let amountIn;
+  try { amountIn = ethers.parseUnits(v, TOKENS[fromKey].dec); } catch(e){ return; }
+  try {
+    const provider = await getReadProvider();
+    const quoter = new ethers.Contract(QUOTER, QUOTER_ABI, provider);
+    const tokenIn = tokenAddrFor(fromKey), tokenOut = tokenAddrFor(toKey);
+    let best = null;
+    for (const fee of FEE_TIERS){
+      try {
+        const res = await quoter.quoteExactInputSingle.staticCall({
+          tokenIn, tokenOut, amountIn, fee, sqrtPriceLimitX96: 0
+        });
+        const out = res.amountOut !== undefined ? res.amountOut : res[0];
+        if (out > 0n && (!best || out > best.amountOut)) best = { amountOut: out, fee };
+      } catch(_) { /* bu tier'da havuz yok */ }
+    }
+    if (seq !== quoteSeq) return; // eskidi
+    if (!best){
+      $('buy-amt').value=''; $('route-info').style.display='none'; lastQuote=null;
+      $('swap-btn').textContent='No liquidity for this pair'; $('swap-btn').disabled=true; return;
+    }
+    lastQuote = best;
+    const outDec = TOKENS[toKey].dec;
+    const outNum = Number(ethers.formatUnits(best.amountOut, outDec));
+    $('buy-amt').value = outNum.toLocaleString(undefined,{maximumFractionDigits: outDec>=18?6:2});
+
+    const inNum = parseFloat(v);
+    const rate = outNum / inNum;
+    $('ri-rate').textContent = `1 ${TOKENS[fromKey].sym} = ${rate.toLocaleString(undefined,{maximumFractionDigits:6})} ${TOKENS[toKey].sym}`;
+    $('ri-fee').textContent  = (best.fee/10000) + '%';
+    const minOut = best.amountOut - (best.amountOut * BigInt(Math.round(slippage*100)) / 10000n);
+    $('ri-min').textContent = Number(ethers.formatUnits(minOut, outDec)).toLocaleString(undefined,{maximumFractionDigits: outDec>=18?6:2}) + ' ' + TOKENS[toKey].sym;
+    $('route-info').style.display='';
+    setSwapBtn();
+  } catch(e){
+    if (seq !== quoteSeq) return;
+    $('buy-amt').value=''; $('route-info').style.display='none';
+    console.warn('quote error', e);
+  }
 }
 
-function setPct(p) {
-  toast(`${p}% selected — connect wallet to see balance`, 'info');
+function minOutFor(amountOut){
+  return amountOut - (amountOut * BigInt(Math.round(slippage*100)) / 10000n);
 }
 
-async function executeSwap() {
+function setSwapBtn(){
+  const btn = $('swap-btn');
+  const v = $('sell-amt').value.trim();
+  if (!BC.addr){ btn.disabled=false; btn.textContent='Connect wallet'; return; }
+  if (!v || parseFloat(v)<=0){ btn.disabled=true; btn.textContent='Enter an amount'; return; }
+  if (isWrapPair()){ btn.disabled=false; btn.textContent = (fromKey==='ETH'?'🔁 Wrap to WETH':'🔁 Unwrap to ETH'); return; }
+  if (!lastQuote){ btn.disabled=true; btn.textContent='Fetching best price…'; return; }
+  btn.disabled=false; btn.textContent=`🔄 Swap ${TOKENS[fromKey].sym} → ${TOKENS[toKey].sym}`;
+}
+
+// ── TAKAS ──
+async function executeSwap(){
   if (!requireWallet()) return;
-  const amt = document.getElementById('sell-amt').value;
-  if (!amt || parseFloat(amt) <= 0) { toast('Enter amount to swap', 'error'); return; }
-  const btn = document.getElementById('swap-btn');
-  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Swapping…';
+  if (!BC.signer){ showNotification('Session expired','Please reconnect your wallet.','warning'); openWalletModal(); return; }
+  const v = $('sell-amt').value.trim();
+  if (!v || parseFloat(v)<=0){ toast('Enter an amount','error'); return; }
 
-  const rc = await sendTxWithFee('0.00002', 500, 'swap');
-  if (rc) {
-    const ex = CHAINS[BC.chain].ex;
-    document.getElementById('swap-result').innerHTML =
-      `<div class="tx-result">✅ Swap confirmed! Block ${rc.blockNumber}<br>🔗 <a href="${ex}/tx/${rc.hash}" target="_blank">${rc.hash.slice(0,28)}…</a></div>`;
-    toast('✅ Swap done! +500 XP', 'success');
+  await loadEthers();
+  const okNet = await ensureBaseNetwork();
+  if (!okNet){ showNotification('Wrong Network','Please switch to Base and try again.','warning'); return; }
+
+  const fromT = TOKENS[fromKey], toT = TOKENS[toKey];
+  let amountIn;
+  try { amountIn = ethers.parseUnits(v, fromT.dec); } catch(e){ toast('Invalid amount','error'); return; }
+
+  const btn = $('swap-btn'); const orig = btn.textContent;
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Confirm in wallet…';
+  $('swap-result').innerHTML='';
+
+  try {
+    // Bakiye kontrolü
+    const balRaw = await readBalance(BC.provider, fromKey, BC.addr);
+    if (balRaw < amountIn){
+      showNotification('Insufficient balance', `You don't have enough ${fromT.sym}.`, 'warning');
+      btn.disabled=false; btn.textContent=orig; return;
+    }
+
+    // WRAP / UNWRAP (1:1, en güvenli gerçek işlem)
+    if (isWrapPair()){
+      const weth = new ethers.Contract(WETH, WETH_ABI, BC.signer);
+      let tx;
+      if (fromKey==='ETH') tx = await weth.deposit({ value: amountIn });
+      else tx = await weth.withdraw(amountIn);
+      await afterTx(tx, btn, orig); return;
+    }
+
+    if (!lastQuote){ toast('Price not ready, try again','error'); btn.disabled=false; btn.textContent=orig; return; }
+
+    const tokenIn = tokenAddrFor(fromKey), tokenOut = tokenAddrFor(toKey);
+    const amountOutMin = minOutFor(lastQuote.amountOut);
+    const router = new ethers.Contract(ROUTER, ROUTER_ABI, BC.signer);
+
+    // ERC20 girişlerinde allowance
+    if (fromKey !== 'ETH'){
+      const erc = new ethers.Contract(fromT.addr, ERC20_ABI, BC.signer);
+      const allowed = await erc.allowance(BC.addr, ROUTER);
+      if (allowed < amountIn){
+        showNotification('Approval needed', `Approve ${fromT.sym} for swapping (one time).`, 'info');
+        const atx = await erc.approve(ROUTER, amountIn);
+        btn.innerHTML='<span class="spin"></span> Approving…';
+        await atx.wait();
+      }
+    }
+
+    btn.innerHTML='<span class="spin"></span> Swapping…';
+    let tx;
+
+    if (toKey === 'ETH'){
+      // token → ETH : router'da WETH topla, sonra unwrap → kullanıcıya ETH
+      const params = { tokenIn, tokenOut: WETH, fee: lastQuote.fee, recipient: ROUTER,
+        amountIn, amountOutMinimum: amountOutMin, sqrtPriceLimitX96: 0 };
+      const d0 = router.interface.encodeFunctionData('exactInputSingle', [params]);
+      const d1 = router.interface.encodeFunctionData('unwrapWETH9', [amountOutMin, BC.addr]);
+      tx = await router.multicall([d0, d1]);
+    } else {
+      const params = { tokenIn, tokenOut, fee: lastQuote.fee, recipient: BC.addr,
+        amountIn, amountOutMinimum: amountOutMin, sqrtPriceLimitX96: 0 };
+      const value = (fromKey === 'ETH') ? amountIn : 0n;
+      tx = await router.exactInputSingle(params, { value });
+    }
+    await afterTx(tx, btn, orig);
+
+  } catch(e){
+    console.error('[swap]', e);
+    if (e.code === 4001 || (e.message||'').includes('rejected')) showNotification('Cancelled','Swap rejected in wallet.','info');
+    else showNotification('Swap failed', e.shortMessage || e.reason || e.message || 'Transaction reverted.', 'error');
+    btn.disabled=false; btn.textContent=orig;
   }
-  btn.disabled = false; btn.textContent = '🔄 Swap on Base';
 }
 
-function openTokenModal(side) {
-  toast('Token selector — use iframe mode for full token list', 'info');
+async function afterTx(tx, btn, orig){
+  showNotification('Submitted','Waiting for confirmation on Base…','info');
+  const rc = await tx.wait();
+  const hash = rc.hash || tx.hash;
+  $('swap-result').innerHTML =
+    `<div class="tx-result">✅ Confirmed in block ${rc.blockNumber}<br>🔗 <a href="https://basescan.org/tx/${hash}" target="_blank">${hash.slice(0,22)}…</a></div>`;
+  showNotification('Swap confirmed ✅','Transaction settled. +500 XP','success',
+    [{ label:'View on BaseScan', action:()=>window.open(`https://basescan.org/tx/${hash}`,'_blank') }]);
+  addXP(500, 'swap');
+  if (typeof recordGamePlayed === 'function') recordGamePlayed();
+  $('sell-amt').value=''; $('buy-amt').value=''; $('route-info').style.display='none'; lastQuote=null;
+  refreshBalances();
+  btn.disabled=false; btn.textContent=orig;
 }
+
+// ── EVENTS ──
+$('sell-amt').addEventListener('input', onAmountChange);
+document.querySelectorAll('.qt-chip').forEach(c =>
+  c.addEventListener('click', ()=> setPair(c.dataset.from, c.dataset.to)));
+document.querySelectorAll('.slip-opt').forEach(o =>
+  o.addEventListener('click', ()=>{
+    slippage = parseFloat(o.dataset.slip);
+    document.querySelectorAll('.slip-opt').forEach(x=>x.classList.remove('active'));
+    o.classList.add('active');
+    if (lastQuote) fetchAndShowQuote();
+  }));
 
 initNav('dex');
-setTimeout(()=>{ if(BC.addr) updateNavUI(); }, 600);
+renderTokens();
+setTimeout(()=>{ if (BC.addr){ updateNavUI(); refreshBalances(); } }, 800);
 </script>
 </body>
 </html>

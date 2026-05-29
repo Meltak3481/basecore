@@ -4,789 +4,582 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="base:app_id" content="69eb54ae345dbf0ebcf5d84c" />
-<title>Wheel — BaseCore</title>
+<title>NFT — BaseCore</title>
 <link rel="stylesheet" href="shared.css">
 <style>
-.page-wrap{position:relative;z-index:1;padding:80px 16px 100px;max-width:480px;margin:0 auto;}
+/* ── SPIN WHEEL ── */
+.wheel-section{background:linear-gradient(135deg,rgba(139,92,246,.12),rgba(0,112,243,.08));border:1px solid rgba(139,92,246,.25);border-radius:20px;padding:24px 20px;margin-bottom:24px;position:relative;overflow:hidden;}
+.wheel-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--purple),var(--blue2),transparent);}
+.ws-title{text-align:center;margin-bottom:6px;}
+.ws-title h2{font-size:20px;font-weight:900;}
+.ws-title p{font-size:13px;color:var(--text2);margin-top:4px;}
+.wheel-outer{position:relative;width:280px;margin:20px auto 16px;}
+.wheel-glow{position:absolute;inset:-20px;border-radius:50%;background:radial-gradient(ellipse,rgba(139,92,246,.2),transparent 70%);animation:glowPulse 2s ease-in-out infinite alternate;}
+@keyframes glowPulse{from{opacity:.5;transform:scale(.95);}to{opacity:1;transform:scale(1.05);}}
+.wheel-ptr{position:absolute;top:-14px;left:50%;transform:translateX(-50%);z-index:10;filter:drop-shadow(0 0 10px var(--purple));}
+canvas#nft-wheel{border-radius:50%;display:block;box-shadow:0 0 60px rgba(139,92,246,.35),0 0 120px rgba(0,0,0,.5);}
+.wheel-hub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#1a0a2e,#0d0618);border:3px solid rgba(139,92,246,.5);display:flex;align-items:center;justify-content:center;font-size:20px;z-index:5;box-shadow:0 0 20px rgba(139,92,246,.4);}
+.spin-info{display:flex;justify-content:center;gap:16px;margin-bottom:16px;flex-wrap:wrap;}
+.si-item{text-align:center;}
+.si-val{font-size:20px;font-weight:900;}
+.si-lbl{font-size:11px;color:var(--muted);font-family:var(--mono);}
+.nft-spin-btn{width:100%;padding:18px;border-radius:16px;border:none;cursor:pointer;font-family:var(--sans);font-size:16px;font-weight:900;background:linear-gradient(135deg,#7c3aed,#4f46e5,#0070f3);color:#fff;box-shadow:0 0 30px rgba(124,58,237,.4),0 8px 32px rgba(0,0,0,.3);transition:all .2s;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:10px;}
+.nft-spin-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);transform:translateX(-100%);transition:transform .4s;}
+.nft-spin-btn:hover::before{transform:translateX(100%);}
+.nft-spin-btn:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(124,58,237,.6);}
+.nft-spin-btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;}
+.spins-left{display:flex;justify-content:center;gap:8px;margin-top:12px;}
+.sd{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.1);border:1px solid rgba(139,92,246,.3);transition:all .3s;}
+.sd.on{background:var(--purple);box-shadow:0 0 12px var(--purple);}
+.sd.off{background:var(--muted);}
 
-/* ── HERO ── */
-.wheel-hero{text-align:center;margin-bottom:14px;}
-.wheel-hero h1{font-size:26px;font-weight:900;background:linear-gradient(135deg,#c084fc,#a78bfa,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.wheel-hero p{font-size:13px;color:var(--text2);margin-top:4px;}
+/* ── NFT REVEAL OVERLAY ── */
+.nft-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);backdrop-filter:blur(20px);z-index:800;display:none;align-items:center;justify-content:center;}
+.nft-overlay.open{display:flex;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.nft-reveal-wrap{text-align:center;padding:20px;width:100%;max-width:340px;}
+.nft-reveal-text{font-size:14px;color:var(--text2);margin-bottom:20px;font-family:var(--mono);}
 
-/* ── WHEEL WRAP ── */
-.wheel-wrap{
-  position:relative;width:100%;max-width:340px;
-  margin:0 auto 16px;
-}
-.wheel-canvas-outer{
-  position:relative;
-  width:100%;aspect-ratio:1;
-}
-/* 3D tilt via CSS perspective */
-.wheel-canvas-outer{
-  transform:perspective(900px) rotateX(8deg);
-  transform-origin:center center;
-  filter:drop-shadow(0 16px 32px rgba(0,0,0,.65));
-}
-#wcanvas{
-  width:100%;height:100%;display:block;
-  border-radius:50%;
-}
+/* ── CARD 3D ── */
+.card-scene{width:220px;margin:0 auto 20px;perspective:800px;cursor:pointer;}
+.card-3d{width:100%;aspect-ratio:.68;position:relative;transform-style:preserve-3d;transition:transform .9s cubic-bezier(.4,0,.2,1);}
+.card-3d.flipped{transform:rotateY(180deg);}
+.card-face{position:absolute;inset:0;border-radius:18px;backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
+.card-front{padding:16px;}
+.card-front .cf-glow{position:absolute;inset:0;opacity:.15;}
+.card-front .cf-logo{font-size:52px;margin-bottom:8px;z-index:1;}
+.card-front .cf-brand{font-size:16px;font-weight:900;letter-spacing:2px;z-index:1;}
+.card-front .cf-rarity{font-size:13px;font-weight:800;letter-spacing:3px;margin-top:4px;z-index:1;padding:4px 14px;border-radius:20px;}
+.card-front .cf-tap{font-size:11px;color:rgba(255,255,255,.5);margin-top:20px;z-index:1;font-family:var(--mono);animation:tapBlink 1.5s ease-in-out infinite;}
+@keyframes tapBlink{0%,100%{opacity:.5;}50%{opacity:1;}}
+.card-front .cf-shine{position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:linear-gradient(45deg,transparent 30%,rgba(255,255,255,.08) 50%,transparent 70%);animation:shine 3s ease-in-out infinite;}
+@keyframes shine{0%{transform:translateX(-100%) rotate(45deg);}100%{transform:translateX(100%) rotate(45deg);}}
+.card-particles{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;}
+.cp-item{position:absolute;border-radius:50%;animation:cpFloat var(--d) ease-in-out var(--dl) infinite alternate;}
+@keyframes cpFloat{from{transform:translateY(0) scale(1);opacity:.7;}to{transform:translateY(-20px) scale(1.5);opacity:.1;}}
+.card-back{transform:rotateY(180deg);padding:18px;flex-direction:column;gap:6px;}
+.cb-art{font-size:52px;}
+.cb-rarity{font-size:11px;font-weight:800;letter-spacing:2px;padding:3px 12px;border-radius:20px;}
+.cb-name{font-size:15px;font-weight:800;text-align:center;margin-top:4px;}
+.cb-xp{font-size:20px;font-weight:900;font-family:var(--mono);}
+.cb-attrs{display:grid;grid-template-columns:1fr 1fr;gap:5px;width:100%;margin-top:6px;}
+.cb-attr{background:rgba(0,0,0,.3);border-radius:8px;padding:5px;text-align:center;}
+.cb-attr-k{font-size:9px;color:rgba(255,255,255,.4);font-family:var(--mono);text-transform:uppercase;}
+.cb-attr-v{font-size:12px;font-weight:700;margin-top:1px;}
+.reveal-actions{display:flex;flex-direction:column;gap:10px;width:100%;}
+.btn-collect{width:100%;padding:15px;border-radius:14px;border:none;cursor:pointer;font-family:var(--sans);font-size:15px;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--purple),var(--blue));box-shadow:0 0 24px rgba(139,92,246,.4);transition:all .2s;}
+.btn-collect:hover{transform:translateY(-2px);}
+.btn-close-reveal{width:100%;padding:12px;border-radius:12px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-family:var(--sans);font-size:13px;cursor:pointer;}
 
-/* Pointer — above tilt */
-.wheel-ptr{
-  position:absolute;
-  top:-18px;left:50%;
-  transform:translateX(-50%);
-  z-index:20;
-  width:0;height:0;
-  border-left:18px solid transparent;
-  border-right:18px solid transparent;
-  border-top:36px solid #c084fc;
-  filter:drop-shadow(0 0 14px #c084fc) drop-shadow(0 0 28px #7c3aed);
-  animation:ptrBob 1.6s ease-in-out infinite;
-}
-@keyframes ptrBob{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(-6px);}}
+/* ── COLLECTION ── */
+.rarity-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;}
+.rs-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center;}
+.rs-val{font-size:20px;font-weight:900;}
+.rs-lbl{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:3px;}
+.coll-empty{text-align:center;padding:48px 20px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);}
+.nft-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.nft-mini{aspect-ratio:.68;border-radius:14px;position:relative;overflow:hidden;cursor:pointer;transition:all .25s;border:2px solid transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px;}
+.nft-mini:hover{transform:translateY(-4px) scale(1.03);}
+.nft-mini-shine{position:absolute;inset:0;background:linear-gradient(45deg,transparent 30%,rgba(255,255,255,.06) 50%,transparent 70%);}
+.nft-mini-art{font-size:26px;margin-bottom:4px;z-index:1;}
+.nft-mini-name{font-size:9px;font-weight:700;text-align:center;line-height:1.2;z-index:1;color:rgba(255,255,255,.9);}
+.nft-mini-rarity{font-size:8px;font-family:var(--mono);margin-top:4px;padding:2px 8px;border-radius:10px;font-weight:800;letter-spacing:1px;z-index:1;}
+.nft-mini-num{position:absolute;top:5px;right:6px;font-size:9px;font-family:var(--mono);color:rgba(255,255,255,.4);}
+.new-badge{position:absolute;top:5px;left:5px;background:var(--green);color:#000;font-size:8px;font-weight:800;padding:1px 5px;border-radius:6px;z-index:2;}
 
-/* Rainbow outer ring — CSS, not canvas */
-.wheel-ring{
-  position:absolute;inset:-12px;border-radius:50%;z-index:0;
-  background:conic-gradient(from 0deg,
-    #c084fc,#818cf8,#38bdf8,#34d399,#fbbf24,#fb923c,#f472b6,#c084fc);
-  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 2px));
-  mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 2px));
-  animation:ringRot 5s linear infinite;
-}
-@keyframes ringRot{to{transform:rotate(360deg);}}
+/* ── NFT DETAIL MODAL ── */
+.nft-detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(16px);z-index:700;display:none;align-items:flex-end;justify-content:center;}
+.nft-detail-overlay.open{display:flex;}
+.nft-detail{background:var(--card);border:1px solid var(--border2);border-radius:24px 24px 0 0;padding:24px 20px 40px;width:100%;max-width:480px;animation:sheetUp .35s cubic-bezier(.4,0,.2,1);}
+@keyframes sheetUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.nd-handle{width:40px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 18px;}
+.nd-card-preview{width:130px;margin:0 auto 16px;aspect-ratio:.68;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:14px;}
+.nd-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0;}
+.nds{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;}
+.nds-val{font-size:18px;font-weight:900;}
+.nds-lbl{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:3px;}
 
-/* Glow behind wheel */
-.wheel-glow{
-  position:absolute;inset:-40px;border-radius:50%;z-index:-1;
-  background:radial-gradient(ellipse,rgba(139,92,246,.22) 0%,transparent 65%);
-  animation:glowPulse 2.2s ease-in-out infinite alternate;
-}
-@keyframes glowPulse{from{opacity:.4;transform:scale(.88);}to{opacity:1;transform:scale(1.12);}}
+/* ── FUTURE REWARDS BANNER ── */
+.reward-banner{background:linear-gradient(135deg,rgba(245,197,24,.08),rgba(249,115,22,.06));border:1px solid rgba(245,197,24,.2);border-radius:14px;padding:16px;margin-bottom:20px;display:flex;align-items:center;gap:14px;}
+.rb-icon{font-size:32px;flex-shrink:0;}
+.rb-text h4{font-size:14px;font-weight:800;color:var(--yellow);}
+.rb-text p{font-size:12px;color:var(--text2);margin-top:4px;line-height:1.5;}
+.rb-coming{font-size:10px;font-family:var(--mono);color:var(--orange);background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);padding:2px 8px;border-radius:10px;margin-top:6px;display:inline-block;}
 
-/* ── SPIN BAR ── */
-.spin-bar{display:flex;justify-content:center;gap:28px;margin:10px 0 14px;}
-.sb-item{text-align:center;}
-.sb-val{font-size:24px;font-weight:900;font-family:var(--mono);}
-.sb-lbl{font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-top:2px;}
-
-/* Dots */
-.spin-dots{display:flex;justify-content:center;gap:10px;margin-bottom:18px;}
-.sd{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.07);border:1.5px solid rgba(139,92,246,.3);transition:all .4s cubic-bezier(.34,1.56,.64,1);}
-.sd.on{background:var(--purple);border-color:var(--purple);box-shadow:0 0 16px var(--purple),0 0 32px rgba(139,92,246,.3);transform:scale(1.25);}
-.sd.off{background:#1e1e2e;border-color:rgba(255,255,255,.1);}
-
-/* ── SPIN BUTTON ── */
-.spin-btn{
-  width:100%;padding:20px;border-radius:18px;border:none;cursor:pointer;
-  font-family:var(--sans);font-size:17px;font-weight:900;color:#fff;
-  background:linear-gradient(135deg,#7c3aed,#4f46e5,#2563eb);
-  box-shadow:0 0 36px rgba(124,58,237,.5),0 8px 32px rgba(0,0,0,.4);
-  transition:all .2s;position:relative;overflow:hidden;
-  display:flex;align-items:center;justify-content:center;gap:10px;
-}
-.spin-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transform:translateX(-100%);transition:transform .5s;}
-.spin-btn:hover::before{transform:translateX(100%);}
-.spin-btn:hover:not(:disabled){transform:translateY(-3px);box-shadow:0 0 56px rgba(124,58,237,.7);}
-.spin-btn:active:not(:disabled){transform:scale(.98);}
-.spin-btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shadow:none;}
-@keyframes rotSpin{to{transform:rotate(360deg);}}
-.spin-dot-el{width:20px;height:20px;border-radius:50%;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;animation:rotSpin .7s linear infinite;display:inline-block;}
-
-/* Sound toggle */
-.sfx-toggle{
-  position:fixed;bottom:80px;right:16px;z-index:200;
-  width:40px;height:40px;border-radius:50%;
-  background:var(--card);border:1px solid var(--border2);
-  display:flex;align-items:center;justify-content:center;
-  font-size:18px;cursor:pointer;
-  box-shadow:0 4px 16px rgba(0,0,0,.4);
-  transition:all .2s;
-}
-.sfx-toggle:hover{background:var(--card2);transform:scale(1.1);}
-
-/* ── MYSTERY BOX ── */
-.mystery-section{background:linear-gradient(135deg,rgba(245,197,24,.07),rgba(249,115,22,.05));border:1px solid rgba(245,197,24,.2);border-radius:18px;padding:20px;margin-bottom:24px;position:relative;overflow:hidden;}
-.mystery-section::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(245,197,24,.45),transparent);}
-.mystery-header{display:flex;align-items:center;gap:14px;margin-bottom:12px;}
-.mystery-icon{width:52px;height:52px;border-radius:14px;flex-shrink:0;background:linear-gradient(135deg,rgba(245,197,24,.15),rgba(249,115,22,.1));border:1px solid rgba(245,197,24,.25);display:flex;align-items:center;justify-content:center;font-size:26px;position:relative;}
-.mystery-lock{position:absolute;bottom:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:var(--card);border:1.5px solid rgba(245,197,24,.3);display:flex;align-items:center;justify-content:center;font-size:10px;}
-.mystery-title{font-size:16px;font-weight:900;color:var(--yellow);}
-.mystery-sub{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.5;}
-.mystery-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(245,197,24,.08);border:1px solid rgba(245,197,24,.2);border-radius:20px;padding:4px 12px;margin-top:8px;font-size:10px;font-weight:800;color:var(--yellow);font-family:var(--mono);}
-.mystery-row{display:flex;align-items:center;justify-content:space-between;background:rgba(0,0,0,.18);border-radius:10px;padding:10px 14px;margin-top:6px;}
-.mr-label{font-size:12px;color:var(--text2);}
-.mr-val{font-size:13px;font-weight:800;color:var(--yellow);font-family:var(--mono);}
-
-/* ── LEGEND ── */
-.seg-legend{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:28px;}
-.sl-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;transition:border-color .2s;}
-.sl-item:hover{border-color:var(--border2);}
-.sl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-.sl-label{font-size:12px;font-weight:700;}
-.sl-prob{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:1px;}
-
-/* ── WIN CARD ── */
-.win-overlay{position:fixed;inset:0;z-index:900;pointer-events:none;display:flex;align-items:center;justify-content:center;}
-.win-burst{position:absolute;inset:0;background:radial-gradient(ellipse 70% 70% at 50% 50%,rgba(139,92,246,.2),transparent);opacity:0;}
-.win-card{background:linear-gradient(145deg,#0f0a22,#0a1525);border:2px solid var(--purple);border-radius:26px;padding:38px 48px;text-align:center;transform:scale(0) rotate(-12deg);opacity:0;box-shadow:0 0 80px rgba(139,92,246,.5),0 24px 60px rgba(0,0,0,.8);pointer-events:all;max-width:300px;width:90%;}
-.win-card.show{animation:winPop .55s cubic-bezier(.175,.885,.32,1.275) forwards;}
-.win-card.hide{animation:winHide .3s ease forwards;}
-.win-burst.show{animation:burstAnim .7s ease forwards;}
-@keyframes winPop{from{transform:scale(0) rotate(-12deg);opacity:0;}to{transform:scale(1) rotate(0);opacity:1;}}
-@keyframes winHide{from{transform:scale(1);opacity:1;}to{transform:scale(.7);opacity:0;}}
-@keyframes burstAnim{0%{opacity:0;}40%{opacity:1;}100%{opacity:0;}}
-.win-emoji{font-size:60px;margin-bottom:10px;display:block;animation:emojiJump .65s ease infinite alternate;}
-@keyframes emojiJump{from{transform:translateY(0) scale(1);}to{transform:translateY(-10px) scale(1.1);}}
-.win-label{font-size:12px;font-weight:700;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
-.win-xp{font-size:50px;font-weight:900;font-family:var(--mono);margin-bottom:4px;}
-.win-name{font-size:14px;font-weight:700;color:var(--text2);margin-bottom:20px;}
-.win-close{padding:12px 32px;border-radius:12px;border:1px solid var(--border2);background:rgba(255,255,255,.06);color:var(--text2);font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background .2s;}
-.win-close:hover{background:rgba(255,255,255,.1);}
-
-/* Mystery overlay */
-.mystery-overlay{position:fixed;inset:0;background:rgba(0,0,0,.93);backdrop-filter:blur(28px);z-index:950;display:none;align-items:center;justify-content:center;flex-direction:column;gap:0;padding:28px;}
-.mystery-overlay.open{display:flex;animation:fadeUp .4s ease;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
-.mbox-emoji{font-size:96px;animation:boxRock 2s ease-in-out infinite;margin-bottom:18px;}
-@keyframes boxRock{0%,100%{transform:translateY(0) rotate(-5deg);}50%{transform:translateY(-14px) rotate(5deg);}}
-.mystery-win-title{font-size:30px;font-weight:900;color:var(--yellow);text-align:center;margin-bottom:8px;}
-.mystery-win-sub{font-size:14px;color:var(--text2);text-align:center;line-height:1.7;margin-bottom:14px;}
-.mystery-locked{background:rgba(245,197,24,.1);border:1px solid rgba(245,197,24,.3);border-radius:14px;padding:14px 22px;text-align:center;font-size:13px;color:var(--yellow);font-weight:700;line-height:1.7;max-width:280px;margin-bottom:24px;}
-.mystery-ok{padding:15px 44px;border-radius:14px;border:1px solid var(--border2);background:rgba(255,255,255,.07);color:var(--text);font-family:var(--sans);font-size:15px;font-weight:800;cursor:pointer;transition:all .2s;}
-.mystery-ok:hover{background:rgba(255,255,255,.13);transform:translateY(-2px);}
-
-/* Confetti */
-.cp{position:fixed;width:9px;height:9px;border-radius:2px;pointer-events:none;z-index:960;animation:cpFall var(--d) ease-in var(--dl) forwards;}
-@keyframes cpFall{0%{transform:translateY(-20px) rotate(0);opacity:1;}100%{transform:translateY(100vh) rotate(720deg);opacity:0;}}
+/* ── CONFETTI ── */
+.cp{position:fixed;width:10px;height:10px;border-radius:2px;pointer-events:none;z-index:850;animation:cf var(--d) ease-in var(--dl) forwards;}
+@keyframes cf{0%{transform:translateY(-20px) rotate(0);opacity:1;}100%{transform:translateY(100vh) rotate(720deg);opacity:0;}}
 </style>
 </head>
 <body>
 <div class="bg-mesh"></div>
 <div class="bg-grid"></div>
 
-<!-- Sound toggle button -->
-<div class="sfx-toggle" id="sfx-toggle" onclick="toggleSFX()" title="Toggle sound">🔊</div>
-
-<!-- Win overlay -->
-<div class="win-overlay" id="win-overlay" style="pointer-events:none">
-  <div class="win-burst" id="win-burst"></div>
-  <div class="win-card" id="win-card">
-    <span class="win-emoji" id="win-emoji">🎉</span>
-    <div class="win-label">You Won</div>
-    <div class="win-xp" id="win-xp">+0 XP</div>
-    <div class="win-name" id="win-name">—</div>
-    <button class="win-close" onclick="closeWin()">Awesome! 🚀</button>
+<div class="nft-overlay" id="nft-overlay">
+  <div class="nft-reveal-wrap">
+    <div class="nft-reveal-text" id="reveal-text">🎴 You won an NFT! Tap to reveal.</div>
+    <div class="card-scene" onclick="flipCard()">
+      <div class="card-3d" id="card-3d">
+        <div class="card-face card-front" id="card-front">
+          <div class="card-particles" id="front-particles"></div>
+          <div class="cf-glow" id="cf-glow"></div>
+          <div class="cf-shine"></div>
+          <div class="cf-logo" id="cf-logo">⬡</div>
+          <div class="cf-brand">BaseCore</div>
+          <div class="cf-rarity" id="cf-rarity-label">COMMON</div>
+          <div class="cf-tap">TAP TO REVEAL</div>
+        </div>
+        <div class="card-face card-back" id="card-back">
+          <div class="card-particles" id="back-particles"></div>
+          <div class="cb-art" id="cb-art">⬡</div>
+          <div class="cb-rarity" id="cb-rarity">COMMON</div>
+          <div class="cb-name" id="cb-name">BaseCore #001</div>
+          <div class="cb-xp" id="cb-xp" style="color:var(--yellow)">+500 XP</div>
+          <div class="cb-attrs" id="cb-attrs"></div>
+        </div>
+      </div>
+    </div>
+    <div class="reveal-actions" id="reveal-actions" style="display:none">
+      <button class="btn-collect" onclick="collectAndClose()">✅ Add to Collection</button>
+      <button class="btn-close-reveal" onclick="collectAndClose()">Close</button>
+    </div>
   </div>
 </div>
 
-<!-- Mystery overlay -->
-<div class="mystery-overlay" id="mystery-overlay">
-  <div class="mbox-emoji">🎁</div>
-  <div class="mystery-win-title">Mystery Box!</div>
-  <div class="mystery-win-sub">Ultra-rare find! You got a Mystery Box.<br>It will be openable in a future update.</div>
-  <div class="mystery-locked">🔒 Locked · Coming Soon<br><span style="font-size:11px;opacity:.7">Your box is saved. Stay tuned!</span></div>
-  <button class="mystery-ok" onclick="closeMysteryOverlay()">Got it! 🔥</button>
+<div class="nft-detail-overlay" id="nft-detail-overlay" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="nft-detail">
+    <div class="nd-handle"></div>
+    <div class="nd-card-preview" id="nd-preview">
+      <div style="font-size:48px" id="nd-art">⬡</div>
+      <div class="cb-rarity" id="nd-rarity-badge">COMMON</div>
+      <div style="font-size:14px;font-weight:800;text-align:center" id="nd-name">—</div>
+    </div>
+    <div class="nd-stats">
+      <div class="nds"><div class="nds-val" id="nd-power">—</div><div class="nds-lbl">Power</div></div>
+      <div class="nds"><div class="nds-val" id="nd-mult">1x</div><div class="nds-lbl">XP Mult</div></div>
+      <div class="nds"><div class="nds-val" id="nd-rarity">Common</div><div class="nds-lbl">Rarity</div></div>
+      <div class="nds"><div class="nds-val" id="nd-id">#001</div><div class="nds-lbl">Token ID</div></div>
+    </div>
+    <button onclick="document.getElementById('nft-detail-overlay').classList.remove('open')" style="width:100%;padding:14px;border-radius:14px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-family:var(--sans);font-size:14px;cursor:pointer">Close</button>
+  </div>
 </div>
 
-<!-- Nav -->
 <nav class="navbar">
   <a href="index.html" class="nav-logo"><div class="nav-logo-icon">⬡</div><div class="nav-logo-text">Base<span>Core</span></div></a>
   <div class="nav-right">
     <div class="nav-xp" id="nav-xp" style="display:none"><span class="xp-icon">⚡</span><span id="nav-xp-val">0 XP</span></div>
+    
     <div class="nav-user-wrap" id="nav-user-wrap" style="display:none">
       <div class="nav-addr" id="nav-addr" onclick="toggleUserMenu()"></div>
       <div class="user-dropdown" id="user-dropdown">
-        <button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Disconnect</button>
+        <button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Çıkış Yap</button>
       </div>
     </div>
+
     <button class="nav-connect" id="nav-connect-btn" onclick="openWalletModal()">Connect</button>
   </div>
 </nav>
 
 <nav class="tab-bar">
-  <a href="gm.html"       class="tab-item" data-tab="gm">      <div class="tab-icon-wrap">🌅</div><span class="tab-label">GM/GN</span></a>
-  <a href="dex.html"      class="tab-item" data-tab="dex">     <div class="tab-icon-wrap">🔄</div><span class="tab-label">DEX</span></a>
-  <a href="gaming.html"   class="tab-item" data-tab="gaming">  <div class="tab-icon-wrap">🎮</div><span class="tab-label">Gaming</span></a>
-  <a href="wheel.html"    class="tab-item" data-tab="nft">      <div class="tab-icon-wrap">🎡</div><span class="tab-label">Wheel</span></a>
+  <a href="gm.html" class="tab-item" data-tab="gm"><div class="tab-icon-wrap">🌅</div><span class="tab-label">GM/GN</span></a>
+  <a href="dex.html" class="tab-item" data-tab="dex"><div class="tab-icon-wrap">🔄</div><span class="tab-label">DEX</span></a>
+  <a href="gaming.html" class="tab-item" data-tab="gaming"><div class="tab-icon-wrap">🎮</div><span class="tab-label">Gaming</span></a>
+  <a href="nft.html" class="tab-item" data-tab="nft"><div class="tab-icon-wrap">🖼️</div><span class="tab-label">NFT</span></a>
   <a href="analysis.html" class="tab-item" data-tab="analysis"><div class="tab-icon-wrap">📊</div><span class="tab-label">Analysis</span></a>
-  <a href="deploy.html"   class="tab-item" data-tab="deploy">  <div class="tab-icon-wrap">🚀</div><span class="tab-label">Deploy</span></a>
-  <a href="social.html"   class="tab-item" data-tab="social">  <div class="tab-icon-wrap">👥</div><span class="tab-label">Social</span></a>
+  <a href="deploy.html" class="tab-item" data-tab="deploy"><div class="tab-icon-wrap">🚀</div><span class="tab-label">Deploy</span></a>
+  <a href="social.html" class="tab-item" data-tab="social"><div class="tab-icon-wrap">👥</div><span class="tab-label">Social</span></a>
 </nav>
 
 <div class="page-wrap">
-  <div class="mode-toggle" style="margin-bottom:20px;">
+
+  <div class="mode-toggle" style="margin-bottom: 20px;">
     <button id="btn-onchain" class="mode-btn active" onclick="setPaymentMode('onchain')">⛓️ On-Chain</button>
-    <button id="btn-x402"   class="mode-btn"        onclick="setPaymentMode('x402')">⚡ x402</button>
+    <button id="btn-x402" class="mode-btn" onclick="setPaymentMode('x402')">⚡ x402 Modu</button>
   </div>
 
-  <div class="wheel-hero">
-    <h1>🎡 Fortune Wheel</h1>
-    <p>3 free spins daily · Earn XP · Find Mystery Boxes</p>
+  <div class="wheel-section">
+    <div class="ws-title">
+      <h2>🎡 NFT Spin</h2>
+      <p>Spin to earn XP & NFT cards · 3 spins per day</p>
+    </div>
+    <div class="wheel-outer">
+      <svg class="wheel-ptr" width="28" height="34" viewBox="0 0 28 34">
+        <polygon points="14,2 26,30 14,24 2,30" fill="url(#pg)" filter="url(#gf)"/>
+        <defs>
+          <linearGradient id="pg" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#c084fc"/><stop offset="100%" style="stop-color:#7c3aed"/>
+          </linearGradient>
+          <filter id="gf"><feGaussianBlur in="SourceGraphic" stdDeviation="1" result="b"/><feComposite in="SourceGraphic" in2="b"/></filter>
+        </defs>
+      </svg>
+      <div class="wheel-glow"></div>
+      <canvas id="nft-wheel" width="280" height="280"></canvas>
+      <div class="wheel-hub">⬡</div>
+    </div>
+    <div class="spin-info">
+      <div class="si-item"><div class="si-val" id="si-spins" style="color:var(--purple)">3</div><div class="si-lbl">Spins Left</div></div>
+      <div class="si-item"><div class="si-val" id="si-nfts" style="color:var(--yellow)">0</div><div class="si-lbl">NFTs</div></div>
+      <div class="si-item"><div class="si-val" id="si-xp" style="color:var(--cyan)">0</div><div class="si-lbl">Spin XP</div></div>
+    </div>
+    <button class="nft-spin-btn" id="nft-spin-btn" onclick="doNFTSpin()">
+      <span>🎡</span> Spin · 0.00002 ETH
+    </button>
+    <div class="spins-left" id="spins-dots"></div>
   </div>
 
-  <!-- Wheel -->
-  <div class="wheel-wrap">
-    <div class="wheel-glow"></div>
-    <div class="wheel-ring"></div>
-    <div class="wheel-ptr"></div>
-    <div class="wheel-canvas-outer">
-      <canvas id="wcanvas"></canvas>
+  <div class="reward-banner">
+    <div class="rb-icon">🏆</div>
+    <div class="rb-text">
+      <h4>NFT Holder Rewards</h4>
+      <p>Collect NFTs now. Rare holders will receive token airdrops, exclusive XP boosts and whitelist spots when Base token launches.</p>
+      <div class="rb-coming">COMING SOON</div>
     </div>
   </div>
 
-  <div class="spin-bar">
-    <div class="sb-item"><div class="sb-val" id="sb-spins" style="color:var(--purple)">3</div><div class="sb-lbl">Spins Left</div></div>
-    <div class="sb-item"><div class="sb-val" id="sb-boxes" style="color:var(--yellow)">0</div><div class="sb-lbl">Boxes</div></div>
-    <div class="sb-item"><div class="sb-val" id="sb-xp" style="color:var(--cyan)">0</div><div class="sb-lbl">Spin XP</div></div>
+  <div class="section-head">
+    <div class="sh-icon" style="background:rgba(139,92,246,.1);color:var(--purple)">📊</div>
+    <div class="sh-title">Rarity Levels</div>
   </div>
-
-  <div class="spin-dots" id="spin-dots"></div>
-
-  <button class="spin-btn" id="spin-btn" onclick="doSpin()">
-    <span>✦</span> Pay via x402 &amp; Spin!
-  </button>
-
-  <div style="height:28px;"></div>
-
-  <div class="mystery-section">
-    <div class="mystery-header">
-      <div class="mystery-icon">🎁<div class="mystery-lock">🔒</div></div>
-      <div>
-        <div class="mystery-title">Mystery Box</div>
-        <div class="mystery-sub">Ultra-rare drop from the wheel.<br>Boxes unlock in a future update.</div>
-        <div class="mystery-badge">🔒 COMING SOON</div>
-      </div>
+  <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:20px;scrollbar-width:none;">
+    <div style="flex-shrink:0;background:rgba(148,163,184,.08);border:1px solid rgba(148,163,184,.2);border-radius:10px;padding:8px 12px;text-align:center;min-width:80px">
+      <div style="font-size:11px;font-weight:800;color:#94a3b8">COMMON</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:3px">+200 XP</div>
+      <div style="font-size:9px;color:var(--muted);font-family:var(--mono)">40%</div>
     </div>
-    <div class="mystery-row"><span class="mr-label">Drop chance</span><span class="mr-val">2% per spin</span></div>
-    <div class="mystery-row"><span class="mr-label">Your boxes</span><span class="mr-val" id="mystery-count-inline">0 boxes</span></div>
+    <div style="flex-shrink:0;background:rgba(0,232,135,.08);border:1px solid rgba(0,232,135,.2);border-radius:10px;padding:8px 12px;text-align:center;min-width:80px">
+      <div style="font-size:11px;font-weight:800;color:var(--green)">UNCOMMON</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:3px">+500 XP</div>
+      <div style="font-size:9px;color:var(--muted);font-family:var(--mono)">25%</div>
+    </div>
+    <div style="flex-shrink:0;background:rgba(0,112,243,.08);border:1px solid rgba(0,112,243,.2);border-radius:10px;padding:8px 12px;text-align:center;min-width:80px">
+      <div style="font-size:11px;font-weight:800;color:var(--blue2)">RARE</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:3px">+1K XP</div>
+      <div style="font-size:9px;color:var(--muted);font-family:var(--mono)">18%</div>
+    </div>
+    <div style="flex-shrink:0;background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.2);border-radius:10px;padding:8px 12px;text-align:center;min-width:80px">
+      <div style="font-size:11px;font-weight:800;color:var(--purple)">EPIC</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:3px">+2.5K + NFT</div>
+      <div style="font-size:9px;color:var(--muted);font-family:var(--mono)">10%</div>
+    </div>
+    <div style="flex-shrink:0;background:rgba(245,197,24,.08);border:1px solid rgba(245,197,24,.2);border-radius:10px;padding:8px 12px;text-align:center;min-width:90px">
+      <div style="font-size:11px;font-weight:800;color:var(--yellow)">LEGENDARY</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:3px">+5K + NFT</div>
+      <div style="font-size:9px;color:var(--muted);font-family:var(--mono)">5%</div>
+    </div>
+    <div style="flex-shrink:0;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:8px 12px;text-align:center;min-width:80px">
+      <div style="font-size:11px;font-weight:800;color:var(--red)">MYTHIC</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:3px">+10K + NFT</div>
+      <div style="font-size:9px;color:var(--muted);font-family:var(--mono)">2%</div>
+    </div>
   </div>
 
-  <div style="font-size:12px;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px;">Prize Table</div>
-  <div class="seg-legend" id="seg-legend"></div>
+  <div class="section-head">
+    <div class="sh-icon" style="background:rgba(245,197,24,.1);color:var(--yellow)">🗂️</div>
+    <div class="sh-title">My Collection</div>
+    <span class="xp-badge" id="coll-count">0 NFTs</span>
+  </div>
+  <div class="rarity-stats">
+    <div class="rs-card"><div class="rs-val" style="color:var(--red)" id="rs-mythic">0</div><div class="rs-lbl">Mythic</div></div>
+    <div class="rs-card"><div class="rs-val" style="color:var(--yellow)" id="rs-leg">0</div><div class="rs-lbl">Legendary</div></div>
+    <div class="rs-card"><div class="rs-val" style="color:var(--purple)" id="rs-epic">0</div><div class="rs-lbl">Epic</div></div>
+  </div>
+  <div id="coll-empty" class="coll-empty">
+    <div style="font-size:48px;margin-bottom:12px">🎴</div>
+    <p style="color:var(--muted);font-size:14px">No NFTs yet.<br>Spin the wheel to collect!</p>
+  </div>
+  <div class="nft-grid" id="nft-grid" style="display:none"></div>
+
 </div>
 
-<script src="shared.js"></script>
-<script src="sfx.js"></script>
-<script src="character.js"></script>
-<script src="sfx.js"></script>
+<div id="toasts"></div>
+<script src="shared.js?v=31"></script>
 <script>
-/* ══════════════════════════════════════════════════
-   SEGMENTS — canlı, güçlü renkler
-   ══════════════════════════════════════════════════ */
-const SEGS = [
-  { label:'500 XP',  xp:500,  hex:'#3b82f6', light:'#93c5fd', prob:.18, emoji:'💙', name:'Rare'      },
-  { label:'1K XP',   xp:1000, hex:'#a855f7', light:'#d8b4fe', prob:.12, emoji:'💜', name:'Epic'      },
-  { label:'200 XP',  xp:200,  hex:'#06b6d4', light:'#67e8f9', prob:.22, emoji:'🔵', name:'Common'    },
-  { label:'2.5K XP', xp:2500, hex:'#10b981', light:'#6ee7b7', prob:.09, emoji:'💚', name:'Super'     },
-  { label:'350 XP',  xp:350,  hex:'#f97316', light:'#fed7aa', prob:.16, emoji:'🟠', name:'Uncommon'  },
-  { label:'5K XP',   xp:5000, hex:'#ef4444', light:'#fca5a5', prob:.04, emoji:'🔴', name:'Legendary' },
-  { label:'750 XP',  xp:750,  hex:'#8b5cf6', light:'#c4b5fd', prob:.17, emoji:'🔮', name:'Rare+'     },
-  { label:'🎁 BOX',  xp:300,  hex:'#f59e0b', light:'#fde68a', prob:.02, emoji:'🎁', name:'Mystery'   },
+// ── RARITY DATA ──
+const R = {
+  common:    { name:'Common',    color:'#94a3b8', bg:'linear-gradient(135deg,#0d1520,#111c2a)', border:'rgba(148,163,184,.35)', glow:'rgba(148,163,184,.2)', xp:200,  hasNFT:false, emoji:'⬡',  mult:'1x'   },
+  uncommon:  { name:'Uncommon',  color:'#00e887', bg:'linear-gradient(135deg,#071a0e,#0d2018)', border:'rgba(0,232,135,.35)',   glow:'rgba(0,232,135,.25)',  xp:500,  hasNFT:false, emoji:'🟢', mult:'1.2x' },
+  rare:      { name:'Rare',      color:'#3b8ef8', bg:'linear-gradient(135deg,#07102a,#0d1a38)', border:'rgba(59,142,248,.35)',  glow:'rgba(59,142,248,.25)', xp:1000, hasNFT:true,  emoji:'🔵', mult:'1.5x' },
+  epic:      { name:'Epic',      color:'#8b5cf6', bg:'linear-gradient(135deg,#130820,#1a0d2e)', border:'rgba(139,92,246,.4)',   glow:'rgba(139,92,246,.3)',  xp:2500, hasNFT:true,  emoji:'💜', mult:'2x'   },
+  legendary: { name:'Legendary', color:'#f5c518', bg:'linear-gradient(135deg,#1a1000,#2a1e00)', border:'rgba(245,197,24,.4)',   glow:'rgba(245,197,24,.3)',  xp:5000, hasNFT:true,  emoji:'⭐', mult:'3x'   },
+  mythic:    { name:'Mythic',    color:'#ef4444', bg:'linear-gradient(135deg,#1a0404,#2a0808)', border:'rgba(239,68,68,.5)',    glow:'rgba(239,68,68,.4)',   xp:10000,hasNFT:true,  emoji:'🔥', mult:'5x'   },
+};
+
+const NFT_NAMES = {
+  common:    ['Base Wanderer','Chain Scout','Block Rookie','Hash Hunter','Node Newbie'],
+  uncommon:  ['Base Explorer','Chain Walker','Block Builder','Hash Seeker','Node Runner'],
+  rare:      ['Base Guardian','Chain Warrior','Block Master','Hash Knight','Node Ranger'],
+  epic:      ['Base Champion','Chain Legend','Block Sage','Hash Oracle','Node Wizard'],
+  legendary: ['Base Titan','Chain God','Block Deity','Hash Supreme','Node Overlord'],
+  mythic:    ['Base Immortal','Chain Eternal','Block Genesis','Hash Origin','Node Prime'],
+};
+const NFT_ARTS = {
+  common:    ['⬡','🔷','💠','🔹','🫧'],
+  uncommon:  ['🟢','💚','🌿','🍀','✨'],
+  rare:      ['🔵','💙','🌊','❄️','⚡'],
+  epic:      ['💜','🔮','🌌','🎆','🌠'],
+  legendary: ['⭐','🌟','💫','🔱','✨'],
+  mythic:    ['🔥','💥','👑','♾️','🌋'],
+};
+
+const WHEEL_SEGS = [
+  {label:'+200 XP', color:'#1a2535', r:'common'},
+  {label:'+500 XP', color:'#071a0e', r:'uncommon'},
+  {label:'+200 XP', color:'#1a2535', r:'common'},
+  {label:'+1K XP',  color:'#07102a', r:'rare'},
+  {label:'+200 XP', color:'#1a2535', r:'common'},
+  {label:'+2.5K+NFT',color:'#130820',r:'epic'},
+  {label:'+500 XP', color:'#071a0e', r:'uncommon'},
+  {label:'+5K+NFT', color:'#1a1000', r:'legendary'},
+  {label:'+200 XP', color:'#1a2535', r:'common'},
+  {label:'+1K XP',  color:'#07102a', r:'rare'},
+  {label:'+500 XP', color:'#071a0e', r:'uncommon'},
+  {label:'MYTHIC🔥',color:'#1a0404', r:'mythic'},
 ];
-const N   = SEGS.length;
-const TAU = Math.PI * 2;
-const ARC = TAU / N;
 
-/* ══════════════════════════════════════════════════
-   STATE
-   ══════════════════════════════════════════════════ */
-let wheelSpins   = 3;
-let totalWheelXP = 0;
-let mysteryBoxes = 0;
-let isSpinning   = false;
-let wheelAngle   = 0;
+let nftSpins=3, totalSpinXP=0, collection=[], pendingNFT=null, wAngle=0, wSpinning=false;
 
-/* ══════════════════════════════════════════════════
-   PERSIST
-   ══════════════════════════════════════════════════ */
-function loadWheelState() {
-  if (!BC.addr) return;
-  // Adres her zaman lowercase normalize edilmeli
-  const addr   = BC.addr.toLowerCase();
-  const dayKey = 'bc_wsp_' + addr + '_' + new Date().toDateString();
-  const used   = parseInt(localStorage.getItem(dayKey) || '0');
-  wheelSpins   = Math.max(0, 3 - used);
-  const raw    = localStorage.getItem('bc_wheel_' + addr);
-  if (raw) { const d = JSON.parse(raw); totalWheelXP = d.xp||0; mysteryBoxes = d.boxes||0; }
+// ── PERSIST ──
+function loadNFTState(){
+  if(!BC.addr)return;
+  const d=localStorage.getItem('bc_nft_'+BC.addr);
+  if(d){const p=JSON.parse(d);collection=p.collection||[];totalSpinXP=p.totalSpinXP||0;}
+  const k='bc_nftsp_'+BC.addr+'_'+new Date().toDateString();
+  nftSpins=Math.max(0,3-parseInt(localStorage.getItem(k)||'0'));
 }
-function saveWheelState() {
-  if (!BC.addr) return;
-  localStorage.setItem('bc_wheel_' + BC.addr.toLowerCase(), JSON.stringify({ xp: totalWheelXP, boxes: mysteryBoxes }));
+function saveNFTState(){
+  if(!BC.addr)return;
+  localStorage.setItem('bc_nft_'+BC.addr,JSON.stringify({collection,totalSpinXP}));
 }
-function useSpin() {
-  if (!BC.addr) return;
-  const addr = BC.addr.toLowerCase();
-  const k    = 'bc_wsp_' + addr + '_' + new Date().toDateString();
-  const used = parseInt(localStorage.getItem(k) || '0') + 1;
-  localStorage.setItem(k, used);
-  wheelSpins = Math.max(0, 3 - used);
+function useOneSpin(){
+  if(!BC.addr)return;
+  const k='bc_nftsp_'+BC.addr+'_'+new Date().toDateString();
+  localStorage.setItem(k,parseInt(localStorage.getItem(k)||'0')+1);
+  nftSpins=Math.max(0,nftSpins-1);
 }
 
-/* ══════════════════════════════════════════════════
-   CANVAS DRAW
-   ══════════════════════════════════════════════════ */
-const CVS = document.getElementById('wcanvas');
-let   CTX = null;
-let   SZ  = 0;
-
-function initCanvas() {
-  const wrap = document.getElementById('wcanvas').parentElement;
-  SZ  = wrap.offsetWidth || 300;
-  CVS.width  = SZ;
-  CVS.height = SZ;
-  CTX = CVS.getContext('2d');
-}
-
-function hexToRgb(hex) {
-  return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
-}
-
-function drawWheel(angle) {
-  if (!CTX || !SZ) return;
-  const cx = SZ / 2, cy = SZ / 2;
-  const R  = SZ * 0.46;
-  CTX.clearRect(0, 0, SZ, SZ);
-
-  SEGS.forEach((seg, i) => {
-    const startA = angle + i * ARC - TAU / 4;
-    const endA   = startA + ARC;
-    const midA   = startA + ARC / 2;
-
-    /* ── Segment fill ── */
-    CTX.beginPath();
-    CTX.moveTo(cx, cy);
-    CTX.arc(cx, cy, R, startA, endA);
-    CTX.closePath();
-
-    // Radial gradient: bright center → dark edge = 3D convex look
-    const gx = cx + Math.cos(midA) * R * 0.35;
-    const gy = cy + Math.sin(midA) * R * 0.35;
-    const g  = CTX.createRadialGradient(gx, gy, 0, gx, gy, R * 0.9);
-    g.addColorStop(0,    seg.light + 'ff');
-    g.addColorStop(0.35, seg.hex   + 'ff');
-    g.addColorStop(1,    darken(seg.hex, 55) + 'ff');
-    CTX.fillStyle = g;
-    CTX.fill();
-
-    /* ── Sheen (highlight strip near center) ── */
-    CTX.save();
-    CTX.beginPath();
-    CTX.moveTo(cx, cy);
-    CTX.arc(cx, cy, R * 0.55, startA, endA);
-    CTX.closePath();
-    CTX.fillStyle = 'rgba(255,255,255,0.07)';
-    CTX.fill();
-    CTX.restore();
-
-    /* ── Divider ── */
-    CTX.beginPath();
-    CTX.moveTo(cx, cy);
-    CTX.lineTo(cx + Math.cos(startA) * R, cy + Math.sin(startA) * R);
-    CTX.strokeStyle = 'rgba(0,0,0,.45)';
-    CTX.lineWidth   = 2;
-    CTX.stroke();
-
-    /* ── Emoji ── */
-    CTX.save();
-    CTX.translate(cx, cy);
-    CTX.rotate(midA);
-    CTX.font         = `${SZ * 0.075}px serif`;
-    CTX.textAlign    = 'center';
-    CTX.textBaseline = 'middle';
-    CTX.fillText(seg.emoji, R * 0.80, 0);
-
-    /* ── Label ── */
-    CTX.font         = `bold ${SZ * 0.053}px 'JetBrains Mono', monospace`;
-    CTX.fillStyle    = '#ffffff';
-    CTX.shadowColor  = 'rgba(0,0,0,.9)';
-    CTX.shadowBlur   = 7;
-    CTX.fillText(seg.label, R * 0.51, 0);
-    CTX.shadowBlur   = 0;
-    CTX.restore();
+// ── DRAW WHEEL ──
+function drawWheel(a){
+  const c=document.getElementById('nft-wheel');if(!c)return;
+  const ctx=c.getContext('2d'),N=WHEEL_SEGS.length,arc=(Math.PI*2)/N,cx=140,cy=140,rad=136;
+  ctx.clearRect(0,0,280,280);
+  WHEEL_SEGS.forEach((seg,i)=>{
+    const s=a+i*arc-Math.PI/2;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,rad,s,s+arc);ctx.closePath();
+    ctx.fillStyle=seg.color;ctx.fill();
+    ctx.strokeStyle=R[seg.r].color+'88';ctx.lineWidth=2;ctx.stroke();
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(s+arc/2);
+    ctx.textAlign='right';ctx.fillStyle='#fff';ctx.font='bold 10px JetBrains Mono,monospace';
+    ctx.shadowColor=R[seg.r].color;ctx.shadowBlur=6;
+    ctx.fillText(seg.label,rad-8,4);ctx.shadowBlur=0;ctx.restore();
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(s+arc/2);
+    ctx.beginPath();ctx.arc(rad-5,0,4,0,Math.PI*2);
+    ctx.fillStyle=R[seg.r].color;ctx.shadowColor=R[seg.r].color;ctx.shadowBlur=8;ctx.fill();ctx.shadowBlur=0;ctx.restore();
   });
-
-  /* ── Outer ring ── */
-  const ringG = CTX.createLinearGradient(0, 0, SZ, SZ);
-  ringG.addColorStop(0,    '#c084fc');
-  ringG.addColorStop(.25,  '#818cf8');
-  ringG.addColorStop(.5,   '#38bdf8');
-  ringG.addColorStop(.75,  '#34d399');
-  ringG.addColorStop(1,    '#c084fc');
-  CTX.beginPath();
-  CTX.arc(cx, cy, R, 0, TAU);
-  CTX.strokeStyle = ringG;
-  CTX.lineWidth   = SZ * 0.022;
-  CTX.stroke();
-
-  /* ── Inner dark border ── */
-  CTX.beginPath();
-  CTX.arc(cx, cy, R - SZ * 0.011, 0, TAU);
-  CTX.strokeStyle = 'rgba(0,0,0,.4)';
-  CTX.lineWidth   = SZ * 0.006;
-  CTX.stroke();
-
-  /* ── Hub background ── */
-  const hubR = SZ * 0.095;
-  const hg   = CTX.createRadialGradient(cx - hubR*.3, cy - hubR*.3, 0, cx, cy, hubR);
-  hg.addColorStop(0,   '#6d28d9');
-  hg.addColorStop(.5,  '#1e0a40');
-  hg.addColorStop(1,   '#05001a');
-  CTX.beginPath();
-  CTX.arc(cx, cy, hubR, 0, TAU);
-  CTX.fillStyle = hg;
-  CTX.fill();
-  CTX.strokeStyle = 'rgba(196,132,252,.7)';
-  CTX.lineWidth   = 2.5;
-  CTX.stroke();
-
-  /* ── Hub symbol ── */
-  CTX.font         = `bold ${SZ * 0.055}px serif`;
-  CTX.textAlign    = 'center';
-  CTX.textBaseline = 'middle';
-  CTX.fillStyle    = '#c084fc';
-  CTX.shadowColor  = '#7c3aed';
-  CTX.shadowBlur   = 14;
-  CTX.fillText('✦', cx, cy);
-  CTX.shadowBlur   = 0;
-
-  /* ── Edge glow (convex rim) ── */
-  const rimG = CTX.createRadialGradient(cx, cy, R * 0.9, cx, cy, R + SZ * 0.01);
-  rimG.addColorStop(0,   'rgba(255,255,255,.0)');
-  rimG.addColorStop(.6,  'rgba(255,255,255,.05)');
-  rimG.addColorStop(1,   'rgba(255,255,255,.12)');
-  CTX.beginPath();
-  CTX.arc(cx, cy, R + 1, 0, TAU);
-  CTX.fillStyle = rimG;
-  CTX.fill();
+  const ring=ctx.createLinearGradient(0,0,280,280);
+  ring.addColorStop(0,'rgba(139,92,246,.7)');ring.addColorStop(.5,'rgba(59,130,246,.7)');ring.addColorStop(1,'rgba(139,92,246,.7)');
+  ctx.beginPath();ctx.arc(cx,cy,rad,0,Math.PI*2);ctx.strokeStyle=ring;ctx.lineWidth=4;ctx.stroke();
+  const cg=ctx.createRadialGradient(cx,cy,0,cx,cy,26);cg.addColorStop(0,'#2d1b5e');cg.addColorStop(1,'#0d0618');
+  ctx.beginPath();ctx.arc(cx,cy,26,0,Math.PI*2);ctx.fillStyle=cg;ctx.fill();
+  ctx.strokeStyle='rgba(139,92,246,.6)';ctx.lineWidth=2;ctx.stroke();
 }
 
-/* Renk yardımcıları */
-function darken(hex, amt) {
-  const [r,g,b] = hexToRgb(hex);
-  return '#' + [r,g,b].map(v => Math.max(0, v-amt).toString(16).padStart(2,'0')).join('');
-}
+// ── SPIN ──
+async function doNFTSpin(){
+  if(!requireWallet())return;
+  if(nftSpins<=0){toast('No spins left today!','info');return;}
+  if(wSpinning)return;
+  const btn=document.getElementById('nft-spin-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span> Spinning...';
+  
+  // Burada sendTxWithFee devreye girip x402 veya OnChain kararını verecek
+  const rc=await sendTxWithFee('0.00002',0,null);
+  
+  if(!rc){btn.disabled=false;btn.innerHTML='<span>🎡</span> Spin · 0.00002 ETH';return;}
+  wSpinning=true;useOneSpin();updateSpinUI();
 
-/* ══════════════════════════════════════════════════
-   IDLE ANIMATION — delta-time tabanlı, takılmaz
-   ══════════════════════════════════════════════════ */
-let lastTimestamp  = null;
-let idleRunning    = false;
-const IDLE_SPEED   = 0.5; // rad/saniye
+  const rand=Math.random();
+  let segIdx=0;
+  if(rand<.02)segIdx=11;
+  else if(rand<.07)segIdx=7;
+  else if(rand<.17)segIdx=5;
+  else if(rand<.35)segIdx=3;
+  else if(rand<.60)segIdx=6;
+  else segIdx=0;
 
-function idleLoop(ts) {
-  if (!idleRunning) return;
-  if (lastTimestamp !== null && !isSpinning) {
-    const dt = (ts - lastTimestamp) / 1000; // saniyeye çevir
-    // dt'yi 0.1s ile sınırla — sekme arka plana gittiğinde büyük atlama olmasın
-    wheelAngle += IDLE_SPEED * Math.min(dt, 0.1);
-    drawWheel(wheelAngle);
-  }
-  lastTimestamp = ts;
-  requestAnimationFrame(idleLoop);
-}
+  const seg=WHEEL_SEGS[segIdx];
+  const rarity=R[seg.r];
 
-function startIdle() {
-  if (idleRunning) return;
-  idleRunning   = true;
-  lastTimestamp = null;
-  requestAnimationFrame(idleLoop);
-}
-
-/* Sekme görünürlüğü değişince timestamp'i sıfırla — atlama önleme */
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') lastTimestamp = null;
-});
-
-/* ══════════════════════════════════════════════════
-   SPIN LOGIC — doğru segment seçme
-   ══════════════════════════════════════════════════ */
-function pickSegmentIndex() {
-  let r = Math.random(), acc = 0;
-  for (let i = 0; i < SEGS.length; i++) {
-    acc += SEGS[i].prob;
-    if (r < acc) return i;
-  }
-  return 0;
-}
-
-/*
- * drawWheel'de: segment i'nin merkezi = angle + i*ARC + ARC/2 - TAU/4
- * Pointer = üst = -TAU/4
- * Denklem: targetAngle + i*ARC + ARC/2 - TAU/4 = -TAU/4
- *          targetAngle = -(i + 0.5) * ARC
- * En az extraTurns tur dönsün:
- */
-function calcTargetAngle(segIdx, curAngle, extraTurns) {
-  let base = -(segIdx + 0.5) * ARC;
-  while (base <= curAngle + extraTurns * TAU) base += TAU;
-  return base;
-}
-
-/* Spin sırasında tik sesi — her segment geçişinde */
-let lastTickSeg = -1;
-function checkTick(angle) {
-  const seg = Math.floor(((angle % TAU) + TAU) % TAU / ARC) % N;
-  if (seg !== lastTickSeg) {
-    lastTickSeg = seg;
-    SFX.play('tick');
-  }
-}
-
-async function doSpin() {
-  if (!requireWallet()) return;
-  if (wheelSpins <= 0) { toast('No spins left today!', 'info'); SFX.play('error'); return; }
-  if (isSpinning) return;
-
-  const btn = document.getElementById('spin-btn');
-  btn.disabled  = true;
-  btn.innerHTML = '<span class="spin-dot-el"></span> Processing...';
-
-  SFX.play('click');
-
-  const rc = await sendTxWithFee('0.00002', 0, 'wheel_spin');
-  if (!rc) {
-    btn.disabled  = false;
-    updateSpinUI();
-    return;
-  }
-
-  isSpinning = true;
-  useSpin();
-  updateSpinUI();
-
-  SFX.play('spinStart');
-
-  const segIdx     = pickSegmentIndex();
-  const seg        = SEGS[segIdx];
-  const extraTurns = 5 + Math.floor(Math.random() * 4);
-  const targetAngle = calcTargetAngle(segIdx, wheelAngle, extraTurns);
-
-  const fromAngle = wheelAngle;
-  const dur       = 5200 + Math.random() * 600;
-  const startTime = performance.now();
-
-  // Spin animasyonu — idleLoop durdur, biz çizeceğiz
-  idleRunning = false;
-
-  await new Promise(res => {
-    function frame(now) {
-      const t    = Math.min((now - startTime) / dur, 1);
-      const ease = 1 - Math.pow(1 - t, 4.5);
-      wheelAngle = fromAngle + (targetAngle - fromAngle) * ease;
-      drawWheel(wheelAngle);
-      checkTick(wheelAngle);
-
-      // Son %15'te yavaşlama sesi
-      if (t > 0.85 && t < 0.90) SFX.play('spinEnd');
-
-      if (t < 1) requestAnimationFrame(frame);
-      else {
-        wheelAngle = targetAngle;
-        drawWheel(wheelAngle);
-        res();
-      }
-    }
+  const spins=5+Math.random()*3;
+  const tgt=wAngle+spins*Math.PI*2+(WHEEL_SEGS.length-segIdx)*(Math.PI*2/WHEEL_SEGS.length);
+  const start=performance.now(),dur=5000,from=wAngle;
+  await new Promise(res=>{
+    function frame(now){const t=Math.min((now-start)/dur,1),e=1-Math.pow(1-t,4);wAngle=from+(tgt-from)*e;drawWheel(wAngle);if(t<1)requestAnimationFrame(frame);else{wAngle=tgt%(Math.PI*2);res();}}
     requestAnimationFrame(frame);
   });
+  wSpinning=false;
+  addXP(rarity.xp,null);totalSpinXP+=rarity.xp;
+  saveNFTState();updateSpinUI();
 
-  // Idle'ı yeniden başlat
-  lastTimestamp = null;
-  idleRunning   = true;
-  requestAnimationFrame(idleLoop);
-  isSpinning = false;
-
-  // Ödül ver
-  totalWheelXP += seg.xp;
-  addXP(seg.xp, 'wheel_spin');
-
-  if (seg.name === 'Mystery') {
-    mysteryBoxes++;
-    saveWheelState();
-    updateSpinUI();
-    spawnConfetti('#f59e0b');
-    SFX.play('mystery');
-    setTimeout(() => document.getElementById('mystery-overlay').classList.add('open'), 400);
+  if(rarity.hasNFT){
+    pendingNFT=makeNFT(seg.r);
+    showReveal(seg.r);
   } else {
-    saveWheelState();
-    updateSpinUI();
-    if (seg.xp >= 2500) SFX.play('bigwin');
-    else SFX.play('win');
-    showWin(seg);
+    spawnConfetti(rarity.color);
+    toast(`${rarity.emoji} ${rarity.name}! +${fmtXP(rarity.xp)} XP`,'success');
+  }
+  btn.disabled=false;
+  btn.innerHTML=nftSpins>0?'<span>🎡</span> Spin · 0.00002 ETH':'🌙 No spins left';
+  if(nftSpins<=0)btn.disabled=true;
+}
+
+// ── MAKE NFT ──
+function makeNFT(rId){
+  const r=R[rId];
+  const names=NFT_NAMES[rId],arts=NFT_ARTS[rId];
+  return {
+    id:Date.now(), rId,
+    name:names[~~(Math.random()*names.length)]+' #'+String(collection.length+1).padStart(3,'0'),
+    art:arts[~~(Math.random()*arts.length)],
+    power:Math.round(r.xp/8+Math.random()*60),
+    mult:r.mult,
+    isNew:true,
+  };
+}
+
+// ── SHOW REVEAL ──
+function showReveal(rId){
+  const r=R[rId];
+  const front=document.getElementById('card-front');
+  const back=document.getElementById('card-back');
+  const card=document.getElementById('card-3d');
+  card.classList.remove('flipped');
+  document.getElementById('reveal-actions').style.display='none';
+  document.getElementById('reveal-text').textContent='🎴 You won an NFT! Tap to reveal.';
+
+  front.style.background=r.bg;
+  front.style.border=`2px solid ${r.border}`;
+  front.style.boxShadow=`0 0 50px ${r.glow}, 0 0 100px ${r.glow}`;
+  document.getElementById('cf-glow').style.background=`radial-gradient(ellipse at 50% 50%, ${r.color}30, transparent)`;
+  document.getElementById('cf-logo').textContent=r.emoji;
+  const rl=document.getElementById('cf-rarity-label');
+  rl.textContent=r.name.toUpperCase()+' BASE';
+  rl.style.background=r.color+'22';
+  rl.style.color=r.color;
+  rl.style.border=`1px solid ${r.color}55`;
+
+  const fp=document.getElementById('front-particles');fp.innerHTML='';
+  for(let i=0;i<10;i++){
+    const p=document.createElement('div');p.className='cp-item';
+    p.style.cssText=`width:${2+Math.random()*5}px;height:${2+Math.random()*5}px;background:${r.color};left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${2+Math.random()*3}s;--dl:${Math.random()*2}s`;
+    fp.appendChild(p);
   }
 
-  btn.disabled  = wheelSpins <= 0;
-  btn.innerHTML = wheelSpins > 0
-    ? '<span>✦</span> Pay via x402 &amp; Spin!'
-    : '🌙 No spins left · Come back tomorrow';
+  back.style.background=r.bg;
+  back.style.border=`2px solid ${r.border}`;
+  back.style.boxShadow=`0 0 40px ${r.glow}`;
+  document.getElementById('cb-art').textContent=pendingNFT.art;
+  const cr=document.getElementById('cb-rarity');cr.textContent=r.name.toUpperCase()+' BASE';cr.style.background=r.color+'22';cr.style.color=r.color;cr.style.border=`1px solid ${r.color}55`;
+  document.getElementById('cb-name').textContent=pendingNFT.name;
+  document.getElementById('cb-xp').textContent='+'+fmtXP(r.xp)+' XP';
+  document.getElementById('cb-xp').style.color=r.color;
+  document.getElementById('cb-attrs').innerHTML=`
+    <div class="cb-attr"><div class="cb-attr-k">Power</div><div class="cb-attr-v" style="color:${r.color}">${pendingNFT.power}</div></div>
+    <div class="cb-attr"><div class="cb-attr-k">XP Mult</div><div class="cb-attr-v">${pendingNFT.mult}</div></div>
+    <div class="cb-attr"><div class="cb-attr-k">Chain</div><div class="cb-attr-v">Base</div></div>
+    <div class="cb-attr"><div class="cb-attr-k">Rarity</div><div class="cb-attr-v" style="color:${r.color}">${r.name}</div></div>
+  `;
+  const bp=document.getElementById('back-particles');bp.innerHTML='';
+  for(let i=0;i<8;i++){const p=document.createElement('div');p.className='cp-item';p.style.cssText=`width:${3+Math.random()*5}px;height:${3+Math.random()*5}px;background:${r.color};left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${2+Math.random()*3}s;--dl:${Math.random()*2}s`;bp.appendChild(p);}
+
+  document.getElementById('nft-overlay').classList.add('open');
 }
 
-/* ══════════════════════════════════════════════════
-   UI
-   ══════════════════════════════════════════════════ */
-function showWin(seg) {
-  document.getElementById('win-emoji').textContent = seg.emoji;
-  document.getElementById('win-xp').textContent    = '+' + fmtXP(seg.xp) + ' XP';
-  document.getElementById('win-xp').style.color    = seg.hex;
-  document.getElementById('win-name').textContent  = seg.name + ' Prize';
-  document.getElementById('win-card').className    = 'win-card show';
-  document.getElementById('win-burst').className   = 'win-burst show';
-  document.getElementById('win-overlay').style.pointerEvents = 'all';
-  spawnConfetti(seg.hex);
-}
-function closeWin() {
-  document.getElementById('win-card').className  = 'win-card hide';
-  document.getElementById('win-burst').className = 'win-burst';
-  setTimeout(() => {
-    document.getElementById('win-overlay').style.pointerEvents = 'none';
-    document.getElementById('win-card').className = 'win-card';
-  }, 300);
-}
-function closeMysteryOverlay() {
-  document.getElementById('mystery-overlay').classList.remove('open');
+let cardFlipped=false;
+function flipCard(){
+  if(cardFlipped)return;cardFlipped=true;
+  document.getElementById('card-3d').classList.add('flipped');
+  const rId=pendingNFT?.rId||'common';const r=R[rId];
+  setTimeout(()=>{
+    document.getElementById('reveal-actions').style.display='flex';
+    document.getElementById('reveal-text').textContent='✨ '+r.name.toUpperCase()+' BASE NFT unlocked!';
+    spawnConfetti(r.color);
+  },900);
 }
 
-function updateSpinUI() {
-  document.getElementById('sb-spins').textContent = wheelSpins;
-  document.getElementById('sb-boxes').textContent = mysteryBoxes;
-  document.getElementById('sb-xp').textContent    = fmtXP(totalWheelXP);
-  document.getElementById('mystery-count-inline').textContent = mysteryBoxes + (mysteryBoxes === 1 ? ' box' : ' boxes');
-
-  const dots = document.getElementById('spin-dots');
-  dots.innerHTML = '';
-  for (let i = 0; i < 3; i++) {
-    const d = document.createElement('div');
-    d.className = 'sd ' + (i < wheelSpins ? 'on' : 'off');
-    dots.appendChild(d);
-  }
-  const btn = document.getElementById('spin-btn');
-  if (wheelSpins <= 0 && !isSpinning) {
-    btn.disabled  = true;
-    btn.innerHTML = '🌙 No spins left · Come back tomorrow';
-  } else if (!isSpinning) {
-    btn.disabled  = false;
-    btn.innerHTML = '<span>✦</span> Pay via x402 &amp; Spin!';
-  }
-}
-
-function renderLegend() {
-  document.getElementById('seg-legend').innerHTML = SEGS.map(s => `
-    <div class="sl-item">
-      <div class="sl-dot" style="background:${s.hex};box-shadow:0 0 8px ${s.hex}99"></div>
-      <div>
-        <div class="sl-label">${s.emoji} ${s.label}</div>
-        <div class="sl-prob">${s.name} · ${Math.round(s.prob * 100)}%</div>
-      </div>
-    </div>`).join('');
-}
-
-/* ══════════════════════════════════════════════════
-   SOUND TOGGLE
-   ══════════════════════════════════════════════════ */
-function toggleSFX() {
-  const on = SFX.toggle();
-  document.getElementById('sfx-toggle').textContent = on ? '🔊' : '🔇';
-  if (on) SFX.play('click');
-}
-// Init icon
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('sfx-toggle').textContent = SFX.isEnabled() ? '🔊' : '🔇';
-});
-
-/* ══════════════════════════════════════════════════
-   CONFETTI
-   ══════════════════════════════════════════════════ */
-function spawnConfetti(base) {
-  const cols = [base, '#c084fc', '#818cf8', '#38bdf8', '#34d399', '#fbbf24', '#f472b6'];
-  for (let i = 0; i < 65; i++) {
-    const el = document.createElement('div');
-    el.className = 'cp';
-    el.style.cssText = `left:${Math.random()*100}%;background:${cols[~~(Math.random()*cols.length)]};--d:${1.4+Math.random()*.8}s;--dl:${Math.random()*.4}s;transform:rotate(${Math.random()*360}deg)`;
-    document.body.appendChild(el);
-    setTimeout(() => el.remove(), 2500);
-  }
-}
-
-
-/* ══════════════════════════════════════════════════
-   MY BOXES — level ödülü kutular
-   ══════════════════════════════════════════════════ */
-function renderMyBoxes() {
-  if (typeof CHAR === 'undefined') return;
-  const boxes  = CHAR.getMyBoxes();
-  const grid   = document.getElementById('my-boxes-grid');
-  const empty  = document.getElementById('my-boxes-empty');
-  if (!grid) return;
-
-  if (boxes.length === 0) {
-    grid.style.display  = 'none';
-    empty.style.display = '';
-    return;
-  }
-
-  grid.style.display  = '';
-  empty.style.display = 'none';
-
-  grid.innerHTML = boxes.map((box, idx) => {
-    const info   = CHAR.BOXES[box.type];
-    const date   = new Date(box.earnedAt).toLocaleDateString('en-US', { month:'short', day:'numeric' });
-    return `
-      <div style="
-        background:var(--card);border:1px solid ${info.color}33;
-        border-radius:16px;padding:14px 12px;text-align:center;
-        position:relative;overflow:hidden;
-        transition:all .2s;cursor:default;
-      ">
-        <div style="position:absolute;top:0;left:0;right:0;height:1px;
-          background:linear-gradient(90deg,transparent,${info.color}66,transparent);"></div>
-        <div style="display:flex;justify-content:center;margin-bottom:8px;
-          filter:drop-shadow(0 4px 12px ${info.color}44);">
-          ${CHAR.buildBoxSVG(box.type, 68, true)}
-        </div>
-        <div style="font-size:12px;font-weight:900;color:#fff;margin-bottom:2px;">${info.name}</div>
-        <div style="font-size:10px;color:${info.color};font-family:var(--mono);font-weight:700;
-          background:${info.color}18;border:1px solid ${info.color}33;
-          border-radius:20px;padding:2px 8px;display:inline-block;margin-bottom:6px;">
-          LV${box.level} REWARD
-        </div>
-        <div style="font-size:10px;color:var(--muted);font-family:var(--mono);">${date}</div>
-        <div style="margin-top:8px;padding:6px 10px;border-radius:8px;
-          background:rgba(255,255,255,.04);border:1px solid var(--border);
-          font-size:10px;font-weight:700;color:var(--muted);">
-          🔒 Coming Soon
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-/* ══════════════════════════════════════════════════
-   INIT
-   ══════════════════════════════════════════════════ */
-initNav('nft');
-renderLegend();
-
-window.addEventListener('load', () => {
-  initCanvas();
-  drawWheel(0);
-  startIdle();
-  loadWheelState();
+function collectAndClose(){
+  if(pendingNFT){collection.unshift(pendingNFT);saveNFTState();renderCollection();}
+  pendingNFT=null;cardFlipped=false;
+  document.getElementById('nft-overlay').classList.remove('open');
   updateSpinUI();
-  renderMyBoxes();
-});
+}
 
-window.addEventListener('resize', () => {
-  initCanvas();
-  drawWheel(wheelAngle);
-});
+// ── COLLECTION RENDER ──
+function renderCollection(){
+  const grid=document.getElementById('nft-grid');
+  const empty=document.getElementById('coll-empty');
+  document.getElementById('coll-count').textContent=collection.length+' NFTs';
+  document.getElementById('rs-mythic').textContent=collection.filter(n=>n.rId==='mythic').length;
+  document.getElementById('rs-leg').textContent=collection.filter(n=>n.rId==='legendary').length;
+  document.getElementById('rs-epic').textContent=collection.filter(n=>n.rId==='epic').length;
+  if(!collection.length){empty.style.display='block';grid.style.display='none';return;}
+  empty.style.display='none';grid.style.display='grid';
+  grid.innerHTML=collection.map((nft,i)=>{
+    const r=R[nft.rId];
+    return `<div class="nft-mini" style="background:${r.bg};border-color:${r.border};box-shadow:0 0 12px ${r.glow}" onclick="showDetail(${i})">
+      <div class="nft-mini-shine"></div>
+      ${nft.isNew?'<div class="new-badge">NEW</div>':''}
+      <div class="nft-mini-num">#${String(i+1).padStart(3,'0')}</div>
+      <div class="nft-mini-art">${nft.art}</div>
+      <div class="nft-mini-name">${nft.name.split(' #')[0]}</div>
+      <div class="nft-mini-rarity" style="background:${r.color}22;color:${r.color};border:1px solid ${r.color}44">${r.name.toUpperCase()} BASE</div>
+    </div>`;
+  }).join('');
+  collection.forEach(n=>n.isNew=false);saveNFTState();
+}
 
-setTimeout(() => {
-  if (BC.addr) { loadWheelState(); updateSpinUI(); renderMyBoxes(); }
-}, 1000);
+// ── DETAIL ──
+function showDetail(i){
+  const nft=collection[i],r=R[nft.rId];
+  const prev=document.getElementById('nd-preview');
+  prev.style.background=r.bg;prev.style.border=`2px solid ${r.border}`;prev.style.boxShadow=`0 0 24px ${r.glow}`;
+  document.getElementById('nd-art').textContent=nft.art;
+  document.getElementById('nd-name').textContent=nft.name;
+  const rb=document.getElementById('nd-rarity-badge');rb.textContent=r.name.toUpperCase()+' BASE';rb.style.background=r.color+'22';rb.style.color=r.color;rb.style.border=`1px solid ${r.color}55`;
+  document.getElementById('nd-power').textContent=nft.power;document.getElementById('nd-power').style.color=r.color;
+  document.getElementById('nd-mult').textContent=nft.mult;
+  document.getElementById('nd-rarity').textContent=r.name;document.getElementById('nd-rarity').style.color=r.color;
+  document.getElementById('nd-id').textContent='#'+String(i+1).padStart(3,'0');
+  document.getElementById('nft-detail-overlay').classList.add('open');
+}
+
+// ── UI UPDATE ──
+function updateSpinUI(){
+  document.getElementById('si-spins').textContent=nftSpins;
+  document.getElementById('si-nfts').textContent=collection.length;
+  document.getElementById('si-xp').textContent=fmtXP(totalSpinXP);
+  const dots=document.getElementById('spins-dots');dots.innerHTML='';
+  for(let i=0;i<3;i++){const d=document.createElement('div');d.className='sd '+(i<nftSpins?'on':'off');dots.appendChild(d);}
+  const btn=document.getElementById('nft-spin-btn');
+  if(nftSpins<=0){btn.disabled=true;btn.innerHTML='🌙 No spins left · Come back tomorrow';}
+  else{btn.disabled=false;btn.innerHTML='<span>🎡</span> Spin · 0.00002 ETH';}
+}
+
+// ── CONFETTI ──
+function spawnConfetti(color){
+  const cols=[color,'#fff','#f5c518','#8b5cf6'];
+  for(let i=0;i<50;i++){
+    const el=document.createElement('div');el.className='cp';
+    el.style.cssText=`left:${Math.random()*100}%;background:${cols[~~(Math.random()*cols.length)]};--d:${1.5+Math.random()}s;--dl:${Math.random()*.5}s;transform:rotate(${Math.random()*360}deg)`;
+    document.body.appendChild(el);setTimeout(()=>el.remove(),2500);
+  }
+}
+
+// ── INIT ──
+function renderAll(){loadNFTState();renderCollection();updateSpinUI();}
+initNav('nft');
+drawWheel(0);
+loadNFTState();renderCollection();updateSpinUI();
+setTimeout(()=>{if(BC.addr)renderAll();},800);
 </script>
 </body>
 </html>

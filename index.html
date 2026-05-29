@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="base:app_id" content="69eb54ae345dbf0ebcf5d84c" />
-<meta name="base:app_id" content="69eb54ae345dbf0ebcf5d84c" />
 <meta property="base:app_id" content="69eb54ae345dbf0ebcf5d84c" />
 <title>BaseCore — Web3 Hub on Base</title>
 <link rel="stylesheet" href="shared.css">
@@ -129,42 +128,6 @@
 .xm-bar{height:5px;background:rgba(255,255,255,.06);border-radius:6px;margin:6px 0 4px;overflow:hidden;}
 .xm-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--blue2),var(--cyan));transition:width 1s ease;}
 .xm-meta{font-size:11px;color:var(--muted);font-family:var(--mono);}
-
-/* ── NFT MINT ── */
-.nft-mint-card{background:linear-gradient(160deg,rgba(124,58,237,.12),rgba(79,70,229,.08),rgba(15,10,30,.9));border:1px solid rgba(124,58,237,.3);border-radius:22px;padding:20px;margin-bottom:20px;position:relative;overflow:hidden;}
-.nft-mint-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(167,139,250,.7),rgba(139,92,246,.5),transparent);}
-.nft-mint-card::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(124,58,237,.08),transparent 65%);pointer-events:none;}
-.nft-preview-wrap{display:flex;justify-content:center;margin-bottom:16px;position:relative;}
-.nft-preview-glow{position:absolute;width:200px;height:200px;background:radial-gradient(ellipse,rgba(124,58,237,.25),transparent 65%);top:50%;left:50%;transform:translate(-50%,-50%);animation:nftGlow 2.5s ease-in-out infinite alternate;pointer-events:none;}
-@keyframes nftGlow{from{opacity:.4;transform:translate(-50%,-50%) scale(.85);}to{opacity:1;transform:translate(-50%,-50%) scale(1.15);}}
-.nft-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;}
-.nft-title{font-size:18px;font-weight:900;}
-.nft-sub{font-size:12px;color:var(--text2);margin-top:3px;}
-
-
-
-.nft-progress-wrap{margin-bottom:14px;}
-.nft-progress-labels{display:flex;justify-content:space-between;font-size:11px;font-family:var(--mono);margin-bottom:6px;}
-.npl-minted{color:#a78bfa;font-weight:800;}
-.npl-total{color:var(--muted);}
-.nft-progress-bar{background:rgba(255,255,255,.06);border-radius:10px;height:8px;overflow:hidden;}
-.nft-progress-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,#7c3aed,#a855f7,#c084fc);box-shadow:0 0 12px rgba(124,58,237,.5);transition:width 1.5s cubic-bezier(.34,1.56,.64,1);}
-.nft-urgency{font-size:11px;color:#a78bfa;text-align:center;margin-top:6px;font-weight:700;}
-.nft-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
-.ns-item{background:rgba(0,0,0,.3);border:1px solid rgba(124,58,237,.15);border-radius:10px;padding:10px;text-align:center;}
-.ns-val{font-size:15px;font-weight:900;color:#a78bfa;}
-.ns-lbl{font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;margin-top:2px;}
-.nft-mint-btn{width:100%;padding:18px;border-radius:16px;border:none;cursor:pointer;background:linear-gradient(135deg,#7c3aed,#6d28d9,#4f46e5);color:#fff;font-family:var(--sans);font-size:16px;font-weight:900;box-shadow:0 0 40px rgba(124,58,237,.4),0 8px 32px rgba(0,0,0,.4);transition:all .22s;display:flex;align-items:center;justify-content:center;gap:10px;position:relative;overflow:hidden;}
-.nft-mint-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);transform:translateX(-100%);transition:transform .5s;}
-.nft-mint-btn:hover::before{transform:translateX(100%);}
-.nft-mint-btn:hover:not(:disabled){transform:translateY(-3px);box-shadow:0 0 60px rgba(124,58,237,.6);}
-.nft-mint-btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shadow:none;}
-.nft-owned{margin-top:14px;}
-.nft-owned-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;}
-.nft-owned-grid{display:flex;gap:8px;flex-wrap:wrap;}
-.nft-owned-item{width:72px;height:72px;border-radius:12px;border:1px solid rgba(124,58,237,.35);overflow:hidden;cursor:pointer;transition:all .2s;}
-.nft-owned-item:hover{transform:scale(1.08);border-color:rgba(167,139,250,.6);}
-@keyframes spin360{to{transform:rotate(360deg);}}
 </style>
 </head>
 <body>
@@ -219,9 +182,9 @@
     <div class="hm-item-info"><div class="hm-item-name">Gaming</div><div class="hm-item-desc">8 on-chain games</div></div>
     <span class="hm-item-badge" style="background:rgba(249,115,22,.1);color:var(--orange)">HOT</span>
   </a>
-  <a href="wheel.html" class="hm-item" onclick="closeHMenu()">
+  <a href="nft.html" class="hm-item" onclick="closeHMenu()">
     <div class="hm-item-icon" style="background:rgba(139,92,246,.12)">🎡</div>
-    <div class="hm-item-info"><div class="hm-item-name">Fortune Wheel</div><div class="hm-item-desc">Spin daily · Earn XP · Mystery Boxes</div></div>
+    <div class="hm-item-info"><div class="hm-item-name">NFT Spin</div><div class="hm-item-desc">Spin & collect NFTs</div></div>
     <span class="hm-item-badge" style="background:rgba(139,92,246,.1);color:var(--purple)">NFT</span>
   </a>
 
@@ -257,7 +220,10 @@
     </div>
     
     <div class="nav-user-wrap" id="nav-user-wrap" style="display:none">
-      <div class="nav-addr" id="nav-addr"></div>
+      <div class="nav-addr" id="nav-addr" onclick="toggleUserMenu()"></div>
+      <div class="user-dropdown" id="user-dropdown">
+        <button class="ud-btn disconnect" onclick="disconnectWallet()">🔴 Çıkış Yap</button>
+      </div>
     </div>
 
     <button class="nav-connect" id="nav-connect-btn" onclick="openWalletModal()">Connect</button>
@@ -271,7 +237,7 @@
   <a href="gm.html" class="tab-item" data-tab="gm"><div class="tab-icon-wrap">🌅</div><span class="tab-label">GM/GN</span></a>
   <a href="dex.html" class="tab-item" data-tab="dex"><div class="tab-icon-wrap">🔄</div><span class="tab-label">DEX</span></a>
   <a href="gaming.html" class="tab-item" data-tab="gaming"><div class="tab-icon-wrap">🎮</div><span class="tab-label">Gaming</span></a>
-  <a href="wheel.html" class="tab-item" data-tab="nft"><div class="tab-icon-wrap">🎡</div><span class="tab-label">Wheel</span></a>
+  <a href="nft.html" class="tab-item" data-tab="nft"><div class="tab-icon-wrap">🖼️</div><span class="tab-label">NFT</span></a>
   <a href="analysis.html" class="tab-item" data-tab="analysis"><div class="tab-icon-wrap">📊</div><span class="tab-label">Analysis</span></a>
   <a href="deploy.html" class="tab-item" data-tab="deploy"><div class="tab-icon-wrap">🚀</div><span class="tab-label">Deploy</span></a>
 </nav>
@@ -315,7 +281,7 @@
       <span class="fc-arrow">→</span>
     </a>
     <a href="nft.html" class="featured-card" style="background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.15);--fc:var(--purple)">
-      <div class="fc-top"><span class="fc-icon">🎡</span><div><div class="fc-title">Fortune Wheel</div><div class="fc-sub">Spin daily · Earn XP · Mystery Boxes</div></div></div>
+      <div class="fc-top"><span class="fc-icon">🎡</span><div><div class="fc-title">NFT Spin & Collect</div><div class="fc-sub">Spin daily · Rare NFTs · Mythic cards</div></div></div>
       <div class="fc-chips"><span class="fc-chip" style="background:rgba(139,92,246,.15);color:var(--purple)">Common → Mythic</span></div>
       <span class="fc-arrow">→</span>
     </a>
@@ -331,90 +297,12 @@
 
     <div class="mode-toggle" style="margin-bottom: 20px;">
       <button id="btn-onchain" class="mode-btn active" onclick="setPaymentMode('onchain')">⛓️ On-Chain</button>
-      <button id="btn-x402" class="mode-btn" onclick="setPaymentMode('x402')">⚡ x402 Mode</button>
+      <button id="btn-x402" class="mode-btn" onclick="setPaymentMode('x402')">⚡ x402 Modu</button>
     </div>
 
-    <!-- Character Widget -->
-    <div class="char-widget" id="char-widget" onclick="if(typeof CHAR!=='undefined')CHAR.openModal()" style="
-      background:linear-gradient(160deg,rgba(30,58,138,.28),rgba(37,99,235,.12),rgba(15,23,42,.8));
-      border:1px solid rgba(96,165,250,.38);border-radius:22px;
-      padding:22px 20px 16px;margin-bottom:20px;
-      display:flex;flex-direction:column;align-items:center;
-      position:relative;overflow:hidden;cursor:pointer;
-      box-shadow:0 0 48px rgba(37,99,235,.18),0 8px 32px rgba(0,0,0,.35);
-      transition:all .3s;
-    ">
-      <div style="position:absolute;top:0;left:0;right:0;height:1px;
-        background:linear-gradient(90deg,transparent,rgba(96,165,250,.7),rgba(147,197,253,.5),transparent);"></div>
-      <div style="font-size:13px;color:var(--text2);">Connect wallet to view your character</div>
-    </div>
-    <!-- NFT MINT -->
-    <div class="nft-mint-card" id="nft-mint-section">
-      <div class="nft-header">
-        <div><div class="nft-title">⬡ BaseCore Pass</div><div class="nft-sub">x402 exclusive · Limited edition</div></div><div class="npb-label">USDC · x402</div></div>
-      </div>
-      <div class="nft-preview-wrap">
-        <div class="nft-preview-glow"></div>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 280" width="200" height="200" style="border-radius:18px;filter:drop-shadow(0 8px 32px rgba(124,58,237,.5))">
-          <defs>
-            <radialGradient id="nbg" cx="50%" cy="40%" r="70%"><stop offset="0%" stop-color="#1a0a3a"/><stop offset="60%" stop-color="#0d0520"/><stop offset="100%" stop-color="#050010"/></radialGradient>
-            <radialGradient id="nhex" cx="40%" cy="35%" r="65%"><stop offset="0%" stop-color="#a78bfa"/><stop offset="50%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#4c1d95"/></radialGradient>
-            <linearGradient id="nx402" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#c084fc"/><stop offset="100%" stop-color="#818cf8"/></linearGradient>
-            <filter id="nglow"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-          </defs>
-          <rect width="280" height="280" rx="18" fill="url(#nbg)"/>
-          <g opacity="0.06" stroke="#a78bfa" stroke-width="0.8"><line x1="0" y1="56" x2="280" y2="56"/><line x1="0" y1="112" x2="280" y2="112"/><line x1="0" y1="168" x2="280" y2="168"/><line x1="0" y1="224" x2="280" y2="224"/><line x1="56" y1="0" x2="56" y2="280"/><line x1="112" y1="0" x2="112" y2="280"/><line x1="168" y1="0" x2="168" y2="280"/><line x1="224" y1="0" x2="224" y2="280"/></g>
-          <rect x="12" y="12" width="20" height="2" rx="1" fill="#7c3aed" opacity="0.7"/><rect x="12" y="12" width="2" height="20" rx="1" fill="#7c3aed" opacity="0.7"/>
-          <rect x="248" y="12" width="20" height="2" rx="1" fill="#7c3aed" opacity="0.7"/><rect x="266" y="12" width="2" height="20" rx="1" fill="#7c3aed" opacity="0.7"/>
-          <rect x="12" y="266" width="20" height="2" rx="1" fill="#7c3aed" opacity="0.7"/><rect x="12" y="248" width="2" height="20" rx="1" fill="#7c3aed" opacity="0.7"/>
-          <rect x="248" y="266" width="20" height="2" rx="1" fill="#7c3aed" opacity="0.7"/><rect x="266" y="248" width="2" height="20" rx="1" fill="#7c3aed" opacity="0.7"/>
-          <polygon points="140,44 175,63 175,101 140,120 105,101 105,63" fill="none" stroke="#7c3aed" stroke-width="1" opacity="0.3"><animateTransform attributeName="transform" type="rotate" from="0 140 82" to="360 140 82" dur="20s" repeatCount="indefinite"/></polygon>
-          <polygon points="140,30 184,55 184,105 140,130 96,105 96,55" fill="none" stroke="#a78bfa" stroke-width="0.6" opacity="0.2"><animateTransform attributeName="transform" type="rotate" from="360 140 80" to="0 140 80" dur="30s" repeatCount="indefinite"/></polygon>
-          <polygon points="140,55 176,75 176,115 140,135 104,115 104,75" fill="url(#nhex)" filter="url(#nglow)"><animate attributeName="opacity" values="0.9;1;0.9" dur="3s" repeatCount="indefinite"/></polygon>
-          <polygon points="140,62 170,79 170,113 140,130 110,113 110,79" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
-          <circle cx="140" cy="95" r="18" fill="rgba(167,139,250,0.15)"><animate attributeName="r" values="18;22;18" dur="2.5s" repeatCount="indefinite"/></circle>
-          <text x="140" y="101" text-anchor="middle" font-size="22" fill="white" font-weight="900" font-family="monospace">⬡</text>
-          <text x="140" y="168" text-anchor="middle" font-size="34" font-weight="900" font-family="monospace" fill="url(#nx402)" filter="url(#nglow)">x402</text>
-          <line x1="80" y1="175" x2="200" y2="175" stroke="url(#nx402)" stroke-width="1.5" opacity="0.6"/>
-          <text x="140" y="198" text-anchor="middle" font-size="11" font-weight="800" fill="#a78bfa" font-family="monospace" letter-spacing="3" opacity="0.8">BASECORE PASS</text>
-          <text x="140" y="220" text-anchor="middle" font-size="10" fill="#6d28d9" font-family="monospace" opacity="0.7" id="nft-edition-text">EDITION · #???</text>
-          <line x1="20" y1="235" x2="260" y2="235" stroke="#7c3aed" stroke-width="0.5" opacity="0.3"/>
-          <text x="30" y="250" font-size="9" fill="#6d28d9" font-family="monospace" opacity="0.6">BASE MAINNET</text>
-          <text x="250" y="250" text-anchor="end" font-size="9" fill="#6d28d9" font-family="monospace" opacity="0.6">ERC-721</text>
-          <circle cx="50" cy="50" r="2" fill="#a78bfa" opacity="0.6"><animate attributeName="opacity" values="0.6;0.1;0.6" dur="2.1s" repeatCount="indefinite"/></circle>
-          <circle cx="230" cy="50" r="2" fill="#818cf8" opacity="0.5"><animate attributeName="opacity" values="0.5;0.1;0.5" dur="3.2s" repeatCount="indefinite"/></circle>
-          <circle cx="50" cy="230" r="2" fill="#c084fc" opacity="0.5"><animate attributeName="opacity" values="0.5;0.1;0.5" dur="2.7s" repeatCount="indefinite"/></circle>
-          <circle cx="230" cy="230" r="2" fill="#a78bfa" opacity="0.6"><animate attributeName="opacity" values="0.6;0.1;0.6" dur="1.8s" repeatCount="indefinite"/></circle>
-        </svg>
-      </div>
-      <div class="nft-progress-wrap">
-        <!-- Multiplier badge -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <div id="nft-multiplier-badge" style="display:inline-flex;align-items:center;gap:6px;background:rgba(124,58,237,.15);border:1px solid rgba(167,139,250,.3);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:900;color:#a78bfa;font-family:var(--mono);">
-            ⚡ 1x Active
-          </div>
-        </div>
-        <!-- Progress bar -->
-        <div class="nft-progress-bar" style="height:10px;">
-          <div class="nft-progress-fill" id="nft-progress-fill" style="width:0%"></div>
-        </div>
-        <div style="margin-top:6px;display:flex;justify-content:space-between;align-items:center;">
-          <div style="font-size:10px;color:var(--muted);font-family:var(--mono);">Almost sold out</div>
-          <div style="font-size:10px;color:#a78bfa;font-family:var(--mono);font-weight:700;" id="nft-urgency">🔥 Filling fast</div>
-        </div>
-      </div>
-      <div class="nft-stats">
-        <div class="ns-item"><div class="ns-val">$2</div><div class="ns-lbl">Price</div></div>
-        <div class="ns-item"><div class="ns-val" id="ns-owned">0/5</div><div class="ns-lbl">Owned</div></div>
-        <div class="ns-item"><div class="ns-val">+5K</div><div class="ns-lbl">XP / Mint</div></div>
-      </div>
-      <button class="nft-mint-btn" id="nft-mint-btn" onclick="mintNFT()">✦ Mint x402 NFT</button>
-      <div class="nft-owned" id="nft-owned-section" style="display:none">
-        <div class="nft-owned-title">Your NFTs</div>
-        <div class="nft-owned-grid" id="nft-owned-grid"></div>
-      </div>
-    </div>
-
+    <div class="user-hero">
+      <div class="uh-top">
+        <div class="uh-av" id="uh-av">?</div>
         <div class="uh-info">
           <div class="uh-addr" id="uh-addr">—</div>
           <div class="uh-level" id="uh-level">Level 1 · Rookie</div>
@@ -423,7 +311,7 @@
       </div>
       <div class="uh-stats">
         <div class="uhs"><div class="uhs-val" style="color:var(--blue2)" id="uh-xp">0</div><div class="uhs-lbl">XP</div></div>
-        <div class="uhs" style="cursor:pointer" onclick="document.getElementById('nft-mint-section').scrollIntoView({behavior:'smooth'})"><div class="uhs-val" style="color:#a78bfa" id="uh-nft">0</div><div class="uhs-lbl">NFTs</div></div>
+        <div class="uhs"><div class="uhs-val" style="color:var(--yellow)" id="uh-rank">#—</div><div class="uhs-lbl">Rank</div></div>
         <div class="uhs"><div class="uhs-val" style="color:var(--green)" id="uh-streak">0</div><div class="uhs-lbl">Streak</div></div>
         <div class="uhs"><div class="uhs-val" style="color:var(--cyan)" id="uh-refs">0</div><div class="uhs-lbl">Refs</div></div>
       </div>
@@ -443,8 +331,8 @@
       <a href="gaming.html" class="qa-card" style="background:rgba(249,115,22,.06);--qc:rgba(249,115,22,.1)">
         <span class="qa-icon">🎮</span><span class="qa-name">Games</span><span class="qa-badge" style="background:rgba(239,68,68,.12);color:var(--red)">HOT 🔥</span>
       </a>
-      <a href="wheel.html" class="qa-card" style="background:rgba(139,92,246,.06);--qc:rgba(139,92,246,.1)">
-        <span class="qa-icon">🎡</span><span class="qa-name">Wheel</span><span class="qa-badge" style="background:rgba(139,92,246,.12);color:var(--purple)">3/day</span>
+      <a href="nft.html" class="qa-card" style="background:rgba(139,92,246,.06);--qc:rgba(139,92,246,.1)">
+        <span class="qa-icon">🎡</span><span class="qa-name">NFT Spin</span><span class="qa-badge" style="background:rgba(139,92,246,.12);color:var(--purple)">3/day</span>
       </a>
       <a href="deploy.html" class="qa-card" style="background:rgba(0,232,135,.06);--qc:rgba(0,232,135,.1)">
         <span class="qa-icon">🚀</span><span class="qa-name">Deploy</span><span class="qa-badge" style="background:rgba(0,232,135,.1);color:var(--green)">+500 XP</span>
@@ -463,9 +351,9 @@
       <div class="card-body" style="padding:14px">
         <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
           <div style="width:34px;height:34px;border-radius:10px;background:rgba(139,92,246,.12);display:flex;align-items:center;justify-content:center;font-size:16px">🎡</div>
-          <div style="flex:1"><div style="font-size:13px;font-weight:700">Fortune Wheel</div><div style="font-size:11px;color:var(--muted);margin-top:2px" id="task-spin-status">0/3 spins done</div></div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:700">NFT Spin</div><div style="font-size:11px;color:var(--muted);margin-top:2px" id="task-spin-status">0/3 spins done</div></div>
           <span id="task-spin-check" style="font-size:18px;display:none">✅</span>
-          <a href="wheel.html" id="task-spin-go" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);color:var(--purple);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:700;text-decoration:none">Go →</a>
+          <a href="nft.html" id="task-spin-go" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25);color:var(--purple);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:700;text-decoration:none">Go →</a>
         </div>
         <div style="display:flex;align-items:center;gap:10px;padding:10px 0">
           <div style="width:34px;height:34px;border-radius:10px;background:rgba(249,115,22,.12);display:flex;align-items:center;justify-content:center;font-size:16px">🎮</div>
@@ -480,9 +368,7 @@
 </div>
 
 <div id="toasts"></div>
-<script src="shared.js?v=3"></script>
-<script src="sfx.js"></script>
-<script src="character.js"></script>
+<script src="shared.js?v=31"></script>
 <script>
 const LVLS = ['Rookie','Explorer','Builder','Veteran','Elite','Master','Legend','God'];
 
@@ -518,7 +404,6 @@ function updateHMenuUser() {
 }
 
 function showDashboard() {
-  setTimeout(() => updateNFTUI(), 100);
   document.getElementById('section-connect').style.display = 'none';
   document.getElementById('section-dashboard').style.display = '';
   updateDashboard();
@@ -543,8 +428,8 @@ function updateDashboard() {
   const xp = BC.xp;
   let rank = xp<=0?11976:xp<500?Math.round(9500-(xp)*18):xp<5000?Math.round(8000-(xp-500)*1.5):Math.round(1200-(xp-5000)*0.05);
   rank = Math.max(11, rank);
-  // rank kaldırıldı
-  // rank kaldırıldı
+  document.getElementById('uh-rank').textContent = '#'+rank.toLocaleString();
+  document.getElementById('qa-rank').textContent = '#'+rank.toLocaleString();
   const dayKey = new Date().getHours()<3 ? (()=>{const d=new Date();d.setDate(d.getDate()-1);return d.toDateString();})() : new Date().toDateString();
   const spins = Math.min(3, parseInt(localStorage.getItem('bc_nftsp_'+BC.addr+'_'+dayKey)||'0'));
   const games = Math.min(2, parseInt(localStorage.getItem('bc_gamecount_'+BC.addr+'_'+dayKey)||'0'));
@@ -557,118 +442,7 @@ function updateDashboard() {
   updateNavUI();
 }
 
-
-  // ── NFT MINT ──
-  const NFT_TOTAL = 300;
-  const NFT_BASE  = 247;
-
-  function loadNFTState() {
-    // BC.addr yoksa localStorage'daki son adresi kullan
-    const addr = (BC.addr || localStorage.getItem('bc_last_addr') || '').toLowerCase();
-    if (!addr) return { owned: [] };
-    const raw = localStorage.getItem('bc_nft_' + addr);
-    return raw ? JSON.parse(raw) : { owned: [] };
-  }
-
-  function saveNFTState(s) {
-    if (!BC.addr) return;
-    localStorage.setItem('bc_nft_' + BC.addr.toLowerCase(), JSON.stringify(s));
-  }
-
-  function getNFTMultiplier() {
-    const state = loadNFTState();
-    return 1 + (state.owned ? state.owned.length : 0); // 1x base + 1x per NFT
-  }
-
-  function updateNFTUI() {
-    const state  = loadNFTState();
-    const owned  = state.owned ? state.owned.length : 0;
-    const mult   = 1 + owned; // 1x + owned
-    // Progress bar — sabit, bitmeye yakın görünsün
-    // owned 0 ise %88, her NFT +2.4% ekler
-    const basePct  = 88;
-    const ownedPct = owned * 2.4;
-    const pct      = Math.min(98, basePct + ownedPct);
-
-    const pf = document.getElementById('nft-progress-fill');
-    const mb = document.getElementById('nft-multiplier-badge');
-    const no = document.getElementById('ns-owned');
-    const un = document.getElementById('uh-nft');
-
-    if (pf) setTimeout(() => { pf.style.width = pct + '%'; }, 300);
-    if (mb) {
-      mb.textContent = '⚡ ' + mult + 'x Active';
-      mb.style.color = mult >= 3 ? '#fbbf24' : mult >= 2 ? '#34d399' : '#a78bfa';
-      mb.style.borderColor = mult >= 3 ? 'rgba(251,191,36,.3)' : mult >= 2 ? 'rgba(52,211,153,.3)' : 'rgba(167,139,250,.3)';
-      mb.style.background  = mult >= 3 ? 'rgba(251,191,36,.1)' : mult >= 2 ? 'rgba(52,211,153,.1)' : 'rgba(124,58,237,.15)';
-    }
-
-    if (no) no.textContent = owned + '/5';
-    if (un) un.textContent = owned;
-
-    const btn = document.getElementById('nft-mint-btn');
-    const isConnected = BC.addr || localStorage.getItem('bc_last_addr');
-    if (!isConnected) {
-      if (btn) { btn.textContent = '✦ Connect Wallet to Mint'; btn.disabled = false; }
-    } else if (owned >= 5) {
-      if (btn) { btn.textContent = '✅ Max minted (5/5) · ' + mult + 'x XP Active'; btn.disabled = true; }
-    } else {
-      if (btn) { btn.textContent = '✦ Mint x402 NFT · +1x XP Boost'; btn.disabled = false; }
-    }
-
-    const os = document.getElementById('nft-owned-section');
-    const og = document.getElementById('nft-owned-grid');
-    if (owned > 0 && os && og) {
-      os.style.display = '';
-      og.innerHTML = state.owned.map((n,i) => `
-        <div class="nft-owned-item" title="BaseCore Pass #${n.id} · +1x XP">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72" width="72" height="72">
-            <rect width="72" height="72" rx="10" fill="#0d0520"/>
-            <polygon points="36,10 52,19 52,37 36,46 20,37 20,19" fill="#7c3aed" opacity="0.9"/>
-            <text x="36" y="30" text-anchor="middle" font-size="13" fill="white" font-weight="900" font-family="monospace">⬡</text>
-            <text x="36" y="52" text-anchor="middle" font-size="9" fill="#a78bfa" font-family="monospace" font-weight="800">x402</text>
-            <text x="36" y="64" text-anchor="middle" font-size="7" fill="#6d28d9" font-family="monospace">#${n.id}</text>
-          </svg>
-        </div>`).join('');
-    } else if (os) { os.style.display = 'none'; }
-  }
-
-  async function mintNFT() {
-    // Cüzdan bağlı değilse modal aç, mint yapma
-    if (!BC.addr) { openWalletModal(); return; }
-    const state = loadNFTState();
-    if (state.owned.length >= 5) {
-      showNotification('Max Reached', 'You already own 5 BaseCore Pass NFTs.', 'info');
-      return;
-    }
-    const btn = document.getElementById('nft-mint-btn');
-    btn.disabled  = true;
-    btn.innerHTML = '<span style="display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;animation:spin360 .7s linear infinite;margin-right:8px;vertical-align:middle;"></span>Minting...';
-
-    const rc = await sendTxWithFee('0.00002', 5000, 'nft_mint');
-    if (!rc) { updateNFTUI(); return; }
-
-    const tokenId = NFT_BASE + state.owned.length + 1;
-    state.owned.push({ id: tokenId, mintedAt: new Date().toISOString() });
-    saveNFTState(state);
-
-    const newMult = 1 + state.owned.length;
-    const ed = document.getElementById('nft-edition-text');
-    if (ed) ed.textContent = 'EDITION · #' + tokenId;
-
-    showNotification(
-      'NFT Minted! 🎉',
-      'BaseCore Pass #' + tokenId + ' · +5000 XP · Now ' + newMult + 'x XP Boost!',
-      'success'
-    );
-    updateNFTUI();
-  if(typeof CHAR!=='undefined' && document.getElementById('char-widget'))CHAR.renderWidget(BC.xp);
-  }
-
-  initNav('home');
-  updateNFTUI();
-  // Sayfa yüklenince hemen NFT state göster
-  document.addEventListener('DOMContentLoaded', () => updateNFTUI());
+initNav('home');
 setTimeout(() => { if (BC.addr) showDashboard(); else showConnect(); }, 600);
 </script>
 </body>
